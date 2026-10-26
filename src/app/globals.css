@@ -1,0 +1,10 @@
+/* Base mínima; cada zona (invitación, panel, landing) trae sus propios estilos. */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[hidden] { display: none !important; }

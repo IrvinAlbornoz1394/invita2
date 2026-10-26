@@ -1,0 +1,233 @@
+.page {
+  --red: #e8352b;
+  --red-d: #b3201a;
+  --blue: #1675d1;
+  --orange: #ff8a00;
+  --yellow: #ffd93b;
+  --cream: #fff6dc;
+  --ink: #5a2d0c;
+  --clay: 0 8px 0 var(--shade, rgba(0, 0, 0, 0.18)), 0 18px 30px rgba(90, 45, 12, 0.16);
+
+  font-family: var(--font-baloo), system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--cream);
+  overflow-x: clip;
+}
+
+/* ----- Portada ----- */
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 88svh;
+  padding: 64px 16px 96px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+.rays {
+  position: absolute;
+  inset: -60%;
+  z-index: -1;
+  background: repeating-conic-gradient(from 0deg, var(--orange) 0deg 11deg, #ffc23a 11deg 22deg);
+  animation: spin 90s linear infinite;
+}
+.rays::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 246, 200, 0.9) 0%, rgba(255, 230, 140, 0.35) 22%, transparent 45%);
+}
+.kicker {
+  margin: 0 0 12px;
+  padding: 6px 20px;
+  border-radius: 999px;
+  border: 4px solid #fff;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--font-lilita), sans-serif;
+  letter-spacing: 0.06em;
+  --shade: #0b4f9c;
+  box-shadow: var(--clay);
+}
+.title {
+  margin: 0;
+  font-family: var(--font-lilita), sans-serif;
+  font-weight: 400;
+  font-size: clamp(2.8rem, 11vw, 5.2rem);
+  line-height: 1;
+  color: var(--red);
+  -webkit-text-stroke: 12px #fff;
+  paint-order: stroke fill;
+  filter: drop-shadow(0 6px 0 rgba(150, 50, 0, 0.3));
+}
+.lead {
+  max-width: 34ch;
+  margin: 20px auto 0;
+  padding: 12px 20px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.88);
+  font-weight: 600;
+  font-size: clamp(1.05rem, 4vw, 1.25rem);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 54px;
+  padding: 12px 26px;
+  border-radius: 999px;
+  border: 4px solid #fff;
+  font-family: var(--font-lilita), sans-serif;
+  font-size: 1.2rem;
+  text-decoration: none;
+  box-shadow: var(--clay);
+  transition: transform 0.2s ease-out;
+}
+.btn:hover {
+  transform: translateY(-3px);
+}
+.btn:active {
+  transform: translateY(4px);
+}
+.btnPrimary {
+  background: var(--red);
+  color: #fff;
+  --shade: var(--red-d);
+}
+.btnLight {
+  background: #fff;
+  color: var(--ink);
+  --shade: #d8c9a0;
+}
+
+/* ----- Secciones ----- */
+.section {
+  padding: 72px 16px;
+  text-align: center;
+}
+.section > * {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.sectionAlt {
+  background: var(--yellow);
+}
+.heading {
+  margin: 0 auto 32px;
+  font-family: var(--font-lilita), sans-serif;
+  font-weight: 400;
+  font-size: clamp(2rem, 8vw, 3rem);
+  line-height: 1.1;
+  color: var(--red);
+  -webkit-text-stroke: 9px #fff;
+  paint-order: stroke fill;
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+.feature {
+  padding: 24px 20px;
+  border-radius: 26px;
+  border: 4px solid #fff;
+  background: #fff;
+  --shade: #ecd9a8;
+  box-shadow: var(--clay);
+}
+.feature h3,
+.step h3 {
+  margin: 10px 0 4px;
+  font-family: var(--font-lilita), sans-serif;
+  font-weight: 400;
+  font-size: 1.4rem;
+  line-height: 1.15;
+}
+.feature p,
+.step p {
+  margin: 0;
+}
+.emoji {
+  display: inline-grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--cream);
+  font-size: 2.4rem;
+}
+
+.steps {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 16px;
+  max-width: 560px !important;
+  margin-bottom: 32px;
+  text-align: left;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 20px;
+  border-radius: 24px;
+  border: 4px solid #fff;
+  background: #fff;
+  --shade: #e7b400;
+  box-shadow: var(--clay);
+}
+.step h3 {
+  margin-top: 0;
+}
+.stepNum {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: #fff;
+  font-family: var(--font-lilita), sans-serif;
+  font-size: 1.8rem;
+}
+
+.footer {
+  padding: 40px 16px;
+  text-align: center;
+  background: var(--red);
+  color: #fff;
+  font-weight: 600;
+}
+.footer p {
+  margin: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rays {
+    animation: none;
+  }
+}
