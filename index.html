@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Lucero Jeamileth · Mi primer añito</title>
+  <meta name="description" content="¡Estás invitado al primer cumpleaños de Lucero Jeamileth!" />
+  <meta name="theme-color" content="#ff8a00" />
+  <meta property="og:title" content="¡Lucero Jeamileth cumple 1 añito!" />
+  <meta property="og:description" content="Viernes 13 de noviembre · 4:00 p. m. · Mérida, Yucatán" />
+  <meta property="og:image" content="assets/img/fondo-bely-beto.jpg" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lilita+One&display=swap" rel="stylesheet" />
+  <link rel="preload" as="image" href="assets/img/lucero.jpg" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="is-locked">
+
+  <!-- ===================== Intro: regalo sorpresa ===================== -->
+  <div class="intro" id="intro">
+    <div class="sunburst" aria-hidden="true"></div>
+    <div class="intro__inner">
+      <p class="intro__kicker">Lucero tiene una sorpresa para ti</p>
+      <button class="gift" id="gift" aria-label="Abrir invitación">
+        <span class="gift__lid"><span class="gift__bow"></span></span>
+        <span class="gift__box"></span>
+      </button>
+      <p class="intro__hint">Toca el regalo</p>
+    </div>
+  </div>
+
+  <canvas id="confetti" class="confetti" aria-hidden="true"></canvas>
+
+  <button class="music" id="musicBtn" aria-label="Pausar música" aria-pressed="true" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span class="music__eq" aria-hidden="true"><i></i><i></i><i></i></span>
+  </button>
+
+  <!-- Fijo en la parte baja de la pantalla para que se vea en cualquier teléfono -->
+  <a class="scroll-cue" id="scrollCue" href="#tarjeta" aria-label="Ver más" hidden>
+    <svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+  </a>
+
+  <main>
+    <!-- ===================== Hero ===================== -->
+    <header class="hero" id="inicio">
+      <div class="sunburst" aria-hidden="true"></div>
+      <div class="stars" id="stars" aria-hidden="true"></div>
+      <div class="balloons" id="balloons" aria-hidden="true"></div>
+
+      <div class="hero__inner">
+        <div class="logo-badge pop" style="--d:.1s">
+          <img id="logo" alt="Bely y Beto" />
+        </div>
+
+        <p class="pill pop" style="--d:.3s">¡Estás invitado!</p>
+
+        <div class="ribbon pop" style="--d:.5s"><span id="edadTexto"></span></div>
+
+        <h1 class="title" id="title" aria-label=""></h1>
+
+        <div class="portrait pop" style="--d:1.3s">
+          <div class="portrait__ring" aria-hidden="true"></div>
+          <img id="foto" alt="Lucero" />
+          <span class="portrait__age" id="edad"></span>
+        </div>
+
+        <p class="date-chip pop" style="--d:1.6s" id="heroFecha"></p>
+      </div>
+
+      <svg class="cloud-edge" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 120V60c60-40 140-40 200 0 50-50 150-55 210-5 60-55 170-55 230 0 55-45 150-45 210 0 60-50 160-50 220 0 60-45 140-45 200 5 50-40 120-40 170 0V120z"/>
+      </svg>
+    </header>
+
+    <!-- ===================== Tarjeta ilustrada ===================== -->
+    <section class="section section--cream" id="tarjeta">
+      <div class="card3d" id="card3d" data-reveal="zoom">
+        <img id="tarjetaImg" alt="Bely y Beto" />
+        <div class="card3d__text">
+          <p class="card3d__kicker">¡Ven a celebrar conmigo!</p>
+          <p class="card3d__name" id="cardName"></p>
+          <p class="card3d__date" id="cardDate"></p>
+          <p class="card3d__time" id="cardTime"></p>
+        </div>
+        <span class="card3d__shine" aria-hidden="true"></span>
+      </div>
+    </section>
+
+    <!-- ===================== Cuenta regresiva ===================== -->
+    <section class="section section--blue" id="cuenta">
+      <h2 class="heading heading--light" data-reveal="up">¡Ya casi es mi fiesta!</h2>
+      <div class="countdown" id="countdown">
+        <div class="cd cd--red" data-reveal="up" style="--rd:0s"><span class="cd__num" data-unit="d">00</span><span class="cd__lbl">Días</span></div>
+        <div class="cd cd--yellow" data-reveal="up" style="--rd:.1s"><span class="cd__num" data-unit="h">00</span><span class="cd__lbl">Horas</span></div>
+        <div class="cd cd--orange" data-reveal="up" style="--rd:.2s"><span class="cd__num" data-unit="m">00</span><span class="cd__lbl">Minutos</span></div>
+        <div class="cd cd--white" data-reveal="up" style="--rd:.3s"><span class="cd__num" data-unit="s">00</span><span class="cd__lbl">Segundos</span></div>
+      </div>
+      <p class="countdown__done" id="countdownDone" hidden>¡Hoy es el gran día!</p>
+    </section>
+
+    <!-- ===================== Detalles ===================== -->
+    <section class="section section--cream" id="detalles">
+      <h2 class="heading" data-reveal="up">¡Aparta la fecha!</h2>
+      <div class="details">
+        <article class="info info--red" data-reveal="left">
+          <span class="info__icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <div><p class="info__label">Fecha</p><p class="info__value" id="infoFecha"></p></div>
+        </article>
+        <article class="info info--blue" data-reveal="right">
+          <span class="info__icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
+          <div><p class="info__label">Hora</p><p class="info__value" id="infoHora"></p></div>
+        </article>
+        <article class="info info--orange" data-reveal="left">
+          <span class="info__icon"><svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+          <div><p class="info__label">Lugar</p><p class="info__value" id="infoDir"></p><p class="info__sub" id="infoCol"></p></div>
+        </article>
+      </div>
+
+      <div class="map" data-reveal="zoom">
+        <iframe id="mapFrame" title="Mapa del lugar" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      </div>
+
+      <div class="btn-row" data-reveal="up">
+        <a class="btn btn--red" id="btnMapa" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8z"/></svg>Cómo llegar
+        </a>
+        <button class="btn btn--blue" id="btnCal" type="button">
+          <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4"/></svg>Agendar
+        </button>
+      </div>
+    </section>
+
+    <!-- ===================== Amigos ===================== -->
+    <section class="section section--orange" id="amigos">
+      <h2 class="heading heading--light" data-reveal="up">¡Mis amigos también vienen!</h2>
+      <p class="lead lead--light" data-reveal="up">Toca a cada uno para saludarlo</p>
+      <div class="friends" id="friends"></div>
+      <div class="group" data-reveal="zoom">
+        <img id="grupoImg" alt="Bely y Beto y sus amigos" loading="lazy" />
+      </div>
+    </section>
+
+    <!-- ===================== Mensaje ===================== -->
+    <section class="section section--yellow" id="mensaje">
+      <h2 class="heading" data-reveal="up">¡La diversión nos espera!</h2>
+      <p class="lead lead--big" data-reveal="up" id="mensajeTxt"></p>
+      <p class="love" data-reveal="zoom">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-8-5.3-8-11a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 20 10c0 5.7-8 11-8 11z"/></svg>
+        ¡Te esperamos!
+      </p>
+    </section>
+
+    <!-- ===================== RSVP ===================== -->
+    <section class="section section--cream" id="rsvp">
+      <h2 class="heading" data-reveal="up">¿Vienes a mi fiesta?</h2>
+      <form class="rsvp" id="rsvpForm" data-reveal="up">
+        <label class="field">
+          <span>Tu nombre</span>
+          <input name="nombre" required autocomplete="name" placeholder="Ej. Familia Pérez" />
+        </label>
+        <div class="choice" role="radiogroup" aria-label="Asistencia">
+          <label><input type="radio" name="asiste" value="si" checked /><span>¡Sí voy!</span></label>
+          <label><input type="radio" name="asiste" value="no" /><span>No podré</span></label>
+        </div>
+        <label class="field" id="fieldPersonas">
+          <span>¿Cuántos vienen?</span>
+          <div class="stepper">
+            <button type="button" data-step="-1" aria-label="Menos">−</button>
+            <input name="personas" type="number" min="1" max="15" value="1" inputmode="numeric" />
+            <button type="button" data-step="1" aria-label="Más">+</button>
+          </div>
+        </label>
+        <button class="btn btn--red btn--block" type="submit">
+          <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-13.4 7.8L3 21l1.3-4.4A9 9 0 1 1 21 12z"/></svg>Confirmar por WhatsApp
+        </button>
+      </form>
+    </section>
+
+    <footer class="footer">
+      <svg class="cloud-edge cloud-edge--top" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M0 0v60c60 40 140 40 200 0 50 50 150 55 210 5 60 55 170 55 230 0 55 45 150 45 210 0 60 50 160 50 220 0 60 45 140 45 200-5 50 40 120 40 170 0V0z"/>
+      </svg>
+      <p class="footer__name" id="footerName"></p>
+      <p>Hecho con mucho cariño para celebrar mi primer añito</p>
+      <a class="btn btn--ghost" href="#inicio">Volver al inicio</a>
+    </footer>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
