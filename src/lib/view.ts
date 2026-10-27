@@ -47,7 +47,9 @@ export function buildView(inv: InvitationWithTheme) {
   };
 
   const mapQuery = [inv.address, inv.area].filter(Boolean).join(", ") || inv.venue_name || "";
-  const q = encodeURIComponent(mapQuery);
+  // Ruta en auto hasta el pin exacto si se conoce; si no, hasta el lugar escrito
+  const destination = inv.maps_destination || [inv.venue_name, inv.address, inv.area].filter(Boolean).join(", ");
+  const q = encodeURIComponent(inv.maps_destination || mapQuery);
 
   const visible: Record<BlockKey, boolean> = {
     card: sections.card,
@@ -106,7 +108,9 @@ export function buildView(inv: InvitationWithTheme) {
     address: inv.address,
     area: inv.area,
     place: [inv.venue_name, inv.address, inv.area].filter(Boolean).join(", "),
-    mapsUrl: inv.maps_url || (mapQuery ? `https://www.google.com/maps/search/?api=1&query=${q}` : null),
+    mapsUrl: destination
+      ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`
+      : null,
     mapEmbed: mapQuery ? `https://maps.google.com/maps?q=${q}&z=16&output=embed` : null,
     message: inv.message,
     // 10 dígitos = número mexicano sin lada de país: wa.me necesita el 52

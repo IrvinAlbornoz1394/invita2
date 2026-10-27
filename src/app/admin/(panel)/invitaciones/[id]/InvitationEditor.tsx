@@ -338,7 +338,8 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                   onChange={(e) => patch({ maps_url: e.target.value })}
                 />
                 <span className={styles.help}>
-                  Si lo dejas vacío, “Cómo llegar” busca la dirección. Pega el enlace cuando la dirección no sea exacta.
+                  “Cómo llegar” abre la ruta en auto. Con este enlace (el de Compartir en Google Maps) la ruta va al pin
+                  exacto; sin él, a la dirección escrita.
                 </span>
               </label>
             </div>

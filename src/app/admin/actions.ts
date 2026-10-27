@@ -9,6 +9,7 @@ import { zonedToUtc } from "@/lib/dates";
 import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATION } from "@/lib/defaults";
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
 import { invitationSlug } from "@/lib/slug";
+import { resolveMapsDestination } from "@/lib/maps";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -73,7 +74,11 @@ export async function saveInvitation(id: string, input: InvitationInput): Promis
 
   const { data, error } = await supabase
     .from("invitations")
-    .update({ ...fields, event_at: zonedToUtc(date, time, fields.timezone).toISOString() })
+    .update({
+      ...fields,
+      event_at: zonedToUtc(date, time, fields.timezone).toISOString(),
+      maps_destination: await resolveMapsDestination(fields.maps_url),
+    })
     .eq("id", id)
     .select("slug")
     .single();

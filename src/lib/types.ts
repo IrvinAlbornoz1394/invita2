@@ -89,6 +89,8 @@ export type Invitation = {
   address: string | null;
   area: string | null;
   maps_url: string | null;
+  /** "lat,lng" sacado de maps_url al guardar */
+  maps_destination?: string | null;
   message: string | null;
   whatsapp: string | null;
   show: Show;
