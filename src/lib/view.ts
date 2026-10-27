@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
-import { DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, TITLE_FONTS, type TitleFont } from "./defaults";
+import { DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf } from "./dates";
-import type { InvitationWithTheme, Show, TextKey } from "./types";
+import type { IntroStyle, InvitationWithTheme, Show, TextKey } from "./types";
 
 export type Tone = "surface" | "secondary" | "accent" | "highlight";
 export type BlockKey = "card" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
@@ -16,6 +16,9 @@ export function buildView(inv: InvitationWithTheme) {
   const theme = inv.theme;
   const colors = { ...DEFAULT_COLORS, ...theme?.colors };
   const bg = resolveBackground(colors, theme?.background);
+  const introImage = theme?.intro?.image_url || null;
+  const introStyle: IntroStyle =
+    INTRO_STYLES.find((s) => s.value === theme?.intro?.style && (s.value !== "image" || introImage))?.value ?? "gift";
   const font = (theme && theme.title_font in TITLE_FONTS ? theme.title_font : "lilita") as TitleFont;
 
   const nameLines = inv.name_lines.filter(Boolean);
@@ -24,7 +27,10 @@ export function buildView(inv: InvitationWithTheme) {
 
   const fill = (s: string) => s.replaceAll("{nombre}", firstName).replaceAll("{edad}", inv.age == null ? "" : String(inv.age));
   const texts = Object.fromEntries(
-    (Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [k, fill(inv.texts?.[k] || DEFAULT_TEXTS[k])])
+    (Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [
+      k,
+      fill(inv.texts?.[k] || DEFAULT_TEXTS[k] || (k === "introHint" ? INTRO_STYLES.find((s) => s.value === introStyle)!.hint : "")),
+    ])
   ) as Record<TextKey, string>;
 
   const sections = { ...DEFAULT_SECTIONS, ...inv.sections };
@@ -33,6 +39,8 @@ export function buildView(inv: InvitationWithTheme) {
     time: null,
     title: "",
     description: "",
+    image_url: null,
+    image_style: "framed",
     // La columna es jsonb: puede venir incompleta
     ...(inv.show as Partial<Show> | null),
     performers: (inv.show?.performers ?? []).filter((p) => p.name || p.image_url),
@@ -73,6 +81,7 @@ export function buildView(inv: InvitationWithTheme) {
     "--on-secondary": textOn(colors.secondary, colors.ink),
     "--on-accent": textOn(colors.accent, colors.ink),
     "--bg-a": bg.from,
+    "--balloon": theme?.intro?.color || colors.primary,
     "--bg-b": bg.to,
     "--bg-soften": bg.soften / 100,
     "--bg-img": bg.imageUrl ? `url("${encodeURI(bg.imageUrl)}")` : "none",
@@ -113,6 +122,8 @@ export function buildView(inv: InvitationWithTheme) {
       name: theme?.name ?? "",
       logoUrl: theme?.logo_url ?? null,
       bgStyle: bg.style,
+      introStyle,
+      introImage,
       logoStyle: theme?.logo_style ?? "badge",
       cardUrl: theme?.card_url ?? null,
       groupUrl: theme?.group_url ?? null,

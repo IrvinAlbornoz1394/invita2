@@ -21,6 +21,17 @@ export type ThemeBackground = {
   soften: number;
 };
 
+export type IntroStyle = "gift" | "balloon" | "image";
+
+export type ThemeIntro = {
+  style: IntroStyle;
+  /** Color del globo; null = color principal del tema */
+  color: string | null;
+  image_url: string | null;
+};
+
+export type ImageStyle = "framed" | "plain";
+
 export type LogoStyle = "badge" | "plain";
 
 export type Theme = {
@@ -35,6 +46,7 @@ export type Theme = {
   music_url: string | null;
   music_start: number;
   background: Partial<ThemeBackground> | null;
+  intro: Partial<ThemeIntro> | null;
   updated_at?: string;
 };
 
@@ -47,6 +59,8 @@ export type Show = {
   title: string;
   description: string;
   performers: Performer[];
+  image_url?: string | null;
+  image_style?: ImageStyle;
 };
 
 export type Extra = { emoji: string; label: string; note: string };

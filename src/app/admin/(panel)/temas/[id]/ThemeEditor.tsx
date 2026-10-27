@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { autoBackground, BACKGROUND_STYLES, DEFAULT_SOFTEN, resolveBackground } from "@/lib/background";
-import { COLOR_LABELS, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
+import { COLOR_LABELS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
 import type { LogoStyle, Theme, ThemeColors } from "@/lib/types";
 import { deleteTheme, saveTheme } from "../../../actions";
@@ -33,6 +33,11 @@ function toForm(t: Theme): ThemeInput {
       image_url: t.background?.image_url ?? null,
       soften: t.background?.soften ?? DEFAULT_SOFTEN,
     },
+    intro: {
+      style: t.intro?.style ?? "gift",
+      color: t.intro?.color ?? null,
+      image_url: t.intro?.image_url ?? null,
+    },
   };
 }
 
@@ -48,6 +53,7 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
   const patch = (p: Partial<ThemeInput>) => setForm((f) => ({ ...f, ...p }));
   const patchBg = (p: Partial<ThemeInput["background"]>) => setForm((f) => ({ ...f, background: { ...f.background, ...p } }));
   const autoBg = autoBackground(form.colors);
+  const patchIntro = (p: Partial<ThemeInput["intro"]>) => setForm((f) => ({ ...f, intro: { ...f.intro, ...p } }));
 
   function save() {
     setError(null);
@@ -249,6 +255,55 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 folder={folder}
               />
             </div>
+          </section>
+
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Apertura</h2>
+            <p className={styles.cardHint}>Lo primero que ven: al tocarlo se abre la invitación y empieza la música.</p>
+            <div className={styles.chips}>
+              {INTRO_STYLES.map((o) => (
+                <label key={o.value} className={styles.check}>
+                  <input
+                    type="radio"
+                    name="intro_style"
+                    checked={form.intro.style === o.value}
+                    onChange={() => patchIntro({ style: o.value })}
+                  />
+                  {o.label}
+                </label>
+              ))}
+            </div>
+            {form.intro.style === "balloon" && (
+              <div className={styles.field} style={{ maxWidth: 320 }}>
+                <span className={styles.labelRow}>
+                  <span className={styles.label}>Color del globo</span>
+                  {form.intro.color ? (
+                    <button type="button" className={styles.restore} onClick={() => patchIntro({ color: null })}>
+                      Usar color principal
+                    </button>
+                  ) : (
+                    <span className={styles.help}>color principal</span>
+                  )}
+                </span>
+                <span className={styles.colorField}>
+                  <ColorInputs
+                    value={form.intro.color ?? form.colors.primary}
+                    onChange={(v) => patchIntro({ color: v || null })}
+                  />
+                </span>
+              </div>
+            )}
+            {form.intro.style === "image" && (
+              <div className={styles.grid}>
+                <MediaField
+                  label="Imagen para abrir"
+                  help="PNG sin fondo: la placa de Paw Patrol, un huevo de dinosaurio, el logo de Roblox… Flota y al tocarla estalla con confeti. Sin imagen se usa el regalo."
+                  value={form.intro.image_url ?? null}
+                  onChange={(image_url) => patchIntro({ image_url })}
+                  folder={folder}
+                />
+              </div>
+            )}
           </section>
 
           <section className={styles.card}>

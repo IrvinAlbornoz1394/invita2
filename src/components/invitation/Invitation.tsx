@@ -118,11 +118,11 @@ export function Invitation({ view, preview = false }: Props) {
     setOpening(true);
     const m = musicRef.current;
     m?.play().then(() => setPlaying(m.playing));
-    burstFrom(fx, e.currentTarget, 160);
+    burstFrom(fx, e.currentTarget, theme.introStyle === "gift" ? 160 : 220, theme.introStyle === "balloon" ? 0.32 : 0.5);
     setTimeout(() => {
       setStarted(true);
       setTimeout(() => fx.rain(90), 900);
-    }, 1100);
+    }, OPEN_DELAY[theme.introStyle]);
   }
 
   function toggleMusic() {
@@ -145,12 +145,7 @@ export function Invitation({ view, preview = false }: Props) {
         <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
         <div className="intro__inner">
           <p className="intro__kicker">{view.texts.introKicker}</p>
-          <button className={`gift${opening ? " is-open" : ""}`} onClick={openGift} aria-label="Abrir invitación">
-            <span className="gift__lid">
-              <span className="gift__bow" />
-            </span>
-            <span className="gift__box" />
-          </button>
+          <Opener view={view} opening={opening} onOpen={openGift} />
           <p className="intro__hint">{view.texts.introHint}</p>
         </div>
       </div>
@@ -371,6 +366,61 @@ function Block({ name, view, fx, say }: BlockProps) {
   }
 }
 
+/* ---------------- Apertura: regalo, globo o imagen del tema ---------------- */
+/** ms entre el toque y la portada: el globo revienta rápido; el regalo se toma su tiempo */
+const OPEN_DELAY = { gift: 1100, balloon: 650, image: 800 } as const;
+
+function Opener({
+  view,
+  opening,
+  onOpen,
+}: {
+  view: InvitationView;
+  opening: boolean;
+  onOpen: (e: React.MouseEvent<HTMLButtonElement>) => void;
+}) {
+  const { introStyle, introImage } = view.theme;
+  const open = opening ? " is-open" : "";
+
+  if (introStyle === "balloon")
+    return (
+      <button className={`pop-balloon${open}`} onClick={onOpen} aria-label="Reventar el globo y abrir la invitación">
+        <svg viewBox="0 0 120 220" aria-hidden="true">
+          <defs>
+            <radialGradient id="inv-balloon" cx="38%" cy="30%" r="75%">
+              <stop offset="0" style={{ stopColor: "color-mix(in srgb, var(--balloon) 55%, #fff)" }} />
+              <stop offset=".55" style={{ stopColor: "var(--balloon)" }} />
+              <stop offset="1" style={{ stopColor: "color-mix(in srgb, var(--balloon) 70%, #000)" }} />
+            </radialGradient>
+          </defs>
+          <path className="pop-balloon__string" d="M60 146 C 48 166, 72 182, 58 218" />
+          <g className="pop-balloon__body">
+            <path d="M60 4 C 26 4 6 32 6 64 C 6 100 38 132 60 138 C 82 132 114 100 114 64 C 114 32 94 4 60 4 Z" fill="url(#inv-balloon)" />
+            <path d="M52 146 L68 146 L60 136 Z" fill="var(--balloon)" />
+            <ellipse cx="38" cy="38" rx="11" ry="19" transform="rotate(-25 38 38)" fill="#fff" opacity=".55" />
+          </g>
+        </svg>
+      </button>
+    );
+
+  if (introStyle === "image" && introImage)
+    return (
+      <button className={`pop-image${open}`} onClick={onOpen} aria-label="Abrir invitación">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={introImage} alt="" />
+      </button>
+    );
+
+  return (
+    <button className={`gift${open}`} onClick={onOpen} aria-label="Abrir invitación">
+      <span className="gift__lid">
+        <span className="gift__bow" />
+      </span>
+      <span className="gift__box" />
+    </button>
+  );
+}
+
 /* ---------------- Tarjeta con inclinación 3D ---------------- */
 function Card({ view }: { view: InvitationView }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -542,6 +592,12 @@ function ShowBlock({ view, fx, say }: { view: InvitationView; fx: Fx; say: (t: s
             <strong>{show.timeLabel}</strong>
           </span>
         </p>
+      )}
+      {show.image_url && (
+        <div className={`show-img show-img--${show.image_style ?? "framed"}`} data-reveal="zoom">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={show.image_url} alt={show.title || ""} loading="lazy" />
+        </div>
       )}
       {show.title && (
         <p className="show-name" data-reveal="up">

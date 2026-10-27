@@ -131,6 +131,25 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 .gift.is-open { animation: inv-giftShake .45s ease-in-out; }
 .gift.is-open .gift__lid { transform: translate(40px, -220px) rotate(35deg); opacity: 0; }
 
+/* Globo que se revienta */
+.pop-balloon {
+  position: relative; width: 170px; height: 300px; border: 0; background: none; padding: 0;
+  animation: inv-float 3.2s ease-in-out infinite;
+}
+.pop-balloon svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 14px 18px rgb(0 0 0 / .2)); }
+.pop-balloon__body { transform-origin: 60px 70px; transform-box: view-box; }
+.pop-balloon__body > * { stroke: none; }
+.pop-balloon__string { fill: none; stroke: #fff; stroke-width: 2.5; stroke-linecap: round; }
+.pop-balloon.is-open { animation: none; }
+.pop-balloon.is-open .pop-balloon__body { animation: inv-pop .28s ease-out forwards; }
+.pop-balloon.is-open .pop-balloon__string { transition: transform 1s ease-in, opacity 1s; transform: translateY(260px) rotate(25deg); opacity: 0; }
+
+/* Imagen propia del tema (placa, huevo, logo…) */
+.pop-image { border: 0; background: none; padding: 0; width: min(230px, 62vw); animation: inv-float 3.2s ease-in-out infinite; }
+.pop-image img { display: block; width: 100%; height: auto; max-height: 300px; object-fit: contain; filter: drop-shadow(0 14px 18px rgb(0 0 0 / .22)); }
+.pop-image.is-open { animation: inv-giftShake .4s ease-in-out; }
+.pop-image.is-open img { transition: transform .45s .3s var(--ease), opacity .35s .4s; transform: scale(1.6); opacity: 0; }
+
 /* ==========================================================================
    Elementos flotantes
    ========================================================================== */
@@ -403,6 +422,10 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
   color: var(--c-secondary-d); -webkit-text-stroke: 7px #fff; paint-order: stroke fill;
 }
 .tone-secondary .show-name { color: var(--c-highlight); -webkit-text-stroke-color: var(--c-secondary-d); }
+.show-img { margin: 0 auto 18px !important; max-width: 420px !important; }
+.show-img img { display: block; width: 100%; height: auto; }
+.show-img--framed { border-radius: 26px; overflow: hidden; border: 6px solid #fff; --shade: var(--c-accent-d); box-shadow: var(--clay); }
+.show-img--plain img { max-height: 340px; object-fit: contain; filter: drop-shadow(0 10px 14px rgb(0 0 0 / .18)); }
 .performers { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 14px; margin-top: 22px !important; max-width: 560px !important; }
 .performers--1 { --cols: 1; max-width: 240px !important; }
 .performers--3 { --cols: 3; }
@@ -547,6 +570,8 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 @keyframes inv-spin { to { transform: rotate(360deg); } }
 @keyframes inv-shift { to { background-position: 0 100%; } }
 @keyframes inv-drift { to { background-position: 52px 52px, 78px 78px, 0 0; } }
+@keyframes inv-float { 0%, 100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-18px) rotate(3deg); } }
+@keyframes inv-pop { 0% { transform: scale(1); opacity: 1; } 45% { transform: scale(1.3, 1.22); opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
 @keyframes inv-pulse { 50% { transform: scale(1.06); } }
 @keyframes inv-popIn { from { opacity: 0; transform: scale(.4) translateY(30px); } to { opacity: 1; transform: none; } }
 @keyframes inv-letterIn { from { opacity: 0; transform: translateY(-120px) scale(.3) rotate(-30deg); } to { opacity: 1; transform: none; } }

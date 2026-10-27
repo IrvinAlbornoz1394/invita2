@@ -54,6 +54,8 @@ export const invitationInput = z.object({
     title: text(120),
     description: text(600),
     performers: z.array(z.object({ name: text(60), image_url: optionalAsset })).max(12),
+    image_url: optionalAsset,
+    image_style: z.enum(["framed", "plain"]),
   }),
   extras: z
     .array(z.object({ emoji: text(16), label: text(60).min(1, "Cada extra necesita nombre"), note: text(140) }))
@@ -90,6 +92,11 @@ export const themeInput = z.object({
     to: hex.nullable(),
     image_url: optionalAsset,
     soften: z.number().int().min(0).max(80),
+  }),
+  intro: z.object({
+    style: z.enum(["gift", "balloon", "image"]),
+    color: hex.nullable(),
+    image_url: optionalAsset,
   }),
 });
 

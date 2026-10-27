@@ -3,7 +3,8 @@ import type { ThemeColors } from "./types";
 /** Textos predeterminados. {nombre} y {edad} se reemplazan al mostrar. */
 export const DEFAULT_TEXTS = {
   introKicker: "{nombre} tiene una sorpresa para ti",
-  introHint: "Toca el regalo",
+  /** Vacío = según la apertura del tema (ver INTRO_HINTS) */
+  introHint: "",
   heroPill: "¡Estás invitado!",
   cardKicker: "¡Ven a celebrar conmigo!",
   countdownTitle: "¡Ya casi es mi fiesta!",
@@ -20,7 +21,7 @@ export const DEFAULT_TEXTS = {
 
 export const TEXT_LABELS: Record<keyof typeof DEFAULT_TEXTS, string> = {
   introKicker: "Pantalla de entrada",
-  introHint: "Indicación del regalo",
+  introHint: "Indicación para abrir",
   heroPill: "Etiqueta de portada",
   cardKicker: "Frase de la tarjeta",
   countdownTitle: "Título de cuenta regresiva",
@@ -134,6 +135,8 @@ export const DEMO_INVITATION = {
     title: "¡Show sorpresa!",
     description: "Canciones, bailes y concursos con mis personajes favoritos.",
     performers: [],
+    image_url: null,
+    image_style: "framed" as const,
   },
   extras: [
     { emoji: "🎡", label: "Miniferia", note: "Juegos para los peques" },
@@ -149,3 +152,10 @@ export function ageRibbon(age: number | null) {
   if (age === null) return "¡Es mi cumpleaños!";
   return age === 1 ? "Mi primer añito" : `¡Cumplo ${age} años!`;
 }
+
+/** Formas de abrir la invitación, con su indicación por defecto. */
+export const INTRO_STYLES = [
+  { value: "gift", label: "Regalo", hint: "Toca el regalo" },
+  { value: "balloon", label: "Globo que se revienta", hint: "¡Revienta el globo!" },
+  { value: "image", label: "Imagen propia", hint: "Toca para abrir" },
+] as const;

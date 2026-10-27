@@ -12,7 +12,7 @@ import {
   TIMEZONES,
 } from "@/lib/defaults";
 import type { InvitationInput } from "@/lib/schema";
-import type { Extra, Invitation, Performer, SectionKey, TextKey, Theme } from "@/lib/types";
+import type { Extra, ImageStyle, Invitation, Performer, SectionKey, TextKey, Theme } from "@/lib/types";
 import { deleteInvitation, duplicateInvitation, saveInvitation } from "../../../actions";
 import { CopyLink } from "../../../CopyLink";
 import { MediaField } from "../../../MediaField";
@@ -38,7 +38,15 @@ type Form = {
   maps_url: string;
   message: string;
   whatsapp: string;
-  show: { enabled: boolean; time: string; title: string; description: string; performers: Performer[] };
+  show: {
+    enabled: boolean;
+    time: string;
+    title: string;
+    description: string;
+    performers: Performer[];
+    image_url: string | null;
+    image_style: ImageStyle;
+  };
   extras: Extra[];
   gallery: { url: string }[];
   sections: Record<SectionKey, boolean>;
@@ -71,6 +79,8 @@ function toForm(inv: Invitation): Form {
       title: inv.show?.title ?? "",
       description: inv.show?.description ?? "",
       performers: inv.show?.performers ?? [],
+      image_url: inv.show?.image_url ?? null,
+      image_style: inv.show?.image_style ?? "framed",
     },
     extras: inv.extras ?? [],
     gallery: inv.gallery ?? [],
@@ -404,6 +414,37 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                   />
                 </label>
 
+                <MediaField
+                  label="Imagen del show (opcional)"
+                  help="Un póster, los personajes o el escenario. Va debajo de la hora del show."
+                  value={form.show.image_url}
+                  onChange={(image_url) => patchShow({ image_url })}
+                  folder={folder}
+                />
+                {form.show.image_url && (
+                  <div className={styles.field}>
+                    <span className={styles.label}>Estilo de la imagen</span>
+                    <div className={styles.chips}>
+                      {(
+                        [
+                          ["framed", "Con marco"],
+                          ["plain", "Sin marco (PNG sin fondo)"],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <label key={value} className={styles.check}>
+                          <input
+                            type="radio"
+                            name="show_image_style"
+                            checked={form.show.image_style === value}
+                            onChange={() => patchShow({ image_style: value })}
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className={styles.field}>
                   <span className={styles.label}>Personajes / artistas (opcional)</span>
                   <div className={styles.items}>
@@ -655,7 +696,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                       id={`text-${k}`}
                       className={styles.input}
                       value={form.texts[k]}
-                      placeholder={DEFAULT_TEXTS[k]}
+                      placeholder={DEFAULT_TEXTS[k] || "Según la apertura del tema (ej. Toca el regalo)"}
                       onChange={(e) => patch({ texts: { ...form.texts, [k]: e.target.value } })}
                     />
                   </div>
