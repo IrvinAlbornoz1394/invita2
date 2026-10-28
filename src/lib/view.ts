@@ -74,10 +74,10 @@ export function buildView(inv: InvitationWithTheme) {
   const blocksWithPrev = blocks.map((b, i) => ({ ...b, prev: i === 0 ? null : blocks[i - 1].tone }));
 
   // Elementos flotantes del tema a un lado de la sección
-  const decor: Partial<Record<BlockKey, { side: "left" | "right"; urls: string[] }>> = {};
-  for (const { key, side } of DECOR_SECTIONS) {
+  const decor: Partial<Record<BlockKey, { side: "left" | "right"; title: string; urls: string[] }>> = {};
+  for (const { key, side, title } of DECOR_SECTIONS) {
     const urls = (theme?.decor?.[key] ?? []).filter(Boolean).slice(0, DECOR_MAX);
-    if (urls.length) decor[key] = { side, urls };
+    if (urls.length) decor[key] = { side, title: texts[title], urls };
   }
 
   const style = {

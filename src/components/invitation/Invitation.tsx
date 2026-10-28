@@ -240,12 +240,18 @@ export function Invitation({ view, preview = false }: Props) {
         {view.blocks.map(({ key, tone, prev }) => (
           <Section key={key} id={key} tone={tone} prev={prev}>
             {view.decor[key] ? (
-              <div className={`split split--${view.decor[key].side}`}>
-                <Decor {...view.decor[key]} />
-                <div className="split__body">
-                  <Block name={key} view={view} fx={fx} say={say} />
+              <>
+                {/* El título va a todo lo ancho; debajo, elementos e información lado a lado */}
+                <h2 className="heading" data-reveal="up">
+                  {view.decor[key].title}
+                </h2>
+                <div className={`split split--${view.decor[key].side}`}>
+                  <Decor {...view.decor[key]} />
+                  <div className="split__body">
+                    <Block name={key} view={view} fx={fx} say={say} bare />
+                  </div>
                 </div>
-              </div>
+              </>
             ) : (
               <Block name={key} view={view} fx={fx} say={say} />
             )}
@@ -329,9 +335,10 @@ function Decor({ side, urls }: { side: "left" | "right"; urls: string[] }) {
   );
 }
 
-type BlockProps = { name: BlockKey; view: InvitationView; fx: Fx; say: (t: string) => void };
+/** bare: sin título (lo pone la sección cuando lleva elementos flotantes) */
+type BlockProps = { name: BlockKey; view: InvitationView; fx: Fx; say: (t: string) => void; bare?: boolean };
 
-function Block({ name, view, fx, say }: BlockProps) {
+function Block({ name, view, fx, say, bare }: BlockProps) {
   switch (name) {
     case "card":
       return <Card view={view} />;
@@ -345,11 +352,11 @@ function Block({ name, view, fx, say }: BlockProps) {
         </>
       );
     case "details":
-      return <Details view={view} />;
+      return <Details view={view} bare={bare} />;
     case "show":
       return <ShowBlock view={view} fx={fx} say={say} />;
     case "extras":
-      return <Extras view={view} fx={fx} />;
+      return <Extras view={view} fx={fx} bare={bare} />;
     case "gallery":
       return (
         <>
@@ -499,7 +506,7 @@ function Card({ view }: { view: InvitationView }) {
 }
 
 /* ---------------- Fecha, hora y lugar ---------------- */
-function Details({ view }: { view: InvitationView }) {
+function Details({ view, bare }: { view: InvitationView; bare?: boolean }) {
   const placeValue = view.venueName || view.address;
   const placeSub = view.venueName ? [view.address, view.area].filter(Boolean).join(", ") : view.area;
 
@@ -536,9 +543,11 @@ function Details({ view }: { view: InvitationView }) {
 
   return (
     <>
-      <h2 className="heading" data-reveal="up">
-        {view.texts.detailsTitle}
-      </h2>
+      {!bare && (
+        <h2 className="heading" data-reveal="up">
+          {view.texts.detailsTitle}
+        </h2>
+      )}
       <div className="details">
         <article className="info info--primary" data-reveal="left">
           <span className="info__icon">
@@ -666,7 +675,7 @@ function ShowBlock({ view, fx, say }: { view: InvitationView; fx: Fx; say: (t: s
 }
 
 /* ---------------- Extras (miniferia, brincolines, mesa de dulces…) ---------------- */
-function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
+function Extras({ view, fx, bare }: { view: InvitationView; fx: Fx; bare?: boolean }) {
   function wiggle(e: React.MouseEvent<HTMLButtonElement>) {
     const b = e.currentTarget;
     b.classList.remove("is-wiggling");
@@ -677,9 +686,11 @@ function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
 
   return (
     <>
-      <h2 className="heading" data-reveal="up">
-        {view.texts.extrasTitle}
-      </h2>
+      {!bare && (
+        <h2 className="heading" data-reveal="up">
+          {view.texts.extrasTitle}
+        </h2>
+      )}
       <ul className="extras">
         {view.extras.map((x, i) => (
           <li key={i} data-reveal="zoom" style={{ "--rd": `${(i % 6) * 0.06}s` } as CSSProperties}>

@@ -162,8 +162,8 @@ export const INTRO_STYLES = [
 
 /** Secciones que aceptan elementos flotantes del tema, y de qué lado van. */
 export const DECOR_SECTIONS = [
-  { key: "details", label: "¡Aparta la fecha!", side: "left" },
-  { key: "extras", label: "¡Lo que te espera!", side: "right" },
+  { key: "details", label: "¡Aparta la fecha!", side: "left", title: "detailsTitle" },
+  { key: "extras", label: "¡Lo que te espera!", side: "right", title: "extrasTitle" },
 ] as const;
 
 export const DECOR_MAX = 3;
