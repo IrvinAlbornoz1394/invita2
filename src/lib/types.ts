@@ -1,4 +1,4 @@
-import type { DEFAULT_TEXTS, DEFAULT_SECTIONS } from "./defaults";
+import type { DEFAULT_TEXTS, DEFAULT_SECTIONS, DECOR_SECTIONS } from "./defaults";
 
 export type ThemeColors = {
   primary: string;
@@ -30,6 +30,11 @@ export type ThemeIntro = {
   image_url: string | null;
 };
 
+export type DecorKey = (typeof DECOR_SECTIONS)[number]["key"];
+
+/** Imágenes flotantes por sección */
+export type ThemeDecor = Partial<Record<DecorKey, string[]>>;
+
 export type ImageStyle = "framed" | "plain";
 
 export type LogoStyle = "badge" | "plain";
@@ -47,6 +52,7 @@ export type Theme = {
   music_start: number;
   background: Partial<ThemeBackground> | null;
   intro: Partial<ThemeIntro> | null;
+  decor: ThemeDecor | null;
   updated_at?: string;
 };
 

@@ -159,3 +159,11 @@ export const INTRO_STYLES = [
   { value: "balloon", label: "Globo que se revienta", hint: "¡Revienta el globo!" },
   { value: "image", label: "Imagen propia", hint: "Toca para abrir" },
 ] as const;
+
+/** Secciones que aceptan elementos flotantes del tema, y de qué lado van. */
+export const DECOR_SECTIONS = [
+  { key: "details", label: "¡Aparta la fecha!", side: "left" },
+  { key: "extras", label: "¡Lo que te espera!", side: "right" },
+] as const;
+
+export const DECOR_MAX = 3;

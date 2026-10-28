@@ -239,7 +239,16 @@ export function Invitation({ view, preview = false }: Props) {
 
         {view.blocks.map(({ key, tone, prev }) => (
           <Section key={key} id={key} tone={tone} prev={prev}>
-            <Block name={key} view={view} fx={fx} say={say} />
+            {view.decor[key] ? (
+              <div className={`split split--${view.decor[key].side}`}>
+                <Decor {...view.decor[key]} />
+                <div className="split__body">
+                  <Block name={key} view={view} fx={fx} say={say} />
+                </div>
+              </div>
+            ) : (
+              <Block name={key} view={view} fx={fx} say={say} />
+            )}
           </Section>
         ))}
 
@@ -298,6 +307,25 @@ function Section({ id, tone, prev, children }: { id: string; tone: Tone; prev: T
     >
       {children}
     </section>
+  );
+}
+
+/** Imágenes del tema que flotan a un lado de la sección (en celular, en fila arriba). */
+function Decor({ side, urls }: { side: "left" | "right"; urls: string[] }) {
+  return (
+    <div className={`decor decor--${urls.length}`} aria-hidden="true">
+      {urls.map((url, i) => (
+        <span
+          key={i}
+          className="decor__item"
+          data-reveal={side}
+          style={{ "--i": i, "--rd": `${i * 0.12}s` } as CSSProperties}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt="" loading="lazy" />
+        </span>
+      ))}
+    </div>
   );
 }
 

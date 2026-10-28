@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
+import { DECOR_MAX, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf } from "./dates";
 import type { IntroStyle, InvitationWithTheme, Show, TextKey } from "./types";
@@ -46,10 +46,11 @@ export function buildView(inv: InvitationWithTheme) {
     performers: (inv.show?.performers ?? []).filter((p) => p.name || p.image_url),
   };
 
-  const mapQuery = [inv.address, inv.area].filter(Boolean).join(", ") || inv.venue_name || "";
-  // Ruta en auto hasta el pin exacto si se conoce; si no, hasta el lugar escrito
-  const destination = inv.maps_destination || [inv.venue_name, inv.address, inv.area].filter(Boolean).join(", ");
-  const q = encodeURIComponent(inv.maps_destination || mapQuery);
+  // Pin exacto si se conoce; si no, el lugar escrito. El nombre del lugar va
+  // incluido: sin él, Google suele ubicar solo la colonia y no pone marcador.
+  const mapQuery = [inv.venue_name, inv.address, inv.area].filter(Boolean).join(", ");
+  const destination = inv.maps_destination || mapQuery;
+  const q = encodeURIComponent(destination);
 
   const visible: Record<BlockKey, boolean> = {
     card: sections.card,
@@ -71,6 +72,13 @@ export function buildView(inv: InvitationWithTheme) {
     tone: (i % 2 === 0 ? "surface" : COLORED_TONES[colored++ % COLORED_TONES.length]) as Tone,
   }));
   const blocksWithPrev = blocks.map((b, i) => ({ ...b, prev: i === 0 ? null : blocks[i - 1].tone }));
+
+  // Elementos flotantes del tema a un lado de la sección
+  const decor: Partial<Record<BlockKey, { side: "left" | "right"; urls: string[] }>> = {};
+  for (const { key, side } of DECOR_SECTIONS) {
+    const urls = (theme?.decor?.[key] ?? []).filter(Boolean).slice(0, DECOR_MAX);
+    if (urls.length) decor[key] = { side, urls };
+  }
 
   const style = {
     "--c-primary": colors.primary,
@@ -111,7 +119,7 @@ export function buildView(inv: InvitationWithTheme) {
     mapsUrl: destination
       ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving`
       : null,
-    mapEmbed: mapQuery ? `https://maps.google.com/maps?q=${q}&z=16&output=embed` : null,
+    mapEmbed: destination ? `https://maps.google.com/maps?q=${q}&z=16&output=embed` : null,
     message: inv.message,
     // 10 dígitos = número mexicano sin lada de país: wa.me necesita el 52
     whatsapp: inv.whatsapp?.length === 10 ? `52${inv.whatsapp}` : inv.whatsapp,
@@ -120,6 +128,7 @@ export function buildView(inv: InvitationWithTheme) {
     gallery: inv.gallery,
     texts,
     blocks: blocksWithPrev,
+    decor,
     colors,
     style,
     theme: {

@@ -3,9 +3,9 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { autoBackground, BACKGROUND_STYLES, DEFAULT_SOFTEN, resolveBackground } from "@/lib/background";
-import { COLOR_LABELS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
+import { COLOR_LABELS, DECOR_MAX, DECOR_SECTIONS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
-import type { LogoStyle, Theme, ThemeColors } from "@/lib/types";
+import type { DecorKey, LogoStyle, Theme, ThemeColors } from "@/lib/types";
 import { deleteTheme, saveTheme } from "../../../actions";
 import { MediaField } from "../../../MediaField";
 import styles from "../../../admin.module.css";
@@ -38,7 +38,14 @@ function toForm(t: Theme): ThemeInput {
       color: t.intro?.color ?? null,
       image_url: t.intro?.image_url ?? null,
     },
+    decor: { details: decorSlots(t, "details"), extras: decorSlots(t, "extras") },
   };
+}
+
+/** Siempre DECOR_MAX espacios en el formulario; los vacíos se descartan al guardar. */
+function decorSlots(t: Theme, key: DecorKey) {
+  const urls = t.decor?.[key] ?? [];
+  return Array.from({ length: DECOR_MAX }, (_, i) => urls[i] ?? null);
 }
 
 export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
@@ -54,6 +61,8 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
   const patchBg = (p: Partial<ThemeInput["background"]>) => setForm((f) => ({ ...f, background: { ...f.background, ...p } }));
   const autoBg = autoBackground(form.colors);
   const patchIntro = (p: Partial<ThemeInput["intro"]>) => setForm((f) => ({ ...f, intro: { ...f.intro, ...p } }));
+  const setDecor = (key: DecorKey, i: number, url: string | null) =>
+    setForm((f) => ({ ...f, decor: { ...f.decor, [key]: f.decor[key].map((u, j) => (j === i ? url : u)) } }));
 
   function save() {
     setError(null);
@@ -255,6 +264,32 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 folder={folder}
               />
             </div>
+          </section>
+
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Elementos flotantes</h2>
+            <p className={styles.cardHint}>
+              De 2 a 3 imágenes PNG sin fondo (personajes, globos, estrellas…) que flotan a un lado de la sección. En
+              celular se muestran en fila arriba del contenido.
+            </p>
+            {DECOR_SECTIONS.map((s) => (
+              <div key={s.key} className={styles.field} style={{ marginTop: 14 }}>
+                <span className={styles.label}>
+                  {s.label} · {s.side === "left" ? "a la izquierda" : "a la derecha"}
+                </span>
+                <div className={styles.grid2}>
+                  {form.decor[s.key].map((url, i) => (
+                    <MediaField
+                      key={i}
+                      label={`Elemento ${i + 1}`}
+                      value={url ?? null}
+                      onChange={(v) => setDecor(s.key, i, v)}
+                      folder={folder}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
           </section>
 
           <section className={styles.card}>
