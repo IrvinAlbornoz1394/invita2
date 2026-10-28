@@ -69,11 +69,8 @@ export const invitationInput = z.object({
 
 export type InvitationInput = z.input<typeof invitationInput>;
 
-// El editor manda huecos vacíos (null) para los espacios sin imagen
-const decorImages = z
-  .array(optionalAsset)
-  .max(DECOR_MAX)
-  .transform((urls) => urls.filter((u): u is string => !!u));
+// Cada espacio tiene un lugar fijo, así que se conservan los huecos (null)
+const decorImages = z.array(optionalAsset).max(DECOR_MAX);
 
 export const themeInput = z.object({
   name: text(80).min(1, "Ponle nombre al tema"),
@@ -104,7 +101,7 @@ export const themeInput = z.object({
     color: hex.nullable(),
     image_url: optionalAsset,
   }),
-  decor: z.object({ details: decorImages, extras: decorImages }),
+  decor: z.object({ details: decorImages, extras: decorImages, gallery: decorImages }),
 });
 
 export type ThemeInput = z.input<typeof themeInput>;

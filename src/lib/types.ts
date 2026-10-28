@@ -32,8 +32,8 @@ export type ThemeIntro = {
 
 export type DecorKey = (typeof DECOR_SECTIONS)[number]["key"];
 
-/** Imágenes flotantes por sección */
-export type ThemeDecor = Partial<Record<DecorKey, string[]>>;
+/** Imágenes flotantes por sección, por espacio (null = espacio vacío) */
+export type ThemeDecor = Partial<Record<DecorKey, (string | null)[]>>;
 
 export type ImageStyle = "framed" | "plain";
 

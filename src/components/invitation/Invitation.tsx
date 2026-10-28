@@ -239,22 +239,7 @@ export function Invitation({ view, preview = false }: Props) {
 
         {view.blocks.map(({ key, tone, prev }) => (
           <Section key={key} id={key} tone={tone} prev={prev}>
-            {view.decor[key] && key !== "details" ? (
-              <>
-                {/* El título va a todo lo ancho; debajo, elementos e información lado a lado */}
-                <h2 className="heading" data-reveal="up">
-                  {view.decor[key].title}
-                </h2>
-                <div className={`split split--${view.decor[key].side}`}>
-                  <Decor {...view.decor[key]} />
-                  <div className="split__body">
-                    <Block name={key} view={view} fx={fx} say={say} bare />
-                  </div>
-                </div>
-              </>
-            ) : (
-              <Block name={key} view={view} fx={fx} say={say} />
-            )}
+            <Block name={key} view={view} fx={fx} say={say} />
           </Section>
         ))}
 
@@ -316,29 +301,20 @@ function Section({ id, tone, prev, children }: { id: string; tone: Tone; prev: T
   );
 }
 
-/** Imágenes del tema que flotan a un lado de la sección (en celular, en fila arriba). */
-function Decor({ side, urls }: { side: "left" | "right"; urls: string[] }) {
+/** Imagen del tema que flota en un espacio fijo de la sección. */
+function DecorImg({ url, className = "" }: { url: string | null; className?: string }) {
+  if (!url) return null;
   return (
-    <div className={`decor decor--${urls.length}`} aria-hidden="true">
-      {urls.map((url, i) => (
-        <span
-          key={i}
-          className="decor__item"
-          data-reveal={side}
-          style={{ "--i": i, "--rd": `${i * 0.12}s` } as CSSProperties}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={url} alt="" loading="lazy" />
-        </span>
-      ))}
-    </div>
+    <span className={`decor-img ${className}`} data-reveal="zoom" aria-hidden="true">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="" loading="lazy" />
+    </span>
   );
 }
 
-/** bare: sin título (lo pone la sección cuando lleva elementos flotantes) */
-type BlockProps = { name: BlockKey; view: InvitationView; fx: Fx; say: (t: string) => void; bare?: boolean };
+type BlockProps = { name: BlockKey; view: InvitationView; fx: Fx; say: (t: string) => void };
 
-function Block({ name, view, fx, say, bare }: BlockProps) {
+function Block({ name, view, fx, say }: BlockProps) {
   switch (name) {
     case "card":
       return <Card view={view} />;
@@ -352,14 +328,15 @@ function Block({ name, view, fx, say, bare }: BlockProps) {
         </>
       );
     case "details":
-      return <Details view={view} decor={view.decor.details?.urls} />;
+      return <Details view={view} decor={view.decor.details.filter((u) => u !== null)} />;
     case "show":
       return <ShowBlock view={view} fx={fx} say={say} />;
     case "extras":
-      return <Extras view={view} fx={fx} bare={bare} />;
+      return <Extras view={view} fx={fx} />;
     case "gallery":
       return (
         <>
+          <DecorImg url={view.decor.gallery[0]} className="decor-img--top" />
           <h2 className="heading" data-reveal="up">
             {view.texts.galleryTitle}
           </h2>
@@ -507,7 +484,7 @@ function Card({ view }: { view: InvitationView }) {
 
 /* ---------------- Fecha, hora y lugar ---------------- */
 /** decor: imágenes del tema; cada una acompaña a una de las tres tarjetas, en zigzag */
-function Details({ view, decor = [] }: { view: InvitationView; decor?: string[] }) {
+function Details({ view, decor }: { view: InvitationView; decor: string[] }) {
   const placeValue = view.venueName || view.address;
   const placeSub = view.venueName ? [view.address, view.area].filter(Boolean).join(", ") : view.area;
   const cards: { tone: string; icon: IconName; label: string; value: string; sub?: string | null }[] = [
@@ -672,7 +649,7 @@ function ShowBlock({ view, fx, say }: { view: InvitationView; fx: Fx; say: (t: s
 }
 
 /* ---------------- Extras (miniferia, brincolines, mesa de dulces…) ---------------- */
-function Extras({ view, fx, bare }: { view: InvitationView; fx: Fx; bare?: boolean }) {
+function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
   function wiggle(e: React.MouseEvent<HTMLButtonElement>) {
     const b = e.currentTarget;
     b.classList.remove("is-wiggling");
@@ -683,11 +660,10 @@ function Extras({ view, fx, bare }: { view: InvitationView; fx: Fx; bare?: boole
 
   return (
     <>
-      {!bare && (
-        <h2 className="heading" data-reveal="up">
-          {view.texts.extrasTitle}
-        </h2>
-      )}
+      <h2 className="heading" data-reveal="up">
+        {view.texts.extrasTitle}
+      </h2>
+      <DecorImg url={view.decor.extras[0]} />
       <ul className="extras">
         {view.extras.map((x, i) => (
           <li key={i} data-reveal="zoom" style={{ "--rd": `${(i % 6) * 0.06}s` } as CSSProperties}>
@@ -701,6 +677,7 @@ function Extras({ view, fx, bare }: { view: InvitationView; fx: Fx; bare?: boole
           </li>
         ))}
       </ul>
+      <DecorImg url={view.decor.extras[1]} className="decor-img--bottom" />
     </>
   );
 }

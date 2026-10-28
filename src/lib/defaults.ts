@@ -160,10 +160,21 @@ export const INTRO_STYLES = [
   { value: "image", label: "Imagen propia", hint: "Toca para abrir" },
 ] as const;
 
-/** Secciones que aceptan elementos flotantes del tema, y de qué lado van. */
+/** Secciones que aceptan elementos flotantes del tema y dónde va cada espacio. */
 export const DECOR_SECTIONS = [
-  { key: "details", label: "¡Aparta la fecha!", side: "left", title: "detailsTitle" },
-  { key: "extras", label: "¡Lo que te espera!", side: "right", title: "extrasTitle" },
+  {
+    key: "details",
+    label: "¡Aparta la fecha!",
+    hint: "En zigzag junto a cada tarjeta (fecha, hora y lugar)",
+    slots: ["Junto a la fecha", "Junto a la hora", "Junto al lugar"],
+  },
+  {
+    key: "extras",
+    label: "¡Lo que te espera!",
+    hint: "Una debajo del título y otra debajo de todos los elementos",
+    slots: ["Debajo del título", "Debajo de los elementos"],
+  },
+  { key: "gallery", label: "Mis recuerdos", hint: "Arriba del título de la galería", slots: ["Sobre el título"] },
 ] as const;
 
 export const DECOR_MAX = 3;

@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
-import { DECOR_MAX, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
+import { DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf } from "./dates";
-import type { IntroStyle, InvitationWithTheme, Show, TextKey } from "./types";
+import type { DecorKey, IntroStyle, InvitationWithTheme, Show, TextKey, ThemeDecor } from "./types";
 
 export type Tone = "surface" | "secondary" | "accent" | "highlight";
 export type BlockKey = "card" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
@@ -73,12 +73,8 @@ export function buildView(inv: InvitationWithTheme) {
   }));
   const blocksWithPrev = blocks.map((b, i) => ({ ...b, prev: i === 0 ? null : blocks[i - 1].tone }));
 
-  // Elementos flotantes del tema a un lado de la sección
-  const decor: Partial<Record<BlockKey, { side: "left" | "right"; title: string; urls: string[] }>> = {};
-  for (const { key, side, title } of DECOR_SECTIONS) {
-    const urls = (theme?.decor?.[key] ?? []).filter(Boolean).slice(0, DECOR_MAX);
-    if (urls.length) decor[key] = { side, title: texts[title], urls };
-  }
+  // Elementos flotantes del tema, por espacio
+  const decor = themeDecor(theme?.decor);
 
   const style = {
     "--c-primary": colors.primary,
@@ -144,4 +140,17 @@ export function buildView(inv: InvitationWithTheme) {
       musicStart: theme?.music_start ?? 0,
     },
   };
+}
+
+/**
+ * Espacios de imágenes del tema por sección (null = vacío).
+ * Antes "Lo que te espera" tenía 3; la tercera ahora va sobre "Mis recuerdos".
+ */
+export function themeDecor(decor: ThemeDecor | null | undefined): Record<DecorKey, (string | null)[]> {
+  const out = {} as Record<DecorKey, (string | null)[]>;
+  for (const { key, slots } of DECOR_SECTIONS) {
+    const urls = key === "gallery" && !decor?.gallery ? [decor?.extras?.[2] ?? null] : (decor?.[key] ?? []);
+    out[key] = slots.map((_, i) => urls[i] || null);
+  }
+  return out;
 }

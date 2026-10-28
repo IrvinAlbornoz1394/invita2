@@ -3,8 +3,9 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { autoBackground, BACKGROUND_STYLES, DEFAULT_SOFTEN, resolveBackground } from "@/lib/background";
-import { COLOR_LABELS, DECOR_MAX, DECOR_SECTIONS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
+import { COLOR_LABELS, DECOR_SECTIONS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
+import { themeDecor } from "@/lib/view";
 import type { DecorKey, LogoStyle, Theme, ThemeColors } from "@/lib/types";
 import { deleteTheme, saveTheme } from "../../../actions";
 import { MediaField } from "../../../MediaField";
@@ -38,14 +39,8 @@ function toForm(t: Theme): ThemeInput {
       color: t.intro?.color ?? null,
       image_url: t.intro?.image_url ?? null,
     },
-    decor: { details: decorSlots(t, "details"), extras: decorSlots(t, "extras") },
+    decor: themeDecor(t.decor),
   };
-}
-
-/** Siempre DECOR_MAX espacios en el formulario; los vacíos se descartan al guardar. */
-function decorSlots(t: Theme, key: DecorKey) {
-  const urls = t.decor?.[key] ?? [];
-  return Array.from({ length: DECOR_MAX }, (_, i) => urls[i] ?? null);
 }
 
 export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
@@ -269,19 +264,19 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Elementos flotantes</h2>
             <p className={styles.cardHint}>
-              De 2 a 3 imágenes PNG sin fondo (personajes, globos, estrellas…) que flotan a un lado de la sección. En
-              celular se muestran en fila arriba del contenido.
+              Imágenes PNG sin fondo (personajes, globos, estrellas…) que flotan en algunas secciones. Cada espacio
+              tiene su lugar; los vacíos no se muestran.
             </p>
             {DECOR_SECTIONS.map((s) => (
               <div key={s.key} className={styles.field} style={{ marginTop: 14 }}>
                 <span className={styles.label}>
-                  {s.label} · {s.key === "details" ? "en zigzag junto a cada tarjeta" : "a la derecha"}
+                  {s.label} · {s.hint}
                 </span>
                 <div className={styles.grid2}>
                   {form.decor[s.key].map((url, i) => (
                     <MediaField
                       key={i}
-                      label={`Elemento ${i + 1}`}
+                      label={s.slots[i]}
                       value={url ?? null}
                       onChange={(v) => setDecor(s.key, i, v)}
                       folder={folder}
