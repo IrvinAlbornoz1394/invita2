@@ -275,7 +275,7 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
             {DECOR_SECTIONS.map((s) => (
               <div key={s.key} className={styles.field} style={{ marginTop: 14 }}>
                 <span className={styles.label}>
-                  {s.label} · {s.side === "left" ? "a la izquierda" : "a la derecha"}
+                  {s.label} · {s.key === "details" ? "en zigzag junto a cada tarjeta" : "a la derecha"}
                 </span>
                 <div className={styles.grid2}>
                   {form.decor[s.key].map((url, i) => (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import type { BlockKey, InvitationView, Tone } from "@/lib/view";
 import { calendarStamp } from "@/lib/dates";
 import { burstFrom, createConfetti, createMusic, startBalloons, stars, type Fx } from "./effects";
-import { Icon } from "./icons";
+import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
 import { Rsvp } from "./Rsvp";
@@ -239,7 +239,7 @@ export function Invitation({ view, preview = false }: Props) {
 
         {view.blocks.map(({ key, tone, prev }) => (
           <Section key={key} id={key} tone={tone} prev={prev}>
-            {view.decor[key] ? (
+            {view.decor[key] && key !== "details" ? (
               <>
                 {/* El título va a todo lo ancho; debajo, elementos e información lado a lado */}
                 <h2 className="heading" data-reveal="up">
@@ -352,7 +352,7 @@ function Block({ name, view, fx, say, bare }: BlockProps) {
         </>
       );
     case "details":
-      return <Details view={view} bare={bare} />;
+      return <Details view={view} decor={view.decor.details?.urls} />;
     case "show":
       return <ShowBlock view={view} fx={fx} say={say} />;
     case "extras":
@@ -506,9 +506,15 @@ function Card({ view }: { view: InvitationView }) {
 }
 
 /* ---------------- Fecha, hora y lugar ---------------- */
-function Details({ view, bare }: { view: InvitationView; bare?: boolean }) {
+/** decor: imágenes del tema; cada una acompaña a una de las tres tarjetas, en zigzag */
+function Details({ view, decor = [] }: { view: InvitationView; decor?: string[] }) {
   const placeValue = view.venueName || view.address;
   const placeSub = view.venueName ? [view.address, view.area].filter(Boolean).join(", ") : view.area;
+  const cards: { tone: string; icon: IconName; label: string; value: string; sub?: string | null }[] = [
+    { tone: "primary", icon: "calendar", label: "Fecha", value: view.longDate },
+    { tone: "secondary", icon: "clock", label: "Hora", value: `A partir de las ${view.time}` },
+    ...(placeValue ? [{ tone: "accent", icon: "pin" as const, label: "Lugar", value: placeValue, sub: placeSub }] : []),
+  ];
 
   function addToCalendar() {
     const start = new Date(view.eventAt);
@@ -543,42 +549,33 @@ function Details({ view, bare }: { view: InvitationView; bare?: boolean }) {
 
   return (
     <>
-      {!bare && (
-        <h2 className="heading" data-reveal="up">
-          {view.texts.detailsTitle}
-        </h2>
-      )}
+      <h2 className="heading" data-reveal="up">
+        {view.texts.detailsTitle}
+      </h2>
       <div className="details">
-        <article className="info info--primary" data-reveal="left">
-          <span className="info__icon">
-            <Icon name="calendar" />
-          </span>
-          <div>
-            <p className="info__label">Fecha</p>
-            <p className="info__value">{view.longDate}</p>
-          </div>
-        </article>
-        <article className="info info--secondary" data-reveal="right">
-          <span className="info__icon">
-            <Icon name="clock" />
-          </span>
-          <div>
-            <p className="info__label">Hora</p>
-            <p className="info__value">A partir de las {view.time}</p>
-          </div>
-        </article>
-        {placeValue && (
-          <article className="info info--accent info--wide" data-reveal="left">
-            <span className="info__icon">
-              <Icon name="pin" />
-            </span>
-            <div>
-              <p className="info__label">Lugar</p>
-              <p className="info__value">{placeValue}</p>
-              {placeSub && <p className="info__sub">{placeSub}</p>}
+        {cards.map((c, i) => {
+          const img = decor[i];
+          // con imagen se alternan: imagen a la izquierda, luego a la derecha…
+          const imgSide = i % 2 === 0 ? "left" : "right";
+          return (
+            <div key={c.label} className={`detail${img ? ` detail--img detail--img-${imgSide}` : ""}`}>
+              {img && (
+                <span className="detail__img" data-reveal={imgSide} aria-hidden="true">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={img} alt="" loading="lazy" />
+                </span>
+              )}
+              <article className={`info info--${c.tone}`} data-reveal={img ? (imgSide === "left" ? "right" : "left") : "up"}>
+                <span className="info__icon">
+                  <Icon name={c.icon} />
+                </span>
+                <p className="info__label">{c.label}</p>
+                <p className="info__value">{c.value}</p>
+                {c.sub && <p className="info__sub">{c.sub}</p>}
+              </article>
             </div>
-          </article>
-        )}
+          );
+        })}
       </div>
 
       {view.mapEmbed && (
