@@ -484,6 +484,10 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 }
 .decor-img--top { margin-bottom: 4px !important; }
 .decor-img--bottom { margin-top: 28px !important; margin-bottom: 0 !important; }
+/* a todo lo ancho: sale del padding lateral de la sección */
+.section > .decor-img--wide {
+  width: calc(100% + 32px); max-width: none; margin-left: -16px !important; margin-right: -16px !important;
+}
 .decor-img--bottom img { animation-name: inv-bob; animation-duration: 3.2s; }
 
 /* ----- Extras ----- */

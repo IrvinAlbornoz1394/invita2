@@ -663,7 +663,7 @@ function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
       <h2 className="heading" data-reveal="up">
         {view.texts.extrasTitle}
       </h2>
-      <DecorImg url={view.decor.extras[0]} />
+      <DecorImg url={view.decor.extras[0]} className="decor-img--wide" />
       <ul className="extras">
         {view.extras.map((x, i) => (
           <li key={i} data-reveal="zoom" style={{ "--rd": `${(i % 6) * 0.06}s` } as CSSProperties}>
@@ -677,7 +677,7 @@ function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
           </li>
         ))}
       </ul>
-      <DecorImg url={view.decor.extras[1]} className="decor-img--bottom" />
+      <DecorImg url={view.decor.extras[1]} className="decor-img--wide decor-img--bottom" />
     </>
   );
 }
