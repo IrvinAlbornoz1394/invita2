@@ -484,9 +484,12 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 }
 .decor-img--top { margin-bottom: 4px !important; }
 .decor-img--bottom { margin-top: 28px !important; margin-bottom: 0 !important; }
-/* a todo lo ancho: sale del padding lateral de la sección */
+/* a lo ancho: --w es la fracción de la sección (1 = de orilla a orilla, sin el padding lateral) */
 .section > .decor-img--wide {
-  width: calc(100% + 32px); max-width: none; margin-left: -16px !important; margin-right: -16px !important;
+  --w: 1; --full: calc(100% + 32px);
+  width: calc(var(--full) * var(--w)); max-width: none;
+  margin-left: calc(var(--full) * (1 - var(--w)) / 2 - 16px) !important;
+  margin-right: calc(var(--full) * (1 - var(--w)) / 2 - 16px) !important;
 }
 .decor-img--bottom img { animation-name: inv-bob; animation-duration: 3.2s; }
 

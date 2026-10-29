@@ -302,10 +302,10 @@ function Section({ id, tone, prev, children }: { id: string; tone: Tone; prev: T
 }
 
 /** Imagen del tema que flota en un espacio fijo de la sección. */
-function DecorImg({ url, className = "" }: { url: string | null; className?: string }) {
+function DecorImg({ url, className = "", style }: { url: string | null; className?: string; style?: CSSProperties }) {
   if (!url) return null;
   return (
-    <span className={`decor-img ${className}`} data-reveal="zoom" aria-hidden="true">
+    <span className={`decor-img ${className}`} style={style} data-reveal="zoom" aria-hidden="true">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt="" loading="lazy" />
     </span>
@@ -663,7 +663,11 @@ function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
       <h2 className="heading" data-reveal="up">
         {view.texts.extrasTitle}
       </h2>
-      <DecorImg url={view.decor.extras[0]} className="decor-img--wide" />
+      <DecorImg
+        url={view.decor.extras[0]}
+        className="decor-img--wide"
+        style={{ "--w": view.decor.extras_top_width / 100 } as CSSProperties}
+      />
       <ul className="extras">
         {view.extras.map((x, i) => (
           <li key={i} data-reveal="zoom" style={{ "--rd": `${(i % 6) * 0.06}s` } as CSSProperties}>

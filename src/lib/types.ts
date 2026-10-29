@@ -33,7 +33,10 @@ export type ThemeIntro = {
 export type DecorKey = (typeof DECOR_SECTIONS)[number]["key"];
 
 /** Imágenes flotantes por sección, por espacio (null = espacio vacío) */
-export type ThemeDecor = Partial<Record<DecorKey, (string | null)[]>>;
+export type ThemeDecor = Partial<Record<DecorKey, (string | null)[]>> & {
+  /** % del ancho de la sección que ocupa la imagen bajo el título de "Lo que te espera" */
+  extras_top_width?: number;
+};
 
 export type ImageStyle = "framed" | "plain";
 

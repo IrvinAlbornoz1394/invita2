@@ -178,3 +178,6 @@ export const DECOR_SECTIONS = [
 ] as const;
 
 export const DECOR_MAX = 3;
+
+/** Ancho por defecto (en % de la sección) de la imagen bajo el título de "Lo que te espera" */
+export const DECOR_EXTRAS_TOP_WIDTH = 100;

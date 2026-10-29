@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
+import { DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf } from "./dates";
 import type { DecorKey, IntroStyle, InvitationWithTheme, Show, TextKey, ThemeDecor } from "./types";
@@ -146,8 +146,13 @@ export function buildView(inv: InvitationWithTheme) {
  * Espacios de imágenes del tema por sección (null = vacío).
  * Antes "Lo que te espera" tenía 3; la tercera ahora va sobre "Mis recuerdos".
  */
-export function themeDecor(decor: ThemeDecor | null | undefined): Record<DecorKey, (string | null)[]> {
-  const out = {} as Record<DecorKey, (string | null)[]>;
+export function themeDecor(
+  decor: ThemeDecor | null | undefined,
+): Record<DecorKey, (string | null)[]> & { extras_top_width: number } {
+  const out = { extras_top_width: decor?.extras_top_width ?? DECOR_EXTRAS_TOP_WIDTH } as Record<
+    DecorKey,
+    (string | null)[]
+  > & { extras_top_width: number };
   for (const { key, slots } of DECOR_SECTIONS) {
     const urls = key === "gallery" && !decor?.gallery ? [decor?.extras?.[2] ?? null] : (decor?.[key] ?? []);
     out[key] = slots.map((_, i) => urls[i] || null);

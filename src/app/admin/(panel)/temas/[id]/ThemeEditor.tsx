@@ -283,6 +283,26 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                     />
                   ))}
                 </div>
+                {s.key === "extras" && (
+                  <label className={styles.field} style={{ marginTop: 10 }}>
+                    <span className={styles.label}>
+                      Ancho de la imagen debajo del título: {form.decor.extras_top_width}%
+                    </span>
+                    <input
+                      type="range"
+                      min={20}
+                      max={100}
+                      step={5}
+                      value={form.decor.extras_top_width}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, decor: { ...f.decor, extras_top_width: Number(e.target.value) } }))
+                      }
+                    />
+                    <span className={styles.help}>
+                      Qué tanto del ancho de la pantalla ocupa; ajústalo según la imagen (100% = de orilla a orilla).
+                    </span>
+                  </label>
+                )}
               </div>
             ))}
           </section>

@@ -101,7 +101,12 @@ export const themeInput = z.object({
     color: hex.nullable(),
     image_url: optionalAsset,
   }),
-  decor: z.object({ details: decorImages, extras: decorImages, gallery: decorImages }),
+  decor: z.object({
+    details: decorImages,
+    extras: decorImages,
+    gallery: decorImages,
+    extras_top_width: z.number().int().min(20).max(100),
+  }),
 });
 
 export type ThemeInput = z.input<typeof themeInput>;
