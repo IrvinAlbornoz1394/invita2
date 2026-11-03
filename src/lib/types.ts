@@ -40,6 +40,9 @@ export type ThemeDecor = Partial<Record<DecorKey, (string | null)[]>> & {
 
 export type ImageStyle = "framed" | "plain";
 
+/** De dónde sale la imagen del show: la del tema o una propia de la invitación. */
+export type ShowImageSource = "theme" | "custom";
+
 export type LogoStyle = "badge" | "plain";
 
 export type Theme = {
@@ -51,6 +54,7 @@ export type Theme = {
   logo_style: LogoStyle;
   card_url: string | null;
   group_url: string | null;
+  show_url: string | null;
   music_url: string | null;
   music_start: number;
   background: Partial<ThemeBackground> | null;
@@ -68,6 +72,7 @@ export type Show = {
   title: string;
   description: string;
   performers: Performer[];
+  image_source?: ShowImageSource;
   image_url?: string | null;
   image_style?: ImageStyle;
 };

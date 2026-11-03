@@ -160,6 +160,7 @@ export const DEMO_INVITATION = {
     title: "¡Show sorpresa!",
     description: "Canciones, bailes y concursos con mis personajes favoritos.",
     performers: [],
+    image_source: "theme" as const,
     image_url: null,
     image_style: "framed" as const,
   },

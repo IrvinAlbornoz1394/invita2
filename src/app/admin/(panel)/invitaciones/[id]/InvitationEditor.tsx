@@ -12,14 +12,15 @@ import {
   TIMEZONES,
 } from "@/lib/defaults";
 import type { InvitationInput } from "@/lib/schema";
-import type { Extra, ImageStyle, Invitation, Performer, SectionKey, TextKey, Theme } from "@/lib/types";
+import type { Extra, ImageStyle, Invitation, Performer, SectionKey, ShowImageSource, TextKey, Theme } from "@/lib/types";
+import { showImageSource } from "@/lib/view";
 import { deleteInvitation, duplicateInvitation, saveInvitation } from "../../../actions";
 import { CopyLink } from "../../../CopyLink";
 import { MediaField } from "../../../MediaField";
 import { uploadMedia } from "../../../upload";
 import styles from "../../../admin.module.css";
 
-type ThemeOption = Pick<Theme, "id" | "name" | "colors">;
+type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url">;
 
 type Form = {
   published: boolean;
@@ -44,6 +45,7 @@ type Form = {
     title: string;
     description: string;
     performers: Performer[];
+    image_source: ShowImageSource;
     image_url: string | null;
     image_style: ImageStyle;
   };
@@ -79,6 +81,7 @@ function toForm(inv: Invitation): Form {
       title: inv.show?.title ?? "",
       description: inv.show?.description ?? "",
       performers: inv.show?.performers ?? [],
+      image_source: showImageSource(inv.show),
       image_url: inv.show?.image_url ?? null,
       image_style: inv.show?.image_style ?? "framed",
     },
@@ -123,6 +126,8 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
 
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
   const patchShow = (p: Partial<Form["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
+  const themeShowUrl = themes.find((t) => t.id === form.theme_id)?.show_url ?? null;
+  const showImage = form.show.image_source === "theme" ? themeShowUrl : form.show.image_url;
 
   function save(next: Form = form) {
     setError(null);
@@ -415,14 +420,48 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                   />
                 </label>
 
-                <MediaField
-                  label="Imagen del show (opcional)"
-                  help="Un póster, los personajes o el escenario. Va debajo de la hora del show."
-                  value={form.show.image_url}
-                  onChange={(image_url) => patchShow({ image_url })}
-                  folder={folder}
-                />
-                {form.show.image_url && (
+<div className={styles.field}>
+                  <span className={styles.label}>Imagen del show</span>
+                  <div className={styles.chips}>
+                    {(
+                      [
+                        ["theme", "La del tema"],
+                        ["custom", "Personalizada"],
+                      ] as const
+                    ).map(([value, label]) => (
+                      <label key={value} className={styles.check}>
+                        <input
+                          type="radio"
+                          name="show_image_source"
+                          checked={form.show.image_source === value}
+                          onChange={() => patchShow({ image_source: value })}
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                  {form.show.image_source === "theme" && (
+                    <span className={styles.help}>
+                      {!themeShowUrl
+                        ? "Este tema no tiene imagen de show: el show se verá sin imagen. Agrégala en el tema o elige Personalizada."
+                        : "Se usa la imagen del show que tiene el tema."}
+                    </span>
+                  )}
+                  {form.show.image_source === "theme" && themeShowUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={themeShowUrl} alt="" style={{ maxWidth: 160, maxHeight: 120, objectFit: "contain", marginTop: 8 }} />
+                  )}
+                </div>
+                {form.show.image_source === "custom" && (
+                  <MediaField
+                    label="Imagen personalizada (opcional)"
+                    help="Un póster, los personajes o el escenario. Si la dejas vacía, el show va sin imagen."
+                    value={form.show.image_url}
+                    onChange={(image_url) => patchShow({ image_url })}
+                    folder={folder}
+                  />
+                )}
+                {showImage && (
                   <div className={styles.field}>
                     <span className={styles.label}>Estilo de la imagen</span>
                     <div className={styles.chips}>

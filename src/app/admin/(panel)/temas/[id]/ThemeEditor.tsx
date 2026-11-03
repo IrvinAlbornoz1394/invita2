@@ -25,6 +25,7 @@ function toForm(t: Theme): ThemeInput {
     logo_style: t.logo_style ?? "badge",
     card_url: t.card_url,
     group_url: t.group_url,
+    show_url: t.show_url ?? null,
     music_url: t.music_url,
     music_start: t.music_start,
     background: {
@@ -256,6 +257,13 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 help="Los personajes juntos; se muestra en la sección del mensaje."
                 value={form.group_url ?? null}
                 onChange={(group_url) => patch({ group_url })}
+                folder={folder}
+              />
+              <MediaField
+                label="Imagen del show"
+                help="Los personajes del show o un póster. Las invitaciones con show la usan por defecto; cada una puede cambiarla por la suya o dejarla sin imagen."
+                value={form.show_url ?? null}
+                onChange={(show_url) => patch({ show_url })}
                 folder={folder}
               />
             </div>

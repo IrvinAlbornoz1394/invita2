@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONT_WIDTH, TITLE_FONTS, type TitleFont } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf } from "./dates";
-import type { DecorKey, IntroStyle, InvitationWithTheme, Show, TextKey, ThemeDecor } from "./types";
+import type { DecorKey, IntroStyle, InvitationWithTheme, Show, ShowImageSource, TextKey, ThemeDecor } from "./types";
 
 export type Tone = "surface" | "secondary" | "accent" | "highlight";
 export type BlockKey = "card" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
@@ -45,6 +45,8 @@ export function buildView(inv: InvitationWithTheme) {
     ...(inv.show as Partial<Show> | null),
     performers: (inv.show?.performers ?? []).filter((p) => p.name || p.image_url),
   };
+  // Por defecto, la imagen del show del tema; "custom" usa la propia (o ninguna)
+  show.image_url = showImageSource(inv.show) === "theme" ? (theme?.show_url ?? null) : (show.image_url ?? null);
 
   // Pin exacto si se conoce; si no, el lugar escrito. El nombre del lugar va
   // incluido: sin él, Google suele ubicar solo la colonia y no pone marcador.
@@ -159,4 +161,9 @@ export function themeDecor(
     out[key] = slots.map((_, i) => urls[i] || null);
   }
   return out;
+}
+
+/** Invitaciones guardadas antes de existir la opción: con imagen propia, "custom"; sin ella, la del tema. */
+export function showImageSource(show: Partial<Show> | null | undefined): ShowImageSource {
+  return show?.image_source ?? (show?.image_url ? "custom" : "theme");
 }

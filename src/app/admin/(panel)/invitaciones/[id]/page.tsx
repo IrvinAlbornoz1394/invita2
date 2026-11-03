@@ -22,7 +22,7 @@ async function Editor({ params }: Pick<PageProps<"/admin/invitaciones/[id]">, "p
 
   const [inv, themes] = await Promise.all([
     supabase.from("invitations").select("*").eq("id", id).maybeSingle<Invitation>(),
-    supabase.from("themes").select("id, name, colors").order("name").returns<Pick<Theme, "id" | "name" | "colors">[]>(),
+    supabase.from("themes").select("id, name, colors, show_url").order("name").returns<Pick<Theme, "id" | "name" | "colors" | "show_url">[]>(),
   ]);
   if (inv.error) throw inv.error;
   if (themes.error) throw themes.error;

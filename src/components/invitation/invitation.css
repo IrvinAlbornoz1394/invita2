@@ -410,7 +410,7 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 .btn--primary { background: var(--c-primary); --shade: var(--c-primary-d); color: var(--on-primary); }
 .btn--secondary { background: var(--c-secondary); --shade: var(--c-secondary-d); color: var(--on-secondary); }
 .btn--ghost { background: transparent; --shade: rgba(0,0,0,.2); }
-.btn--block { width: 100%; padding-inline: 16px; gap: 8px; white-space: nowrap; }
+.btn--block { width: 100%; padding-inline: 14px; gap: 8px; font-size: clamp(.95rem, 4.4vw, 1.15rem); text-align: center; text-wrap: balance; }
 
 /* ----- Show ----- */
 .show-time {
@@ -492,7 +492,7 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 
 /* ----- Confirmación ----- */
 .rsvp {
-  display: grid; gap: 18px; text-align: left; max-width: 440px !important; padding: 26px 20px;
+  display: grid; grid-template-columns: minmax(0, 1fr); gap: 18px; text-align: left; max-width: 440px !important; padding: 26px 20px;
   background: #fff; border-radius: 30px; border: 4px solid #fff; --shade: var(--c-surface-d); box-shadow: var(--clay);
   color: var(--c-ink);
 }
@@ -503,7 +503,7 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
   transition: border-color .2s;
 }
 .field input:focus { outline: none; border-color: var(--c-secondary); }
-.choice { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.choice { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .choice label { position: relative; }
 .choice input { position: absolute; opacity: 0; inset: 0; }
 .choice span {
@@ -513,7 +513,8 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 }
 .choice input:checked + span { background: var(--c-secondary); border-color: var(--c-secondary); color: var(--on-secondary); box-shadow: 0 5px 0 var(--c-secondary-d); transform: translateY(-2px); }
 .choice input:focus-visible + span { outline: 4px solid var(--c-accent); outline-offset: 2px; }
-.stepper { display: grid; grid-template-columns: 52px 1fr 52px; gap: 8px; }
+.stepper { display: grid; grid-template-columns: 52px minmax(0, 1fr) 52px; gap: 8px; }
+.stepper input { min-width: 0; }
 .stepper button {
   border: 0; border-radius: 16px; background: var(--c-accent); color: var(--on-accent); font-family: var(--f-title); font-size: 1.6rem;
   box-shadow: 0 4px 0 var(--c-accent-d); transition: transform .15s;
