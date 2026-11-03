@@ -200,10 +200,9 @@ export const DECOR_SECTIONS = [
     hint: "Una debajo del título y otra debajo de todos los elementos",
     slots: ["Debajo del título", "Debajo de los elementos"],
   },
-  { key: "gallery", label: "Mis recuerdos", hint: "Arriba del título de la galería", slots: ["Sobre el título"] },
 ] as const;
 
 export const DECOR_MAX = 3;
 
-/** Ancho por defecto (en % de la sección) de la imagen bajo el título de "Lo que te espera" */
+/** Ancho por defecto (en % de la sección) de las imágenes de "Lo que te espera" */
 export const DECOR_EXTRAS_TOP_WIDTH = 100;

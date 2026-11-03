@@ -294,7 +294,7 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 {s.key === "extras" && (
                   <label className={styles.field} style={{ marginTop: 10 }}>
                     <span className={styles.label}>
-                      Ancho de la imagen debajo del título: {form.decor.extras_top_width}%
+                      Ancho de las imágenes: {form.decor.extras_top_width}%
                     </span>
                     <input
                       type="range"
@@ -307,7 +307,7 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                       }
                     />
                     <span className={styles.help}>
-                      Qué tanto del ancho de la pantalla ocupa; ajústalo según la imagen (100% = de orilla a orilla).
+                      Aplica a las dos: la de debajo del título y la de debajo de los elementos. Qué tanto del ancho de la pantalla ocupan (100% = de orilla a orilla).
                     </span>
                   </label>
                 )}

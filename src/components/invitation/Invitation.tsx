@@ -621,16 +621,15 @@ function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
     burstFrom(fx, b, 18, 0.35);
   }
 
+  // El mismo ancho para la imagen de arriba y la de abajo
+  const width = { "--w": view.decor.extras_top_width / 100 } as CSSProperties;
+
   return (
     <>
       <h2 className="heading" data-reveal="up">
         {view.texts.extrasTitle}
       </h2>
-      <DecorImg
-        url={view.decor.extras[0]}
-        className="decor-img--wide"
-        style={{ "--w": view.decor.extras_top_width / 100 } as CSSProperties}
-      />
+      <DecorImg url={view.decor.extras[0]} className="decor-img--wide" style={width} />
       <ul className="extras">
         {view.extras.map((x, i) => (
           <li key={i} data-reveal="zoom" style={{ "--rd": `${(i % 6) * 0.06}s` } as CSSProperties}>
@@ -644,7 +643,7 @@ function Extras({ view, fx }: { view: InvitationView; fx: Fx }) {
           </li>
         ))}
       </ul>
-      <DecorImg url={view.decor.extras[1]} className="decor-img--wide decor-img--bottom" />
+      <DecorImg url={view.decor.extras[1]} className="decor-img--wide decor-img--bottom" style={width} />
     </>
   );
 }

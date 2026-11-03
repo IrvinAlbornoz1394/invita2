@@ -106,7 +106,6 @@ export const themeInput = z.object({
   decor: z.object({
     details: decorImages,
     extras: decorImages,
-    gallery: decorImages,
     extras_top_width: z.number().int().min(20).max(100),
   }),
 });
