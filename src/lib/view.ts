@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "./defaults";
+import { DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONT_WIDTH, TITLE_FONTS, type TitleFont } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf } from "./dates";
 import type { DecorKey, IntroStyle, InvitationWithTheme, Show, TextKey, ThemeDecor } from "./types";
@@ -92,6 +92,7 @@ export function buildView(inv: InvitationWithTheme) {
     "--bg-soften": bg.soften / 100,
     "--bg-img": bg.imageUrl ? `url("${encodeURI(bg.imageUrl)}")` : "none",
     "--f-title": `var(--font-${font}), var(--font-lilita), system-ui, sans-serif`,
+    "--f-ratio": TITLE_FONT_WIDTH[font] ?? 0.6,
   } as CSSProperties;
 
   return {

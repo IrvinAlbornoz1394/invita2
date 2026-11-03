@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { BlockKey, InvitationView, Tone } from "@/lib/view";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { BlockKey, InvitationView } from "@/lib/view";
 import { calendarStamp } from "@/lib/dates";
-import { burstFrom, createConfetti, createMusic, startBalloons, stars, type Fx } from "./effects";
+import { burstFrom, createConfetti, createMusic, startBalloons, type Fx } from "./effects";
 import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
@@ -12,9 +12,11 @@ import "./invitation.css";
 
 type Props = { view: InvitationView; preview?: boolean };
 
-const ROT = [-7, 5, -4, 6, -5, 3, -6, 4, -3];
-const LIFT = [0, -0.05, 0.03, -0.04, 0.02, -0.06, 0.03, -0.02, 0.04];
-const STARS = stars(16);
+/** Secciones que conservan el diseño original (pedido del cliente) */
+const CLASSIC = new Set<BlockKey>(["countdown", "details", "show", "extras", "rsvp"]);
+
+/** Inclinación leve de cada letra del nombre: juguetón, pero legible */
+const ROT = [-3, 2, -2, 3, -2, 1, -3, 2, -1];
 
 export function Invitation({ view, preview = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -26,12 +28,11 @@ export function Invitation({ view, preview = false }: Props) {
   const [opening, setOpening] = useState(false);
   const [started, setStarted] = useState(false);
   const [playing, setPlaying] = useState(false);
-  const [away, setAway] = useState(false);
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
 
   const { colors, theme } = view;
   const palette = useMemo(
-    () => [colors.primary, colors.secondary, colors.highlight, colors.accent, "#ffffff", "#ff6fa5"],
+    () => [colors.primary, colors.secondary, colors.highlight, colors.accent, "#ffffff"],
     [colors]
   );
 
@@ -78,26 +79,19 @@ export function Invitation({ view, preview = false }: Props) {
     };
   }, [theme.musicUrl, theme.musicStart]);
 
-  // Bloquea el scroll mientras el regalo está cerrado
+  // Bloquea el scroll mientras la sorpresa está cerrada
   useEffect(() => {
     document.documentElement.classList.toggle("inv-locked", !started);
     return () => document.documentElement.classList.remove("inv-locked");
   }, [started]);
 
-  // Al abrir: globos y botón para bajar
+  // Al abrir: globos en la portada
   useEffect(() => {
     if (!started) return;
-    const stop = startBalloons(balloonsRef.current!, palette);
-    const onScroll = () => setAway(scrollY > 60);
-    addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => {
-      stop();
-      removeEventListener("scroll", onScroll);
-    };
+    return startBalloons(balloonsRef.current!, palette);
   }, [started, palette]);
 
-  // Animaciones al hacer scroll
+  // Entradas al hacer scroll
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) =>
@@ -107,7 +101,7 @@ export function Invitation({ view, preview = false }: Props) {
             io.unobserve(e.target);
           }
         }),
-      { threshold: 0.15, rootMargin: "0px 0px -30px 0px" }
+      { threshold: 0.12, rootMargin: "0px 0px -24px 0px" }
     );
     rootRef.current!.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
     return () => io.disconnect();
@@ -134,13 +128,15 @@ export function Invitation({ view, preview = false }: Props) {
     } else m.play().then(() => setPlaying(m.playing));
   }
 
-  const lastTone = view.blocks.at(-1)?.tone ?? "surface";
+  const showDock = started && Boolean(theme.musicUrl);
+  // Las secciones con diseño original conservan su franja de color
+  const bands = view.blocks.map((b) => (CLASSIC.has(b.key) && b.tone !== "surface" ? b.tone : null));
 
   return (
-    <div ref={rootRef} className={`inv${started ? " is-started" : ""}`} style={view.style}>
+    <div ref={rootRef} className={`inv${started ? " is-started" : ""}${showDock ? " has-dock" : ""}`} style={view.style}>
       {preview && !view.published && <div className="preview-flag">Vista previa · borrador sin publicar</div>}
 
-      {/* ===================== Intro: regalo sorpresa ===================== */}
+      {/* ===================== Apertura sorpresa ===================== */}
       <div className={`intro${started ? " is-gone" : ""}`} aria-hidden={started}>
         <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
         <div className="intro__inner">
@@ -152,50 +148,10 @@ export function Invitation({ view, preview = false }: Props) {
 
       <canvas ref={canvasRef} className="confetti" aria-hidden="true" />
 
-      {started && theme.musicUrl && (
-        <button
-          className={`music${playing ? " is-playing" : ""}`}
-          onClick={toggleMusic}
-          aria-label={playing ? "Pausar música" : "Reproducir música"}
-          aria-pressed={playing}
-        >
-          <Icon name="music" />
-          <span className="music__eq" aria-hidden="true">
-            <i />
-            <i />
-            <i />
-          </span>
-        </button>
-      )}
-
-      {started && view.blocks.length > 0 && (
-        <a className={`scroll-cue${away ? " is-away" : ""}`} href={`#${view.blocks[0].key}`} aria-label="Ver más">
-          <Icon name="down" />
-        </a>
-      )}
-
       <main>
         {/* ===================== Portada ===================== */}
         <header className="hero" id="inicio">
           <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
-          <div className="stars" aria-hidden="true">
-            {STARS.map((s, i) => (
-              <svg
-                key={i}
-                viewBox="0 0 24 24"
-                className="star"
-                style={{
-                  width: s.size,
-                  left: `${s.left}%`,
-                  top: `${s.top}%`,
-                  animationDelay: `${s.delay}s`,
-                  animationDuration: `${s.duration}s`,
-                }}
-              >
-                <path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7-6.2-3.8-6.2 3.8 1.6-7L2 9.2l7.1-.6z" />
-              </svg>
-            ))}
-          </div>
           <div className="balloons" ref={balloonsRef} aria-hidden="true" />
 
           <div className="hero__inner">
@@ -206,54 +162,83 @@ export function Invitation({ view, preview = false }: Props) {
               </div>
             )}
 
-            <p className="pill pop" style={{ "--d": ".3s" } as CSSProperties}>
-              {view.texts.heroPill}
-            </p>
-
-            {view.ageText && (
-              <div className="ribbon pop" style={{ "--d": ".5s" } as CSSProperties}>
-                <span>{view.ageText}</span>
-              </div>
-            )}
-
             <Title lines={view.nameLines} label={view.fullName} onTap={(x, y) => fx.burst(x, y, 60)} />
 
+            {view.ageText && (
+              <p className="age pop" style={{ "--d": ".9s" } as CSSProperties}>
+                {view.ageText}
+              </p>
+            )}
+
             {view.photoUrl && (
-              <div className="portrait pop" style={{ "--d": "1.3s" } as CSSProperties}>
-                <div className="portrait__ring" aria-hidden="true" />
+              <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={view.photoUrl} alt={view.firstName} />
                 {view.age != null && <span className="portrait__age">{view.age}</span>}
               </div>
             )}
 
-            <p className="date-chip pop" style={{ "--d": "1.6s" } as CSSProperties}>
+            <p className="summary pop" style={{ "--d": "1.2s" } as CSSProperties}>
               {view.shortDate} · {view.time}
             </p>
           </div>
-
-          <svg className="cloud-edge" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 120V60c60-40 140-40 200 0 50-50 150-55 210-5 60-55 170-55 230 0 55-45 150-45 210 0 60-50 160-50 220 0 60-45 140-45 200 5 50-40 120-40 170 0V120z" />
-          </svg>
         </header>
 
-        {view.blocks.map(({ key, tone, prev }) => (
-          <Section key={key} id={key} tone={tone} prev={prev}>
-            <Block name={key} view={view} fx={fx} say={say} />
-          </Section>
-        ))}
+        {/* ===================== Hoja con el contenido ===================== */}
+        <div className="sheet">
+          <span className="sheet__grip" aria-hidden="true" />
 
-        <footer className="footer" style={{ "--prev": `var(--tone-${lastTone})` } as CSSProperties}>
-          <svg className="cloud-edge cloud-edge--top" viewBox="0 0 1440 120" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M0 0v60c60 40 140 40 200 0 50 50 150 55 210 5 60 55 170 55 230 0 55 45 150 45 210 0 60 50 160 50 220 0 60 45 140 45 200-5 50 40 120 40 170 0V0z" />
-          </svg>
-          <p className="footer__name">{view.fullName}</p>
-          <p>{view.texts.footer}</p>
-          <a className="btn btn--ghost" href="#inicio">
-            Volver al inicio
-          </a>
-        </footer>
+          {view.blocks.map(({ key }, i) => {
+            const band = bands[i];
+            const prev = i > 0 ? bands[i - 1] : null;
+            // Borde festoneado arriba cuando cambia el color respecto a la sección anterior
+            const edge = band || prev ? `var(--tone-${prev ?? "sheet"})` : null;
+            return (
+              <section
+                key={key}
+                id={key}
+                className={`section section--${key}${CLASSIC.has(key) ? " classic" : ""}${band ? ` band tone-${band}` : ""}${edge ? " has-edge" : ""}`}
+                style={edge ? ({ "--prev": edge } as CSSProperties) : undefined}
+              >
+                <Block name={key} view={view} fx={fx} say={say} />
+              </section>
+            );
+          })}
+
+          <footer
+            className={`footer${bands.at(-1) ? " has-edge" : ""}`}
+            style={bands.at(-1) ? ({ "--prev": `var(--tone-${bands.at(-1)})` } as CSSProperties) : undefined}
+          >
+            <p className="footer__name">{view.fullName}</p>
+            <p className="footer__text">{view.texts.footer}</p>
+            <a className="footer__top" href="#inicio">
+              Volver al inicio
+            </a>
+          </footer>
+        </div>
       </main>
+
+      {/* ===================== Barra inferior ===================== */}
+      {showDock && (
+        <nav className="dock" aria-label="Música">
+          {theme.musicUrl && (
+            <button
+              type="button"
+              className={`dock__music${playing ? " is-playing" : ""}`}
+              onClick={toggleMusic}
+              aria-label={playing ? "Pausar música" : "Reproducir música"}
+              aria-pressed={playing}
+            >
+              <Icon name="music" />
+              <span className="dock__eq" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
+            </button>
+          )}
+        </nav>
+      )}
 
       <div className={`toast${toast ? " is-on" : ""}`} role="status" aria-live="polite">
         {toast?.text}
@@ -262,7 +247,7 @@ export function Invitation({ view, preview = false }: Props) {
   );
 }
 
-/* ---------------- Título: cada letra con giro y altura distintos ---------------- */
+/* ---------------- Nombre: cada letra cae en su lugar al abrir ---------------- */
 function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap: (x: number, y: number) => void }) {
   let n = 0;
   return (
@@ -272,14 +257,12 @@ function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap:
           {[...word].map((ch, c) => {
             const i = n++;
             return (
-              <span key={c} className="ch" style={{ "--d": `${0.7 + i * 0.07}s` } as CSSProperties}>
-                <span
-                  className="ch__in"
-                  data-ch={ch}
-                  style={{ "--r": `${ROT[i % ROT.length]}deg`, "--y": `${LIFT[i % LIFT.length]}em`, "--i": i } as CSSProperties}
-                >
-                  {ch === " " ? " " : ch}
-                </span>
+              <span
+                key={c}
+                className="ch"
+                style={{ "--d": `${0.35 + i * 0.05}s`, "--r": `${ROT[i % ROT.length]}deg` } as CSSProperties}
+              >
+                {ch === " " ? " " : ch}
               </span>
             );
           })}
@@ -289,15 +272,18 @@ function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap:
   );
 }
 
-function Section({ id, tone, prev, children }: { id: string; tone: Tone; prev: Tone | null; children: ReactNode }) {
+/** Título de sección; si el tema trae un personaje para ese espacio, se asoma a la derecha. */
+function Heading({ text, decor }: { text: string; decor?: string | null }) {
   return (
-    <section
-      id={id}
-      className={`section tone-${tone}${prev ? " has-prev" : ""}`}
-      style={prev ? ({ "--prev": `var(--tone-${prev})` } as CSSProperties) : undefined}
-    >
-      {children}
-    </section>
+    <div className={`heading-row${decor ? " has-decor" : ""}`} data-reveal>
+      <h2 className="heading">{text}</h2>
+      {decor && (
+        <span className="heading-row__decor" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={decor} alt="" loading="lazy" />
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -336,34 +322,27 @@ function Block({ name, view, fx, say }: BlockProps) {
     case "gallery":
       return (
         <>
-          <DecorImg url={view.decor.gallery[0]} className="decor-img--top" />
-          <h2 className="heading" data-reveal="up">
-            {view.texts.galleryTitle}
-          </h2>
+          <Heading text={view.texts.galleryTitle} decor={view.decor.gallery[0]} />
           <Gallery items={view.gallery} name={view.firstName} />
         </>
       );
     case "message":
       return (
         <>
-          <h2 className="heading" data-reveal="up">
-            {view.texts.messageTitle}
-          </h2>
-          {view.message && (
-            <p className="lead lead--big" data-reveal="up">
-              {view.message}
+          <Heading text={view.texts.messageTitle} />
+          <div className="panel message" data-reveal>
+            {view.message && <p className="message__text">{view.message}</p>}
+            {view.theme.groupUrl && (
+              <div className="message__group">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={view.theme.groupUrl} alt="" loading="lazy" />
+              </div>
+            )}
+            <p className="message__closing">
+              <Icon name="heart" />
+              {view.texts.messageClosing}
             </p>
-          )}
-          {view.theme.groupUrl && (
-            <div className="group" data-reveal="zoom">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={view.theme.groupUrl} alt="" loading="lazy" />
-            </div>
-          )}
-          <p className="love" data-reveal="zoom">
-            <Icon name="heart" />
-            {view.texts.messageClosing}
-          </p>
+          </div>
         </>
       );
     case "rsvp":
@@ -433,51 +412,41 @@ function Opener({
   );
 }
 
-/* ---------------- Tarjeta con inclinación 3D ---------------- */
+/* ---------------- Tarjeta del tema, con inclinación leve ---------------- */
 function Card({ view }: { view: InvitationView }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasImage = Boolean(view.theme.cardUrl);
 
   function move(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType !== "mouse") return;
     const card = ref.current!;
     const r = card.getBoundingClientRect();
     const x = (e.clientX - r.left) / r.width;
     const y = (e.clientY - r.top) / r.height;
-    card.style.setProperty("--ry", `${(x - 0.5) * 16}deg`);
-    card.style.setProperty("--rx", `${(0.5 - y) * 16}deg`);
-    card.style.setProperty("--mx", `${x * 100}%`);
-    card.style.setProperty("--my", `${y * 100}%`);
+    card.style.setProperty("--ry", `${(x - 0.5) * 8}deg`);
+    card.style.setProperty("--rx", `${(0.5 - y) * 8}deg`);
   }
   function leave() {
     const card = ref.current!;
     card.style.setProperty("--rx", "0deg");
     card.style.setProperty("--ry", "0deg");
-    card.style.setProperty("--mx", "50%");
-    card.style.setProperty("--my", "30%");
   }
 
   return (
-    <div
-      ref={ref}
-      className={`card3d${hasImage ? "" : " card3d--plain"}`}
-      data-reveal="zoom"
-      onPointerMove={move}
-      onPointerLeave={leave}
-    >
-      <div className="card3d__art">
+    <div ref={ref} className={`card${hasImage ? "" : " card--plain"}`} data-reveal onPointerMove={move} onPointerLeave={leave}>
+      <div className="card__art">
         <div className={`sunburst sunburst--${view.theme.bgStyle}`} aria-hidden="true" />
         {hasImage && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={view.theme.cardUrl!} alt="" />
         )}
       </div>
-      <div className="card3d__text">
-        <p className="card3d__kicker">{view.texts.cardKicker}</p>
-        <p className="card3d__name">{view.firstName}</p>
-        <p className="card3d__date">{view.longDate}</p>
-        <p className="card3d__time">A partir de las {view.time}</p>
+      <div className="card__text">
+        <p className="card__kicker">{view.texts.cardKicker}</p>
+        <p className="card__name">{view.firstName}</p>
+        <p className="card__date">{view.longDate}</p>
+        <p className="card__time">A partir de las {view.time}</p>
       </div>
-      <span className="card3d__shine" aria-hidden="true" />
     </div>
   );
 }
@@ -620,7 +589,7 @@ function ShowBlock({ view, fx, say }: { view: InvitationView; fx: Fx; say: (t: s
           {show.description}
         </p>
       )}
-      {show.performers.length > 0 && (
+      {show.image_url && show.performers.length > 0 && (
         <div className={`performers performers--${Math.min(show.performers.length, 4)}`}>
           {show.performers.map((p, i) => (
             <button

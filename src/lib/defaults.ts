@@ -79,9 +79,34 @@ export const TITLE_FONTS = {
   chewy: "Chewy",
   fredoka: "Fredoka",
   bubblegum: "Bubblegum Sans",
+  sniglet: "Sniglet · tierna, bebés",
+  moonrocks: "Rubik Moonrocks · dinosaurios, mundo jurásico",
+  bangers: "Bangers · cómic, superhéroes",
+  bungee: "Bungee · retro, arcade",
+  pixel: "Press Start 2P · videojuegos pixel",
+  audiowide: "Audiowide · velocidad, carreras",
+  orbitron: "Orbitron · espacio, robots",
+  monoton: "Monoton · neón ochentero",
+  pacifico: "Pacifico · retro, playa",
+  rye: "Rye · vaqueros, viejo oeste",
+  cinzel: "Cinzel Decorative · princesas, castillos",
+  creepster: "Creepster · monstruos, Halloween",
 } as const;
 
 export type TitleFont = keyof typeof TITLE_FONTS;
+
+/** Ancho medio de una letra (en em) de cada fuente: el nombre se achica para caber en pantalla. */
+export const TITLE_FONT_WIDTH: Partial<Record<TitleFont, number>> = {
+  sniglet: 0.64,
+  bangers: 0.42,
+  bungee: 0.73,
+  pixel: 1.02,
+  monoton: 0.73,
+  pacifico: 0.52,
+  rye: 0.62,
+  cinzel: 0.7,
+  creepster: 0.47,
+};
 
 /** Atajos para la sección de extras; cada uno se puede editar después de agregarlo. */
 export const EXTRAS_CATALOG = [
