@@ -83,10 +83,11 @@ function Phone({
 }
 
 export default async function Landing() {
-  const demo = process.env.NEXT_PUBLIC_DEMO_SLUG;
   const contact = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
   const quote = contact ? waLink(contact, "¡Hola! Quiero cotizar una invitación digital para una fiesta.") : null;
   const themes = await getLandingThemes();
+  // "Ver un ejemplo": la invitación configurada o, si no hay, la demo del primer personaje
+  const demo = process.env.NEXT_PUBLIC_DEMO_SLUG || (themes[0] ? `demo/${themes[0].id}` : null);
   const group = themes.find((t) => t.groupUrl)?.groupUrl ?? null;
 
   // Sin WhatsApp configurado, el ejemplo pasa a ser la acción principal
@@ -203,11 +204,15 @@ export default async function Landing() {
             <h2 id="personajes-t" className={styles.stripTitle}>
               Personajes disponibles
             </h2>
+            <p className={styles.stripHint}>Toca uno para ver su invitación de ejemplo</p>
             <ul className={styles.stripList}>
               {themes.map((t) => (
                 <li key={t.id}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={t.logoUrl ?? t.cardUrl ?? ""} alt={t.name} loading="lazy" />
+                  <a className={styles.stripDemo} href={`/demo/${t.id}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={t.logoUrl ?? t.cardUrl ?? ""} alt="" loading="lazy" />
+                    <span>{t.name}</span>
+                  </a>
                 </li>
               ))}
               {contact && (

@@ -1,0 +1,86 @@
+/* Barra flotante de la demo, con los colores de invita2 (no los del tema) */
+.bar {
+  position: fixed;
+  z-index: 300;
+  top: max(10px, env(safe-area-inset-top));
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: calc(100vw - 20px);
+  padding: 5px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.92);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 6px 24px rgb(46 31 102 / 0.22), 0 0 0 1px rgb(46 31 102 / 0.08);
+  font: 600 14px/1 var(--font-poppins), system-ui, sans-serif;
+  color: #2e1f66;
+}
+
+.back {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  color: inherit;
+}
+.back svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.back:hover {
+  background: #ece6fb;
+}
+
+.kids {
+  display: flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: #ece6fb;
+}
+.kid {
+  display: grid;
+  place-items: center;
+  min-width: 64px;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #5f5878;
+  text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+.kid[aria-current="true"] {
+  background: #fff;
+  color: #2e1f66;
+  box-shadow: 0 1px 4px rgb(46 31 102 / 0.16);
+}
+
+.ask {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #5b3db5;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ask:hover {
+  background: #4c31a0;
+}
+
+.back:focus-visible,
+.kid:focus-visible,
+.ask:focus-visible {
+  outline: 3px solid #5b3db5;
+  outline-offset: 2px;
+}
