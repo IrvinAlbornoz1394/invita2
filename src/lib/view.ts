@@ -46,7 +46,10 @@ export function buildView(inv: InvitationWithTheme) {
     performers: (inv.show?.performers ?? []).filter((p) => p.name || p.image_url),
   };
   // Por defecto, la imagen del show del tema; "custom" usa la propia (o ninguna)
-  show.image_url = showImageSource(inv.show) === "theme" ? (theme?.show_url ?? null) : (show.image_url ?? null);
+  if (showImageSource(inv.show) === "theme") {
+    show.image_url = theme?.show_url ?? null;
+    show.image_style = theme?.show_style ?? "framed";
+  }
 
   // Pin exacto si se conoce; si no, el lugar escrito. El nombre del lugar va
   // incluido: sin él, Google suele ubicar solo la colonia y no pone marcador.

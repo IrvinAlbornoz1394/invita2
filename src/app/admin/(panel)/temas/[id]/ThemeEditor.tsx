@@ -6,10 +6,15 @@ import { autoBackground, BACKGROUND_STYLES, DEFAULT_SOFTEN, resolveBackground } 
 import { COLOR_LABELS, DECOR_SECTIONS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
 import { themeDecor } from "@/lib/view";
-import type { DecorKey, LogoStyle, Theme, ThemeColors } from "@/lib/types";
+import type { DecorKey, ImageStyle, LogoStyle, Theme, ThemeColors } from "@/lib/types";
 import { deleteTheme, saveTheme } from "../../../actions";
 import { MediaField } from "../../../MediaField";
 import styles from "../../../admin.module.css";
+
+const SHOW_STYLES: { value: ImageStyle; label: string }[] = [
+  { value: "framed", label: "Con marco" },
+  { value: "plain", label: "Sin marco (PNG sin fondo)" },
+];
 
 const LOGO_STYLES: { value: LogoStyle; label: string }[] = [
   { value: "badge", label: "Con recuadro y fondo" },
@@ -26,6 +31,7 @@ function toForm(t: Theme): ThemeInput {
     card_url: t.card_url,
     group_url: t.group_url,
     show_url: t.show_url ?? null,
+    show_style: t.show_style ?? "framed",
     music_url: t.music_url,
     music_start: t.music_start,
     background: {
@@ -266,6 +272,24 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 onChange={(show_url) => patch({ show_url })}
                 folder={folder}
               />
+              {form.show_url && (
+                <div className={styles.field}>
+                  <span className={styles.label}>Estilo de la imagen del show</span>
+                  <div className={styles.chips}>
+                    {SHOW_STYLES.map((o) => (
+                      <label key={o.value} className={styles.check}>
+                        <input
+                          type="radio"
+                          name="show_style"
+                          checked={form.show_style === o.value}
+                          onChange={() => patch({ show_style: o.value })}
+                        />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 

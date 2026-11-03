@@ -55,6 +55,7 @@ export type Theme = {
   card_url: string | null;
   group_url: string | null;
   show_url: string | null;
+  show_style?: ImageStyle;
   music_url: string | null;
   music_start: number;
   background: Partial<ThemeBackground> | null;

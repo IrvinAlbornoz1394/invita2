@@ -89,6 +89,7 @@ export const themeInput = z.object({
   card_url: optionalAsset,
   group_url: optionalAsset,
   show_url: optionalAsset,
+  show_style: z.enum(["framed", "plain"]),
   music_url: optionalAsset,
   music_start: z.number().int().min(0).max(600),
   background: z.object({

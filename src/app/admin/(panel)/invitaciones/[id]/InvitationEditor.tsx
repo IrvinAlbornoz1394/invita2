@@ -20,7 +20,7 @@ import { MediaField } from "../../../MediaField";
 import { uploadMedia } from "../../../upload";
 import styles from "../../../admin.module.css";
 
-type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url">;
+type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style">;
 
 type Form = {
   published: boolean;
@@ -127,7 +127,6 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
   const patchShow = (p: Partial<Form["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
   const themeShowUrl = themes.find((t) => t.id === form.theme_id)?.show_url ?? null;
-  const showImage = form.show.image_source === "theme" ? themeShowUrl : form.show.image_url;
 
   function save(next: Form = form) {
     setError(null);
@@ -444,7 +443,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                     <span className={styles.help}>
                       {!themeShowUrl
                         ? "Este tema no tiene imagen de show: el show se verá sin imagen. Agrégala en el tema o elige Personalizada."
-                        : "Se usa la imagen del show que tiene el tema."}
+                        : "Se usa la imagen del show del tema, con el estilo (marco o sin marco) que tiene el tema."}
                     </span>
                   )}
                   {form.show.image_source === "theme" && themeShowUrl && (
@@ -461,7 +460,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                     folder={folder}
                   />
                 )}
-                {showImage && (
+                {form.show.image_source === "custom" && form.show.image_url && (
                   <div className={styles.field}>
                     <span className={styles.label}>Estilo de la imagen</span>
                     <div className={styles.chips}>
