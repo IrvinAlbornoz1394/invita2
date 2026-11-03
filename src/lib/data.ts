@@ -28,3 +28,29 @@ export async function getPublishedInvitation(slug: string): Promise<InvitationWi
   if (data?.theme_id) cacheTag(themeTag(data.theme_id));
   return data as InvitationWithTheme | null;
 }
+
+export const themesTag = "themes";
+
+export type LandingTheme = { id: string; name: string; logoUrl: string | null; cardUrl: string | null; groupUrl: string | null };
+
+/** Temas con imagen, para la landing (logos y tarjetas de personajes). */
+export async function getLandingThemes(): Promise<LandingTheme[]> {
+  "use cache";
+  cacheLife("days");
+  cacheTag(themesTag);
+
+  const { data, error } = await createPublicClient()
+    .from("themes")
+    .select("id, name, logo_url, card_url, group_url")
+    .or("logo_url.not.is.null,card_url.not.is.null")
+    .order("created_at");
+
+  if (error) throw error;
+  return (data ?? []).map((t) => ({
+    id: t.id,
+    name: t.name,
+    logoUrl: t.logo_url,
+    cardUrl: t.card_url,
+    groupUrl: t.group_url,
+  }));
+}

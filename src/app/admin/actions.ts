@@ -4,7 +4,7 @@ import { updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { invitationTag, themeTag } from "@/lib/data";
+import { invitationTag, themeTag, themesTag } from "@/lib/data";
 import { zonedToUtc } from "@/lib/dates";
 import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATION } from "@/lib/defaults";
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
@@ -147,6 +147,7 @@ export async function saveTheme(id: string, input: ThemeInput): Promise<ActionRe
 
   // Refresca todas las invitaciones que usan este tema
   updateTag(themeTag(id));
+  updateTag(themesTag);
   return { ok: true, message: "Tema guardado" };
 }
 
@@ -157,5 +158,6 @@ export async function deleteTheme(id: string) {
   if (error) throw error;
 
   updateTag(themeTag(id));
+  updateTag(themesTag);
   redirect("/admin/temas");
 }

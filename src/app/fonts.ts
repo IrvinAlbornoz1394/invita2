@@ -1,4 +1,4 @@
-import { Baloo_2, Bubblegum_Sans, Chewy, Fredoka, Lilita_One, Luckiest_Guy, Titan_One } from "next/font/google";
+import { Baloo_2, Poppins, Bubblegum_Sans, Chewy, Fredoka, Lilita_One, Luckiest_Guy, Titan_One } from "next/font/google";
 
 // Lilita y Baloo son las de siempre; las demás solo se descargan si un tema las usa.
 const lilita = Lilita_One({ weight: "400", subsets: ["latin"], variable: "--font-lilita", display: "swap" });
@@ -9,4 +9,7 @@ const chewy = Chewy({ weight: "400", subsets: ["latin"], variable: "--font-chewy
 const fredoka = Fredoka({ weight: "700", subsets: ["latin"], variable: "--font-fredoka", display: "swap", preload: false });
 const bubblegum = Bubblegum_Sans({ weight: "400", subsets: ["latin"], variable: "--font-bubblegum", display: "swap", preload: false });
 
-export const fontVariables = [lilita, baloo, luckiest, titan, chewy, fredoka, bubblegum].map((f) => f.variable).join(" ");
+// Marca invita2 (landing y panel)
+const poppins = Poppins({ weight: ["400", "500", "600", "700"], subsets: ["latin"], variable: "--font-poppins", display: "swap" });
+
+export const fontVariables = [poppins, lilita, baloo, luckiest, titan, chewy, fredoka, bubblegum].map((f) => f.variable).join(" ");

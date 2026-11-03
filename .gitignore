@@ -40,3 +40,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# skills de agentes (se reinstalan con skills-lock.json)
+/.agents/
+/.claude/skills/
+
+# bocetos y referencias de trabajo de impeccable
+/.impeccable/mocks/
+/.impeccable/questions/
+/.impeccable/ref/
