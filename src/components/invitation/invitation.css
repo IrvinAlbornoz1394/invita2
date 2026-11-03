@@ -282,8 +282,6 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
   color: var(--heading); text-wrap: balance;
 }
 /* Personaje del tema que se asoma por encima del panel */
-.heading-row__decor { flex: none; width: clamp(84px, 24vw, 112px); margin: -24px 4px -22px 0; position: relative; z-index: 1; pointer-events: none; }
-.heading-row__decor img { width: 100%; height: auto; filter: drop-shadow(0 8px 10px rgb(0 0 0 / .16)); animation: inv-float 4.4s ease-in-out infinite; }
 
 .panel { position: relative; background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 20px; }
 

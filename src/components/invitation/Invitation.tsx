@@ -272,17 +272,11 @@ function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap:
   );
 }
 
-/** Título de sección; si el tema trae un personaje para ese espacio, se asoma a la derecha. */
-function Heading({ text, decor }: { text: string; decor?: string | null }) {
+/** Título de sección con el estilo nuevo (recuerdos y mensaje). */
+function Heading({ text }: { text: string }) {
   return (
-    <div className={`heading-row${decor ? " has-decor" : ""}`} data-reveal>
+    <div className="heading-row" data-reveal>
       <h2 className="heading">{text}</h2>
-      {decor && (
-        <span className="heading-row__decor" aria-hidden="true">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={decor} alt="" loading="lazy" />
-        </span>
-      )}
     </div>
   );
 }
@@ -322,7 +316,7 @@ function Block({ name, view, fx, say }: BlockProps) {
     case "gallery":
       return (
         <>
-          <Heading text={view.texts.galleryTitle} decor={view.decor.gallery[0]} />
+          <Heading text={view.texts.galleryTitle} />
           <Gallery items={view.gallery} name={view.firstName} />
         </>
       );
