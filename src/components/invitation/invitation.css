@@ -560,11 +560,45 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 .message__closing svg { width: 24px; height: 24px; fill: var(--c-primary); stroke: none; animation: inv-heart 1.6s ease-in-out infinite; }
 
 /* ----- Pie ----- */
-.footer { position: relative; margin: 0 calc(var(--pad) * -1); padding: 56px var(--pad) 48px; text-align: center; display: grid; justify-items: center; gap: 6px; }
+.footer { position: relative; margin: 0 calc(var(--pad) * -1); padding: 56px var(--pad) 0; text-align: center; display: grid; justify-items: center; gap: 6px; }
 .footer.has-edge { padding-top: 72px; }
-.has-dock .footer { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
 .footer__name { font-family: var(--f-title); font-size: clamp(1.9rem, 8.5vw, 2.5rem); line-height: 1.05; color: var(--heading); }
 .footer__text { color: var(--muted); max-width: 32ch; }
+/* Créditos de invita2: franja oscura del tema con silueta de fiesta encima */
+.credit {
+  --credit: color-mix(in oklab, var(--c-primary) 42%, var(--c-ink));
+  justify-self: stretch; margin: 48px calc(var(--pad) * -1) 0;
+  color: color-mix(in srgb, #fff 74%, var(--credit));
+}
+.inv .credit__scene { display: block; width: 100%; height: auto; margin-bottom: -1px; fill: var(--credit); stroke: none; }
+.inv .credit__strings { fill: none; stroke: var(--credit); stroke-width: 1.1; }
+.credit__pop-a { fill: var(--c-accent); }
+.credit__pop-b { fill: var(--c-secondary); }
+.credit__flame { fill: var(--c-highlight); }
+.credit__dot-a { fill: color-mix(in srgb, var(--c-accent) 75%, transparent); }
+.credit__dot-b { fill: color-mix(in srgb, var(--c-secondary) 75%, transparent); }
+.credit__ribbon { fill: color-mix(in srgb, var(--c-accent) 70%, var(--credit)); }
+.credit__band { background: var(--credit); padding: 6px var(--pad) 36px; display: grid; justify-items: center; gap: 4px; font-size: .8rem; line-height: 1.4; }
+.has-dock .credit__band { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
+.credit__by { margin: 0; letter-spacing: .02em; }
+.credit a { color: #fff; text-decoration: none; }
+.credit__brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.credit__actions { margin-top: 16px; width: min(100%, 290px); display: grid; gap: 10px; }
+.credit__wa, .credit__web { display: flex; align-items: center; justify-content: center; border-radius: 999px; transition: transform .15s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease); }
+.credit__wa:active, .credit__web:active { transform: scale(.97); }
+/* WhatsApp: su verde y su logotipo, para que se reconozca al instante */
+.credit__wa { gap: 12px; padding: 10px 22px 10px 12px; background: #25d366; color: #fff; box-shadow: 0 6px 18px rgb(0 0 0 / .22), inset 0 -2px 0 rgb(0 0 0 / .12); }
+.inv .credit__logo { width: 34px; height: 34px; flex: none; padding: 7px; border-radius: 50%; background: #fff; fill: #25d366; stroke: none; }
+.credit__wa-text { display: grid; text-align: left; line-height: 1.2; }
+.credit__wa-text small { font-size: .72rem; font-weight: 500; opacity: .92; }
+.credit__wa-text strong { font-size: 1.05rem; font-weight: 700; letter-spacing: .01em; font-variant-numeric: tabular-nums; }
+.credit__web { gap: 8px; padding: 11px 20px; font-size: .85rem; font-weight: 600; border: 1px solid color-mix(in srgb, #fff 26%, transparent); background: color-mix(in srgb, #fff 8%, transparent); }
+.inv .credit__web svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; }
+@media (hover: hover) {
+  .credit__brand:hover { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+  .credit__wa:hover { background: #20bd5a; box-shadow: 0 8px 22px rgb(0 0 0 / .28), inset 0 -2px 0 rgb(0 0 0 / .12); }
+  .credit__web:hover { background: color-mix(in srgb, #fff 16%, transparent); }
+}
 .footer__top { margin-top: 10px; font-weight: 600; color: var(--heading); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 1.5px; }
 
 /* ==========================================================================
