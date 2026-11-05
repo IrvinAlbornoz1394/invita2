@@ -150,32 +150,21 @@
 }
 
 .logoLink {
-  text-decoration: none;
-  border-radius: 999px;
+  display: block;
+  border-radius: 12px;
 }
 
 .logo {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  padding: 7px 15px 7px 11px;
-  font-weight: 700;
-  font-size: 18px;
-  line-height: 1;
-  letter-spacing: -0.01em;
-  color: var(--white);
-  background: var(--purple);
-  border-radius: 999px;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.18);
+  display: block;
+  width: auto;
+  height: 40px;
 }
 
-.logo svg {
-  width: 19px;
-  height: 19px;
-}
-
-.logo b {
-  color: var(--sand);
+.isologo {
+  display: block;
+  width: 160px;
+  height: auto;
+  filter: drop-shadow(0 2px 3px rgba(46, 31, 102, 0.18));
 }
 
 .links {
@@ -949,45 +938,202 @@
   margin-top: 6px;
 }
 
-/* ---------- Pie ---------- */
+/* ---------- Pie: franja morada con silueta de fiesta (como el cierre de las invitaciones) ---------- */
 
 .footer {
-  display: grid;
-  gap: 28px;
-  padding: 40px var(--gutter) max(32px, env(safe-area-inset-bottom));
-  background: var(--white);
-  border-top: 1px solid var(--line);
+  --foot: var(--purple-deep);
+  margin-top: 24px;
+  color: var(--on-purple);
 }
 
-.footBrand p {
-  margin-top: 12px;
-  max-width: 24em;
-  font-size: 14.5px;
-  color: var(--muted);
+/* La silueta se queda a un tamaño cómodo y centrada; el suelo se alarga hasta los bordes
+   con franjas del mismo color a la altura de las lomas en cada orilla (y = 84 y 82 de 100). */
+.footScene {
+  --scene-w: min(100vw, 760px);
+  position: relative;
+  margin-bottom: -1px;
 }
 
-.footCol {
+.footScene::before,
+.footScene::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 50%;
+  background: var(--foot);
+}
+
+.footScene::before {
+  left: 0;
+  height: calc(var(--scene-w) * 0.25 * 0.16);
+}
+
+.footScene::after {
+  right: 0;
+  height: calc(var(--scene-w) * 0.25 * 0.18);
+}
+
+.scene {
+  position: relative;
+  display: block;
+  width: var(--scene-w);
+  height: auto;
+  margin: 0 auto;
+  fill: var(--foot);
+}
+
+.sceneStrings {
+  fill: none;
+  stroke: var(--foot);
+  stroke-width: 1.1;
+}
+
+.scenePopA {
+  fill: #f0544a;
+}
+
+.scenePopB {
+  fill: #9b6cf2;
+}
+
+.sceneFlame {
+  fill: #ffb547;
+}
+
+.sceneDotA {
+  fill: rgba(240, 84, 74, 0.75);
+}
+
+.sceneDotB {
+  fill: rgba(91, 61, 181, 0.6);
+}
+
+.sceneRibbon {
+  fill: #8a3f6e;
+}
+
+.footBand {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  text-align: center;
+  padding: 8px var(--gutter) max(28px, env(safe-area-inset-bottom));
+  background: var(--foot);
 }
 
-.footCol h3 {
-  margin-bottom: 4px;
+.footLogo {
+  display: block;
+  border-radius: 16px;
+}
+
+.isologo {
+  display: block;
+  width: 112px;
+  height: auto;
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+}
+
+.footMain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.footTagline {
+  margin-top: 14px;
+  max-width: 22em;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.footLinks {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 6px;
+  margin-top: 20px;
+}
+
+.footLinks a {
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--white);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.footActions {
+  display: grid;
+  gap: 10px;
+  width: min(100%, 300px);
+  margin-top: 24px;
+}
+
+.footWa,
+.footDemo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
   font-size: 15px;
   font-weight: 600;
+  text-decoration: none;
+  transition: transform 0.15s var(--ease-out), background 0.2s var(--ease-out);
 }
 
-.footCol a {
-  padding: 4px 0;
-  font-size: 14.5px;
-  color: var(--muted);
-  text-decoration: none;
+.footWa {
+  color: var(--white);
+  background: #25d366;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22), inset 0 -2px 0 rgba(0, 0, 0, 0.12);
+}
+
+.footWa svg {
+  width: 19px;
+  height: 19px;
+}
+
+.footDemo {
+  color: var(--white);
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.footWa:active,
+.footDemo:active {
+  transform: scale(0.97);
+}
+
+.footCopy {
+  margin-top: 28px;
+  padding-top: 18px;
+  width: min(100%, 520px);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 13px;
+  color: rgba(231, 224, 251, 0.7);
 }
 
 @media (hover: hover) {
-  .footCol a:hover {
-    color: var(--purple);
+  .footLinks a:hover {
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .footWa:hover {
+    background: #20bd5a;
+  }
+
+  .footDemo:hover {
+    background: rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -1065,9 +1211,59 @@
     max-width: 14em;
   }
 
-  .footer {
-    grid-template-columns: 2fr 1fr 1fr;
+  .footActions {
+    display: flex;
+    width: auto;
+  }
+
+  .nav .logo {
+    height: 48px;
+  }
+
+  /* Pie en tres columnas: isologo · frase y enlaces · botones */
+  .footBand {
+    padding-top: 16px;
     padding-inline: max(var(--gutter), calc((100vw - var(--max)) / 2));
+  }
+
+  .footMain {
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+    width: 100%;
+    text-align: left;
+  }
+
+  .footInfo {
+    flex: 1;
+    align-items: flex-start;
+  }
+
+  .footTagline {
+    margin-top: 0;
+    font-size: 16px;
+  }
+
+  .footLinks {
+    justify-content: flex-start;
+    margin: 12px 0 0 -12px;
+  }
+
+  .footLinks a {
+    background: none;
+  }
+
+  .footActions {
+    flex-direction: column;
+    flex: none;
+    width: 260px;
+    margin-top: 0;
+  }
+
+  .footCopy {
+    width: 100%;
+    margin-top: 32px;
+    text-align: left;
   }
 }
 
@@ -1082,6 +1278,23 @@
 
   .nav {
     padding-inline: max(var(--gutter), calc((100vw - var(--max)) / 2));
+  }
+
+  .nav .logo {
+    height: 56px;
+  }
+
+  .isologo {
+    width: 136px;
+  }
+
+  .footScene {
+    --scene-w: 880px;
+  }
+
+  .footActions {
+    flex-direction: row;
+    width: auto;
   }
 
   .links {

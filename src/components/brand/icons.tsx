@@ -1,3 +1,7 @@
+import Image from "next/image";
+import isologo from "../../../public/isologo.png";
+import logo from "../../../public/logo.png";
+
 /** Íconos de línea de invita2 (landing y panel): 24 × 24, trazo 1.8, puntas redondas. */
 const paths = {
   gift: (
@@ -97,16 +101,12 @@ export function BrandIcon({ name, className }: { name: BrandIconName; className?
   );
 }
 
-/** Logotipo: «invita2» en una píldora morada. */
-export function Logo({ className }: { className?: string }) {
-  return (
-    <span className={className}>
-      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-        {paths.gift}
-      </svg>
-      <span>
-        invita<b>2</b>
-      </span>
-    </span>
-  );
+/** Logotipo: «invita2» escrito con globos (public/logo.png). */
+export function Logo({ className, priority = false }: { className?: string; priority?: boolean }) {
+  return <Image src={logo} alt="invita2" sizes="200px" className={className} priority={priority} />;
+}
+
+/** Isologo: solo los globos «i2» (public/isologo.png). */
+export function Isologo({ className }: { className?: string }) {
+  return <Image src={isologo} alt="invita2" sizes="160px" className={className} />;
 }

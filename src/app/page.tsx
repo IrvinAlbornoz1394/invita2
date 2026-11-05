@@ -1,5 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
-import { BrandIcon, Logo, type BrandIconName } from "@/components/brand/icons";
+import { BrandIcon, Isologo, Logo, type BrandIconName } from "@/components/brand/icons";
+import { PartyScene, type PartySceneClasses } from "@/components/brand/PartyScene";
 import { getLandingThemes } from "@/lib/data";
 import apertura from "../../public/landing/pantalla-apertura.jpg";
 import confirmar from "../../public/landing/pantalla-confirmar.jpg";
@@ -7,6 +8,17 @@ import cuenta from "../../public/landing/pantalla-cuenta.jpg";
 import fecha from "../../public/landing/pantalla-fecha.jpg";
 import portada from "../../public/landing/pantalla-portada.jpg";
 import styles from "./landing.module.css";
+
+const SCENE_CLASSES: PartySceneClasses = {
+  scene: styles.scene,
+  strings: styles.sceneStrings,
+  popA: styles.scenePopA,
+  popB: styles.scenePopB,
+  flame: styles.sceneFlame,
+  dotA: styles.sceneDotA,
+  dotB: styles.sceneDotB,
+  ribbon: styles.sceneRibbon,
+};
 
 const FEATURES: { icon: BrandIconName; title: string; text: string }[] = [
   { icon: "gift", title: "Apertura sorpresa", text: "Se abre como regalo, como globo que revienta o con una imagen, con confeti." },
@@ -103,7 +115,7 @@ export default async function Landing() {
     <div className={styles.page}>
       <header className={styles.nav}>
         <a href="#inicio" aria-label="invita2, inicio" className={styles.logoLink}>
-          <Logo className={styles.logo} />
+          <Logo className={styles.logo} priority />
         </a>
         <nav className={styles.links} aria-label="Secciones">
           <a href="#funciones">Funciones</a>
@@ -371,27 +383,41 @@ export default async function Landing() {
       </main>
 
       <footer className={styles.footer}>
-        <div className={styles.footBrand}>
-          <Logo className={styles.logo} />
-          <p>Invitaciones digitales animadas para fiestas infantiles. Hechas con cariño.</p>
+        <div className={styles.footScene}>
+          <PartyScene classes={SCENE_CLASSES} />
         </div>
-        <nav className={styles.footCol} aria-label="Pie de página">
-          <h3>Navegación</h3>
-          <a href="#funciones">Funciones</a>
-          <a href="#como-funciona">Cómo funciona</a>
-          <a href="#preguntas">Preguntas</a>
-        </nav>
-        {(quote || demo) && (
-          <div className={styles.footCol}>
-            <h3>Contacto</h3>
-            {quote && (
-              <a href={quote} {...ext}>
-                WhatsApp
-              </a>
+        <div className={styles.footBand}>
+          <div className={styles.footMain}>
+            <a href="#inicio" aria-label="invita2, volver al inicio" className={styles.footLogo}>
+              <Isologo className={styles.isologo} />
+            </a>
+            <div className={styles.footInfo}>
+              <p className={styles.footTagline}>Invitaciones digitales animadas para fiestas infantiles. Hechas con cariño.</p>
+              <nav className={styles.footLinks} aria-label="Pie de página">
+                <a href="#funciones">Funciones</a>
+                <a href="#como-funciona">Cómo funciona</a>
+                {themes.length > 0 && <a href="#personajes">Personajes</a>}
+                <a href="#preguntas">Preguntas</a>
+              </nav>
+            </div>
+            {(quote || demo) && (
+              <div className={styles.footActions}>
+                {quote && (
+                  <a className={styles.footWa} href={quote} {...ext}>
+                    <BrandIcon name="chat" />
+                    Cotizar por WhatsApp
+                  </a>
+                )}
+                {demo && (
+                  <a className={styles.footDemo} href={`/${demo}`}>
+                    Ver un ejemplo
+                  </a>
+                )}
+              </div>
             )}
-            {demo && <a href={`/${demo}`}>Ver un ejemplo</a>}
           </div>
-        )}
+          <p className={styles.footCopy}>© invita2 · Invitaciones digitales para fiestas infantiles</p>
+        </div>
       </footer>
     </div>
   );

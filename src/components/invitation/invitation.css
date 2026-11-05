@@ -582,7 +582,8 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 .has-dock .credit__band { padding-bottom: calc(100px + env(safe-area-inset-bottom)); }
 .credit__by { margin: 0; letter-spacing: .02em; }
 .credit a { color: #fff; text-decoration: none; }
-.credit__brand { font-size: 1.5rem; font-weight: 800; letter-spacing: -.03em; line-height: 1.1; }
+.credit__brand { display: block; margin-top: 6px; border-radius: 12px; }
+.inv .credit__brand-logo { display: block; width: auto; height: 46px; filter: drop-shadow(0 4px 10px rgb(0 0 0 / .3)); }
 .credit__actions { margin-top: 16px; width: min(100%, 290px); display: grid; gap: 10px; }
 .credit__wa, .credit__web { display: flex; align-items: center; justify-content: center; border-radius: 999px; transition: transform .15s var(--ease), background .2s var(--ease), box-shadow .2s var(--ease); }
 .credit__wa:active, .credit__web:active { transform: scale(.97); }
@@ -595,7 +596,8 @@ html.inv-locked, html.inv-locked body { overflow: hidden; height: 100%; }
 .credit__web { gap: 8px; padding: 11px 20px; font-size: .85rem; font-weight: 600; border: 1px solid color-mix(in srgb, #fff 26%, transparent); background: color-mix(in srgb, #fff 8%, transparent); }
 .inv .credit__web svg { width: 17px; height: 17px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; }
 @media (hover: hover) {
-  .credit__brand:hover { text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+  .credit__brand { transition: transform .2s var(--ease); }
+  .credit__brand:hover { transform: scale(1.04); }
   .credit__wa:hover { background: #20bd5a; box-shadow: 0 8px 22px rgb(0 0 0 / .28), inset 0 -2px 0 rgb(0 0 0 / .12); }
   .credit__web:hover { background: color-mix(in srgb, #fff 16%, transparent); }
 }
