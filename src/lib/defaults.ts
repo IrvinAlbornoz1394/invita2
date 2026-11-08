@@ -181,8 +181,11 @@ export function ageRibbon(age: number | null) {
 
 /** Formas de abrir la invitación, con su indicación por defecto. */
 export const INTRO_STYLES = [
-  { value: "gift", label: "Regalo", hint: "Toca el regalo" },
-  { value: "balloon", label: "Globo que se revienta", hint: "¡Revienta el globo!" },
+  { value: "gift", label: "Regalo 3D", hint: "Toca el regalo" },
+  { value: "balloon", label: "Globo 3D que se revienta", hint: "¡Revienta el globo!" },
+  { value: "book", label: "Libro que se abre", hint: "Toca el libro para abrirlo" },
+  { value: "envelope", label: "Sobre con carta", hint: "Toca el sobre para abrirlo" },
+  { value: "curtain", label: "Telón de teatro", hint: "Toca para abrir el telón" },
   { value: "image", label: "Imagen propia", hint: "Toca para abrir" },
 ] as const;
 

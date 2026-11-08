@@ -100,7 +100,7 @@ export const themeInput = z.object({
     soften: z.number().int().min(0).max(80),
   }),
   intro: z.object({
-    style: z.enum(["gift", "balloon", "image"]),
+    style: z.enum(["gift", "balloon", "book", "envelope", "curtain", "image"]),
     color: hex.nullable(),
     image_url: optionalAsset,
   }),

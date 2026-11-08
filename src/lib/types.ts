@@ -21,7 +21,7 @@ export type ThemeBackground = {
   soften: number;
 };
 
-export type IntroStyle = "gift" | "balloon" | "image";
+export type IntroStyle = "gift" | "balloon" | "book" | "envelope" | "curtain" | "image";
 
 export type ThemeIntro = {
   style: IntroStyle;

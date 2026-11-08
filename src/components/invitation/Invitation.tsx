@@ -9,6 +9,8 @@ import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
 import { Rsvp } from "./Rsvp";
+import { Opener, OPENERS } from "./Openers";
+import { startMapFx } from "./mapfx";
 import { Logo } from "@/components/brand/icons";
 import { PartyScene, type PartySceneClasses } from "@/components/brand/PartyScene";
 import "./invitation.css";
@@ -43,7 +45,9 @@ export function Invitation({ view, preview = false }: Props) {
   const musicRef = useRef<ReturnType<typeof createMusic> | null>(null);
 
   const [opening, setOpening] = useState(false);
+  const [zooming, setZooming] = useState(false);
   const [started, setStarted] = useState(false);
+  const [introGone, setIntroGone] = useState(false);
   const [playing, setPlaying] = useState(false);
   const [toast, setToast] = useState<{ text: string; id: number } | null>(null);
 
@@ -96,11 +100,14 @@ export function Invitation({ view, preview = false }: Props) {
     };
   }, [theme.musicUrl, theme.musicStart]);
 
-  // Bloquea el scroll mientras la sorpresa está cerrada
+  // Bloquea el scroll mientras la apertura está en pantalla
   useEffect(() => {
-    document.documentElement.classList.toggle("inv-locked", !started);
+    document.documentElement.classList.toggle("inv-locked", !introGone);
     return () => document.documentElement.classList.remove("inv-locked");
-  }, [started]);
+  }, [introGone]);
+
+  // El mapa de «fecha y lugar» se acerca apenas mientras la información pasa encima
+  useEffect(() => startMapFx(rootRef.current!), []);
 
   // Al abrir: globos en la portada
   useEffect(() => {
@@ -124,30 +131,60 @@ export function Invitation({ view, preview = false }: Props) {
     return () => io.disconnect();
   }, []);
 
-  function openGift(e: React.MouseEvent<HTMLButtonElement>) {
+  function openIntro(e: React.MouseEvent<HTMLButtonElement>) {
     if (opening) return;
     setOpening(true);
     const m = musicRef.current;
     m?.play().then(() => setPlaying(m.playing));
-    const r = e.currentTarget.getBoundingClientRect();
-    burstFrom(fx, e.currentTarget, theme.introStyle === "gift" ? 160 : 220, theme.introStyle === "balloon" ? 0.32 : 0.5);
-    setTimeout(() => {
-      reveal(r.left + r.width / 2, r.top + r.height / 2);
-      setTimeout(() => fx.rain(90), 900);
-    }, OPEN_DELAY[theme.introStyle]);
+
+    const style = theme.introStyle;
+    const t = OPENERS[style];
+    const target = (e.currentTarget.querySelector(".opener-target") as HTMLElement | null) ?? e.currentTarget;
+    const r = target.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const burst = () =>
+      style === "curtain" ? fx.rain(140) : fx.burst(cx, cy, style === "balloon" ? 240 : 170);
+    setTimeout(burst, t.confetti);
+
+    // Acercamiento a la página del libro o a la carta: se mide dónde quedó
+    if (t.zoom != null) {
+      setTimeout(() => {
+        const page = rootRef.current!.querySelector<HTMLElement>(".book__first, .env3d__letter");
+        const pr = page?.getBoundingClientRect();
+        const intro = rootRef.current!.querySelector<HTMLElement>(".intro")!;
+        // la carta asoma solo por arriba del sobre: se entra por su parte visible
+        const fy = style === "envelope" ? 0.28 : 0.5;
+        intro.style.setProperty("--zx", `${pr ? pr.left + pr.width / 2 : cx}px`);
+        intro.style.setProperty("--zy", `${pr ? pr.top + pr.height * fy : cy}px`);
+        setZooming(true);
+      }, reducedMotion() ? 0 : t.zoom);
+    }
+
+    if (t.iris) {
+      setTimeout(() => reveal(cx, cy), t.start);
+    } else {
+      setTimeout(() => setStarted(true), reducedMotion() ? 0 : t.start);
+      setTimeout(() => setIntroGone(true), reducedMotion() ? 0 : t.gone);
+    }
+    setTimeout(() => fx.rain(90), Math.max(t.start, t.gone) + 900);
   }
 
-  /** La portada aparece en un círculo que crece desde el regalo (View Transitions; sin soporte, fundido) */
+  /** La portada aparece en un círculo que crece desde el objeto (View Transitions; sin soporte, fundido) */
   function reveal(x: number, y: number) {
     const html = document.documentElement;
-    if (!document.startViewTransition || reducedMotion()) {
+    const show = () => {
       setStarted(true);
+      setIntroGone(true);
+    };
+    if (!document.startViewTransition || reducedMotion()) {
+      show();
       return;
     }
     html.style.setProperty("--iris-x", `${x}px`);
     html.style.setProperty("--iris-y", `${y}px`);
     html.classList.add("inv-iris");
-    const vt = document.startViewTransition(() => flushSync(() => setStarted(true)));
+    const vt = document.startViewTransition(() => flushSync(show));
     vt.finished.finally(() => html.classList.remove("inv-iris"));
   }
 
@@ -161,6 +198,16 @@ export function Invitation({ view, preview = false }: Props) {
   }
 
   const showDock = started && Boolean(theme.musicUrl);
+  const style = theme.introStyle;
+  const curtain = style === "curtain";
+  const openerContent = {
+    name: view.firstName,
+    label: `Mi ${view.eventLabel}`,
+    logo: theme.logoUrl,
+    art: theme.cardUrl || theme.logoUrl,
+    image: theme.introImage,
+    invited: view.texts.heroPill,
+  };
   // Las secciones con diseño original conservan su franja de color
   const bands = view.blocks.map((b) => (CLASSIC.has(b.key) && b.tone !== "surface" ? b.tone : null));
 
@@ -168,14 +215,31 @@ export function Invitation({ view, preview = false }: Props) {
     <div ref={rootRef} className={`inv${started ? " is-started" : ""}${showDock ? " has-dock" : ""}`} style={view.style}>
       {preview && !view.published && <div className="preview-flag">Vista previa · borrador sin publicar</div>}
 
-      {/* ===================== Apertura sorpresa ===================== */}
-      <div className={`intro${started ? " is-gone" : ""}`} aria-hidden={started}>
-        <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
-        <div className="intro__inner">
-          <p className="intro__kicker">{view.texts.introKicker}</p>
-          <Opener view={view} opening={opening} onOpen={openGift} />
-          <p className="intro__hint">{view.texts.introHint}</p>
-        </div>
+      {/* ===================== Apertura (se elige en el tema) ===================== */}
+      <div
+        className={`intro intro--${style}${opening ? " is-opening" : ""}${zooming ? " is-zooming" : ""}${introGone ? " is-gone" : ""}`}
+        aria-hidden={introGone}
+      >
+        {!curtain && <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />}
+        {curtain ? (
+          <button className="intro__curtain" onClick={openIntro} aria-label="Abrir el telón y ver la invitación">
+            <Opener style={style} open={opening} c={openerContent} />
+            <span className="intro__plaque">
+              <span className="intro__kicker">{view.texts.introKicker}</span>
+              <span className="intro__hint">{view.texts.introHint}</span>
+            </span>
+          </button>
+        ) : (
+          <div className="intro__inner">
+            <p className="intro__kicker">{view.texts.introKicker}</p>
+            <button className="opener" onClick={openIntro} aria-label="Abrir la invitación">
+              <span className="opener-target">
+                <Opener style={style} open={opening} c={openerContent} />
+              </span>
+            </button>
+            <p className="intro__hint">{view.texts.introHint}</p>
+          </div>
+        )}
       </div>
 
       <canvas ref={canvasRef} className="confetti" aria-hidden="true" />
@@ -448,7 +512,7 @@ function Block({ name, view, fx, say }: BlockProps) {
         </>
       );
     case "details":
-      return <Details view={view} decor={view.decor.details.filter((u) => u !== null)} />;
+      return <Details view={view} decor={view.decor.details} />;
     case "show":
       return <ShowBlock view={view} fx={fx} say={say} />;
     case "extras":
@@ -491,78 +555,6 @@ function Block({ name, view, fx, say }: BlockProps) {
   }
 }
 
-/* ---------------- Apertura: regalo, globo o imagen del tema ---------------- */
-/** ms entre el toque y la portada: el globo revienta rápido; el regalo se toma su tiempo */
-const OPEN_DELAY = { gift: 1100, balloon: 650, image: 800 } as const;
-
-function Opener({
-  view,
-  opening,
-  onOpen,
-}: {
-  view: InvitationView;
-  opening: boolean;
-  onOpen: (e: React.MouseEvent<HTMLButtonElement>) => void;
-}) {
-  const { introStyle, introImage } = view.theme;
-  const open = opening ? " is-open" : "";
-
-  if (introStyle === "balloon")
-    return (
-      <button className={`pop-balloon${open}`} onClick={onOpen} aria-label="Reventar el globo y abrir la invitación">
-        <svg viewBox="0 0 120 220" aria-hidden="true">
-          <defs>
-            <radialGradient id="inv-balloon" cx="38%" cy="30%" r="75%">
-              <stop offset="0" style={{ stopColor: "color-mix(in srgb, var(--balloon) 55%, #fff)" }} />
-              <stop offset=".55" style={{ stopColor: "var(--balloon)" }} />
-              <stop offset="1" style={{ stopColor: "color-mix(in srgb, var(--balloon) 70%, #000)" }} />
-            </radialGradient>
-          </defs>
-          <path className="pop-balloon__string" d="M60 146 C 48 166, 72 182, 58 218" />
-          <g className="pop-balloon__body">
-            <path d="M60 4 C 26 4 6 32 6 64 C 6 100 38 132 60 138 C 82 132 114 100 114 64 C 114 32 94 4 60 4 Z" fill="url(#inv-balloon)" />
-            <path d="M52 146 L68 146 L60 136 Z" fill="var(--balloon)" />
-            <ellipse cx="38" cy="38" rx="11" ry="19" transform="rotate(-25 38 38)" fill="#fff" opacity=".55" />
-          </g>
-        </svg>
-      </button>
-    );
-
-  if (introStyle === "image" && introImage)
-    return (
-      <button className={`pop-image${open}`} onClick={onOpen} aria-label="Abrir invitación">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={introImage} alt="" />
-      </button>
-    );
-
-  return (
-    <button className={`gift3d${open}`} onClick={onOpen} aria-label="Abrir invitación">
-      <span className="gift3d__shadow" aria-hidden="true" />
-      <span className="gift3d__light" aria-hidden="true" />
-      <span className="gift3d__float" aria-hidden="true">
-        <span className="gift3d__scene">
-          <span className="g-face g-front" />
-          <span className="g-face g-back" />
-          <span className="g-face g-right" />
-          <span className="g-face g-left" />
-          <span className="g-face g-bottom" />
-          <span className="g-face g-inside" />
-          <span className="gift3d__lid">
-            <span className="g-lid g-lid--front" />
-            <span className="g-lid g-lid--back" />
-            <span className="g-lid g-lid--right" />
-            <span className="g-lid g-lid--left" />
-            <span className="g-lid-top" />
-            <span className="g-bow" />
-            <span className="g-bow g-bow--cross" />
-          </span>
-        </span>
-      </span>
-    </button>
-  );
-}
-
 /* ---------------- Tarjeta del tema, con inclinación leve ---------------- */
 function Card({ view }: { view: InvitationView }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -592,7 +584,7 @@ function Card({ view }: { view: InvitationView }) {
 
 /* ---------------- Fecha, hora y lugar ---------------- */
 /** decor: imágenes del tema; cada una acompaña a una de las tres tarjetas, en zigzag */
-function Details({ view, decor }: { view: InvitationView; decor: string[] }) {
+function Details({ view, decor }: { view: InvitationView; decor: (string | null)[] }) {
   const placeValue = view.venueName || view.address;
   const placeSub = view.venueName ? [view.address, view.area].filter(Boolean).join(", ") : view.area;
   const cards: { tone: string; icon: IconName; label: string; value: string; sub?: string | null }[] = [
@@ -632,56 +624,72 @@ function Details({ view, decor }: { view: InvitationView; decor: string[] }) {
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
+  const [live, setLive] = useState(false);
+
   return (
-    <>
-      <h2 className="heading" data-reveal="up">
-        {view.texts.detailsTitle}
-      </h2>
-      <div className="details">
-        {cards.map((c, i) => {
-          const img = decor[i];
-          // con imagen se alternan: imagen a la izquierda, luego a la derecha…
-          const imgSide = i % 2 === 0 ? "left" : "right";
-          return (
-            <div key={c.label} className={`detail${img ? ` detail--img detail--img-${imgSide}` : ""}`}>
-              {img && (
-                <span className="detail__img" data-reveal={imgSide} aria-hidden="true">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt="" loading="lazy" />
-                </span>
-              )}
-              <article className={`info info--${c.tone}`} data-reveal={img ? (imgSide === "left" ? "right" : "left") : "up"}>
-                <span className="info__icon">
-                  <Icon name={c.icon} />
-                </span>
-                <p className="info__label">{c.label}</p>
-                <p className="info__value">{c.value}</p>
-                {c.sub && <p className="info__sub">{c.sub}</p>}
-              </article>
-            </div>
-          );
-        })}
-      </div>
-
-      {view.mapEmbed && (
-        <div className="map" data-reveal="zoom">
-          <iframe src={view.mapEmbed} title="Mapa del lugar" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-        </div>
-      )}
-
-      <div className="btn-row" data-reveal="up">
-        {view.mapsUrl && (
-          <a className="btn btn--primary" href={view.mapsUrl} target="_blank" rel="noopener">
-            <Icon name="navigate" />
-            Cómo llegar
-          </a>
+    <div className={`place${view.mapEmbed ? "" : " place--nomap"}${live ? " is-live" : ""}`}>
+      {/* El mapa ocupa la pantalla y se queda fijo; la información pasa encima */}
+      <div className="place__map" data-l="map">
+        {view.mapEmbed ? (
+          <iframe src={view.mapEmbed} title="Mapa del lugar" loading="lazy" referrerPolicy="no-referrer-when-downgrade" tabIndex={live ? 0 : -1} />
+        ) : (
+          <div className={`sunburst sunburst--${view.theme.bgStyle}`} aria-hidden="true" />
         )}
-        <button className="btn btn--secondary" type="button" onClick={addToCalendar}>
-          <Icon name="calendarAdd" />
-          Agendar
-        </button>
+        <span className="place__veil" aria-hidden="true" />
+        {view.mapEmbed && !live && (
+          <span className="place__pin" aria-hidden="true">
+            <span className="place__pin-head">
+              <Icon name="pin" />
+            </span>
+            <span className="place__pin-pulse" />
+          </span>
+        )}
       </div>
-    </>
+
+      <div className="place__content">
+        <h2 className="heading place__title" data-reveal="up">
+          {view.texts.detailsTitle}
+        </h2>
+
+        <div className="place__cards">
+          {cards.map((c, i) => (
+            <article key={c.label} className={`glass glass--${c.tone}`} data-reveal={i % 2 ? "right" : "left"}>
+              {decor[i] && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img className={`glass__decor glass__decor--${i % 2 ? "left" : "right"}`} src={decor[i]} alt="" loading="lazy" />
+              )}
+              <span className="glass__icon">
+                <Icon name={c.icon} />
+              </span>
+              <span className="glass__txt">
+                <small>{c.label}</small>
+                <strong>{c.value}</strong>
+                {c.sub && <em>{c.sub}</em>}
+              </span>
+            </article>
+          ))}
+        </div>
+
+        {/* Acciones fijas al pie mientras el mapa está en pantalla */}
+        <div className="place__actions">
+          {view.mapsUrl && (
+            <a className="btn btn--primary" href={view.mapsUrl} target="_blank" rel="noopener">
+              <Icon name="navigate" />
+              Cómo llegar
+            </a>
+          )}
+          <button className="btn btn--secondary" type="button" onClick={addToCalendar}>
+            <Icon name="calendarAdd" />
+            Agendar
+          </button>
+          {view.mapEmbed && (
+            <button className="place__toggle" type="button" onClick={() => setLive((v) => !v)} aria-pressed={live}>
+              {live ? "Listo" : "Mover el mapa"}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
