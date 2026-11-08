@@ -50,7 +50,7 @@ export function Gallery({ items, name }: { items: GalleryItem[]; name: string })
         {open !== null && (
           <>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={items[open].url} alt={`Foto ${open + 1} de ${name}`} />
+            <img key={open} className="lightbox__img" src={items[open].url} alt={`Foto ${open + 1} de ${name}`} />
             <button className="lightbox__btn lightbox__close" onClick={() => setOpen(null)} aria-label="Cerrar">
               <Icon name="close" />
             </button>

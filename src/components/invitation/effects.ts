@@ -111,22 +111,20 @@ export function startBalloons(box: HTMLElement, colors: string[]) {
     const b = document.createElement("div");
     b.className = "balloon";
     const dur = 13 + Math.random() * 7;
-    Object.assign(b.style, {
-      left: `${Math.random() * 90}%`,
-      width: `${40 + Math.random() * 26}px`,
-      animationDuration: `${dur}s`,
-    });
-    b.innerHTML = `<svg viewBox="0 0 60 110" aria-hidden="true">
-      <path d="M30 62 C30 80 22 88 30 108" stroke="#8a6a4a" stroke-width="1.5" fill="none"/>
-      <ellipse cx="30" cy="30" rx="24" ry="29" fill="${c}"/>
-      <path d="M26 58 L34 58 L30 64 Z" fill="${c}"/>
-      <ellipse cx="21" cy="19" rx="5" ry="9" fill="#fff" opacity=".45" transform="rotate(-20 21 19)"/>
-    </svg>`;
+    b.style.left = `${Math.random() * 90}%`;
+    // Globo «3D»: esfera con luz y sombra en CSS; los pequeños quedan al fondo (más tenues y lentos)
+    const depth = 0.55 + Math.random() * 0.6;
+    b.style.setProperty("--c", c);
+    b.style.setProperty("--z", depth.toFixed(2));
+    b.style.width = `${Math.round(34 + depth * 30)}px`;
+    b.style.animationDuration = `${(dur / depth).toFixed(1)}s`;
+    b.style.zIndex = depth > 0.9 ? "1" : "0";
+    b.innerHTML = '<span class="balloon__body"></span><span class="balloon__string"></span>';
     box.appendChild(b);
     const t = setTimeout(() => {
       b.remove();
       timers.delete(t);
-    }, dur * 1000);
+    }, (dur / depth) * 1000 + 500);
     timers.add(t);
   }
 

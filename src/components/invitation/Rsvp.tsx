@@ -31,7 +31,8 @@ export function Rsvp({ view, fx }: { view: InvitationView; fx: Fx }) {
         <span>Tu nombre</span>
         <input name="nombre" required autoComplete="name" placeholder="Ej. Familia Pérez" />
       </label>
-      <div className="choice" role="radiogroup" aria-label="Asistencia">
+      <div className="choice" role="radiogroup" aria-label="Asistencia" data-on={attending ? "yes" : "no"}>
+        <span className="choice__thumb" aria-hidden="true" />
         <label>
           <input type="radio" name="asiste" checked={attending} onChange={() => setAttending(true)} />
           <span>¡Sí voy!</span>
@@ -49,6 +50,7 @@ export function Rsvp({ view, fx }: { view: InvitationView; fx: Fx }) {
               −
             </button>
             <input
+              className="stepper__value"
               aria-labelledby="personas-label"
               type="number"
               min={1}

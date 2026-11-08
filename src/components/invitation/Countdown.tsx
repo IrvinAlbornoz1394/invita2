@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
 const UNITS = [
   { key: "d", label: "Días", tone: "primary" },
-  { key: "h", label: "Horas", tone: "highlight" },
+  { key: "h", label: "Horas", tone: "secondary" },
   { key: "m", label: "Minutos", tone: "accent" },
-  { key: "s", label: "Segundos", tone: "surface" },
+  { key: "s", label: "Segundos", tone: "highlight" },
 ] as const;
 
 type Left = Record<(typeof UNITS)[number]["key"], number>;
@@ -39,8 +39,8 @@ export function Countdown({ target, doneText }: { target: string; doneText: stri
   return (
     <div className="countdown">
       {UNITS.map((u, i) => (
-        <div key={u.key} className={`cd cd--${u.tone}`} data-reveal="up" style={{ "--rd": `${i * 0.1}s` } as CSSProperties}>
-          <Num value={left ? left[u.key] : 0} />
+        <div key={u.key} className={`cd cd--${u.tone}`} data-reveal="up" style={{ "--rd": `${i * 0.08}s` } as CSSProperties}>
+          <Flip value={String(left ? left[u.key] : 0).padStart(2, "0")} />
           <span className="cd__lbl">{u.label}</span>
         </div>
       ))}
@@ -48,20 +48,27 @@ export function Countdown({ target, doneText }: { target: string; doneText: stri
   );
 }
 
-function Num({ value }: { value: number }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const txt = String(value).padStart(2, "0");
+/**
+ * Tarjeta que se voltea como un reloj de paletas: la mitad de arriba del número
+ * anterior cae y descubre el nuevo. Cada capa ocupa la tarjeta completa y se
+ * recorta a su mitad, así el pliegue queda justo en el centro.
+ */
+function Flip({ value }: { value: string }) {
+  const [pair, setPair] = useState({ from: value, to: value, n: 0 });
+  // Se ajusta durante el render (patrón de React para «valor anterior»)
+  if (pair.to !== value) setPair({ from: pair.to, to: value, n: pair.n + 1 });
 
-  useEffect(() => {
-    const el = ref.current!;
-    el.classList.remove("tick");
-    void el.offsetWidth;
-    el.classList.add("tick");
-  }, [txt]);
-
+  const { from, to, n } = pair;
   return (
-    <span ref={ref} className="cd__num">
-      {txt}
+    <span className="flip" aria-label={to} role="img">
+      <span className="flip__half flip__half--top" aria-hidden="true">{to}</span>
+      <span className="flip__half flip__half--bottom" aria-hidden="true">{n ? from : to}</span>
+      {n > 0 && (
+        <span key={n} className="flip__fold" aria-hidden="true">
+          <span className="flip__half flip__half--top flip__leaf-out">{from}</span>
+          <span className="flip__half flip__half--bottom flip__leaf-in">{to}</span>
+        </span>
+      )}
     </span>
   );
 }

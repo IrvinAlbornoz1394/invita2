@@ -1,9 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { flushSync } from "react-dom";
 import type { BlockKey, InvitationView } from "@/lib/view";
 import { calendarStamp } from "@/lib/dates";
-import { burstFrom, createConfetti, createMusic, startBalloons, type Fx } from "./effects";
+import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, stars, type Fx } from "./effects";
 import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
@@ -27,6 +28,9 @@ type Props = { view: InvitationView; preview?: boolean };
 
 /** Secciones que conservan el diseño original (pedido del cliente) */
 const CLASSIC = new Set<BlockKey>(["countdown", "details", "show", "extras", "rsvp"]);
+
+/** Esferas brillantes que flotan en la portada a distintas profundidades (fijas: SSR y cliente coinciden) */
+const ORBS = stars(7).map((o, i) => ({ ...o, tone: ["primary", "secondary", "highlight", "accent"][i % 4], depth: 0.5 + (i % 3) * 0.3 }));
 
 /** Inclinación leve de cada letra del nombre: juguetón, pero legible */
 const ROT = [-3, 2, -2, 3, -2, 1, -3, 2, -1];
@@ -125,11 +129,26 @@ export function Invitation({ view, preview = false }: Props) {
     setOpening(true);
     const m = musicRef.current;
     m?.play().then(() => setPlaying(m.playing));
+    const r = e.currentTarget.getBoundingClientRect();
     burstFrom(fx, e.currentTarget, theme.introStyle === "gift" ? 160 : 220, theme.introStyle === "balloon" ? 0.32 : 0.5);
     setTimeout(() => {
-      setStarted(true);
+      reveal(r.left + r.width / 2, r.top + r.height / 2);
       setTimeout(() => fx.rain(90), 900);
     }, OPEN_DELAY[theme.introStyle]);
+  }
+
+  /** La portada aparece en un círculo que crece desde el regalo (View Transitions; sin soporte, fundido) */
+  function reveal(x: number, y: number) {
+    const html = document.documentElement;
+    if (!document.startViewTransition || reducedMotion()) {
+      setStarted(true);
+      return;
+    }
+    html.style.setProperty("--iris-x", `${x}px`);
+    html.style.setProperty("--iris-y", `${y}px`);
+    html.classList.add("inv-iris");
+    const vt = document.startViewTransition(() => flushSync(() => setStarted(true)));
+    vt.finished.finally(() => html.classList.remove("inv-iris"));
   }
 
   function toggleMusic() {
@@ -160,11 +179,31 @@ export function Invitation({ view, preview = false }: Props) {
       </div>
 
       <canvas ref={canvasRef} className="confetti" aria-hidden="true" />
+      {started && <div className="progress" aria-hidden="true" />}
 
       <main>
         {/* ===================== Portada ===================== */}
         <header className="hero" id="inicio">
           <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
+          <div className="hero__glow" aria-hidden="true" />
+          <div className="orbs" aria-hidden="true">
+            {ORBS.map((o, i) => (
+              <span
+                key={i}
+                className={`orb orb--${o.tone}`}
+                style={
+                  {
+                    left: `${o.left}%`,
+                    top: `${o.top}%`,
+                    "--s": `${Math.round(o.size * 1.6 * o.depth)}px`,
+                    "--z": o.depth,
+                    "--d": `${o.delay}s`,
+                    "--t": `${o.duration * 2.4}s`,
+                  } as CSSProperties
+                }
+              />
+            ))}
+          </div>
           <div className="balloons" ref={balloonsRef} aria-hidden="true" />
 
           <div className="hero__inner">
@@ -185,8 +224,10 @@ export function Invitation({ view, preview = false }: Props) {
 
             {view.photoUrl && (
               <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
+                <Orbit layer="back" />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={view.photoUrl} alt={view.firstName} />
+                <Orbit layer="front" />
                 {view.age != null && <span className="portrait__age">{view.age}</span>}
               </div>
             )}
@@ -261,11 +302,39 @@ export function Invitation({ view, preview = false }: Props) {
   );
 }
 
+/**
+ * Estrellitas que giran alrededor de la foto. Se pinta dos veces: la capa de
+ * atrás queda bajo la foto y la de adelante solo muestra la mitad inferior
+ * del óvalo, así parece que pasan por detrás y por delante.
+ */
+function Orbit({ layer }: { layer: "back" | "front" }) {
+  return (
+    <span className={`orbit orbit--${layer}`} aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <i key={i}>
+          <b />
+        </i>
+      ))}
+    </span>
+  );
+}
+
 /* ---------------- Nombre: cada letra cae en su lugar al abrir ---------------- */
 function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap: (x: number, y: number) => void }) {
   let n = 0;
   return (
-    <h1 className="title" aria-label={label} onClick={(e) => onTap(e.clientX, e.clientY)}>
+    <h1
+      className="title"
+      aria-label={label}
+      onClick={(e) => {
+        onTap(e.clientX, e.clientY);
+        const ch = (e.target as HTMLElement).closest<HTMLElement>(".ch");
+        if (!ch) return;
+        ch.classList.remove("is-boing");
+        void ch.offsetWidth;
+        ch.classList.add("is-boing");
+      }}
+    >
       {lines.map((word, w) => (
         <span key={w} className="word" aria-hidden="true" style={{ "--len": Math.max(word.length, 5) } as CSSProperties}>
           {[...word].map((ch, c) => {
@@ -468,11 +537,28 @@ function Opener({
     );
 
   return (
-    <button className={`gift${open}`} onClick={onOpen} aria-label="Abrir invitación">
-      <span className="gift__lid">
-        <span className="gift__bow" />
+    <button className={`gift3d${open}`} onClick={onOpen} aria-label="Abrir invitación">
+      <span className="gift3d__shadow" aria-hidden="true" />
+      <span className="gift3d__light" aria-hidden="true" />
+      <span className="gift3d__float" aria-hidden="true">
+        <span className="gift3d__scene">
+          <span className="g-face g-front" />
+          <span className="g-face g-back" />
+          <span className="g-face g-right" />
+          <span className="g-face g-left" />
+          <span className="g-face g-bottom" />
+          <span className="g-face g-inside" />
+          <span className="gift3d__lid">
+            <span className="g-lid g-lid--front" />
+            <span className="g-lid g-lid--back" />
+            <span className="g-lid g-lid--right" />
+            <span className="g-lid g-lid--left" />
+            <span className="g-lid-top" />
+            <span className="g-bow" />
+            <span className="g-bow g-bow--cross" />
+          </span>
+        </span>
       </span>
-      <span className="gift__box" />
     </button>
   );
 }
@@ -482,23 +568,11 @@ function Card({ view }: { view: InvitationView }) {
   const ref = useRef<HTMLDivElement>(null);
   const hasImage = Boolean(view.theme.cardUrl);
 
-  function move(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.pointerType !== "mouse") return;
-    const card = ref.current!;
-    const r = card.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width;
-    const y = (e.clientY - r.top) / r.height;
-    card.style.setProperty("--ry", `${(x - 0.5) * 8}deg`);
-    card.style.setProperty("--rx", `${(0.5 - y) * 8}deg`);
-  }
-  function leave() {
-    const card = ref.current!;
-    card.style.setProperty("--rx", "0deg");
-    card.style.setProperty("--ry", "0deg");
-  }
+  const tilt = useTilt(ref, 10);
 
   return (
-    <div ref={ref} className={`card${hasImage ? "" : " card--plain"}`} data-reveal onPointerMove={move} onPointerLeave={leave}>
+    <div ref={ref} className={`card tilt${hasImage ? "" : " card--plain"}`} data-reveal {...tilt}>
+      <span className="tilt__glare" aria-hidden="true" />
       <div className="card__art">
         <div className={`sunburst sunburst--${view.theme.bgStyle}`} aria-hidden="true" />
         {hasImage && (
@@ -611,6 +685,50 @@ function Details({ view, decor }: { view: InvitationView; decor: string[] }) {
   );
 }
 
+/* ---------------- Inclinación 3D con brillo ---------------- */
+/**
+ * Inclina el elemento hacia el puntero y mueve un brillo encima. Con el dedo
+ * también responde mientras se arrastra, y al soltar vuelve a su lugar.
+ * Escribe el transform directo en el elemento (no variables heredadas).
+ */
+function useTilt(ref: React.RefObject<HTMLElement | null>, max = 8) {
+  const frame = useRef(0);
+  function set(e: React.PointerEvent) {
+    const el = ref.current;
+    if (!el || reducedMotion()) return;
+    const r = el.getBoundingClientRect();
+    const x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    const y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    cancelAnimationFrame(frame.current);
+    frame.current = requestAnimationFrame(() => {
+      el.classList.add("is-tilting");
+      el.style.transform = `perspective(900px) rotateX(${(0.5 - y) * max}deg) rotateY(${(x - 0.5) * max}deg) scale(1.02)`;
+      el.style.setProperty("--gx", `${x * 100}%`);
+      el.style.setProperty("--gy", `${y * 100}%`);
+    });
+  }
+  function reset() {
+    const el = ref.current;
+    if (!el) return;
+    cancelAnimationFrame(frame.current);
+    el.classList.remove("is-tilting");
+    el.style.transform = "";
+  }
+  return { onPointerMove: set, onPointerDown: set, onPointerLeave: reset, onPointerUp: reset, onPointerCancel: reset };
+}
+
+function ShowImage({ url, alt, framed }: { url: string; alt: string; framed: boolean }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const tilt = useTilt(ref, 12);
+  return (
+    <div ref={ref} className={`show-img show-img--${framed ? "framed" : "plain"}${framed ? " tilt" : ""}`} data-reveal="zoom" {...tilt}>
+      {framed && <span className="tilt__glare" aria-hidden="true" />}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={alt} loading="lazy" />
+    </div>
+  );
+}
+
 /* ---------------- Show ---------------- */
 function ShowBlock({ view, fx, say }: { view: InvitationView; fx: Fx; say: (t: string) => void }) {
   const { show } = view;
@@ -638,12 +756,7 @@ function ShowBlock({ view, fx, say }: { view: InvitationView; fx: Fx; say: (t: s
           </span>
         </p>
       )}
-      {show.image_url && (
-        <div className={`show-img show-img--${show.image_style ?? "framed"}`} data-reveal="zoom">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={show.image_url} alt={show.title || ""} loading="lazy" />
-        </div>
-      )}
+      {show.image_url && <ShowImage url={show.image_url} alt={show.title || ""} framed={(show.image_style ?? "framed") === "framed"} />}
       {show.title && (
         <p className="show-name" data-reveal="up">
           {show.title}
