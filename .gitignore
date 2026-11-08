@@ -49,3 +49,6 @@ next-env.d.ts
 /.impeccable/mocks/
 /.impeccable/questions/
 /.impeccable/ref/
+
+# Metadatos de Windows al copiar a WSL
+*:Zone.Identifier
