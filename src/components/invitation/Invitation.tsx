@@ -314,10 +314,9 @@ export function Invitation({ view, preview = false }: Props) {
 
               {view.photoUrl && (
                 <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
-                  <Orbit layer="back" />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={view.photoUrl} alt={view.firstName} />
-                  <Orbit layer="front" />
+                  <span className="portrait__shine" aria-hidden="true" />
                   {view.age != null && <span className="portrait__age">{view.age}</span>}
                 </div>
               )}
@@ -493,23 +492,6 @@ function Chalice() {
       <path className="chalice__cup" d="M14 30h36c0 12-7 20-18 20S14 42 14 30z" />
       <path className="chalice__stem" d="M32 50v10M22 66c0-4 4-6 10-6s10 2 10 6z" />
     </svg>
-  );
-}
-
-/**
- * Estrellitas que giran alrededor de la foto. Se pinta dos veces: la capa de
- * atrás queda bajo la foto y la de adelante solo muestra la mitad inferior
- * del óvalo, así parece que pasan por detrás y por delante.
- */
-function Orbit({ layer }: { layer: "back" | "front" }) {
-  return (
-    <span className={`orbit orbit--${layer}`} aria-hidden="true">
-      {[0, 1, 2, 3, 4].map((i) => (
-        <i key={i}>
-          <b />
-        </i>
-      ))}
-    </span>
   );
 }
 
