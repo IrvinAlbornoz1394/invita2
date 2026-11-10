@@ -17,10 +17,10 @@ export function Rsvp({ view, fx }: { view: InvitationView; fx: Fx }) {
     e.preventDefault();
     const form = e.currentTarget;
     const name = String(new FormData(form).get("nombre") ?? "").trim();
-    const of = `${view.eventLabel} de ${view.fullName}`;
+    const of = `${view.toEvent} de ${view.fullName}`;
     const msg = attending
-      ? `¡Hola! Soy ${name} y confirmo mi asistencia al ${of} el ${view.shortDate}. Asistiremos ${people} ${people === 1 ? "persona" : "personas"}.`
-      : `¡Hola! Soy ${name}. Lamentablemente no podré asistir al ${of}. ¡Muchas felicidades!`;
+      ? `¡Hola! Soy ${name} y confirmo mi asistencia ${of} el ${view.shortDate}. Asistiremos ${people} ${people === 1 ? "persona" : "personas"}.`
+      : `¡Hola! Soy ${name}. Lamentablemente no podré asistir ${of}. ¡Muchas felicidades!`;
     burstFrom(fx, form.querySelector("[type=submit]")!, 90, 0);
     window.open(`https://wa.me/${view.whatsapp ?? ""}?text=${encodeURIComponent(msg)}`, "_blank");
   }

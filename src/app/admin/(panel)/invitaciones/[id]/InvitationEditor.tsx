@@ -4,23 +4,31 @@ import { useEffect, useEffectEvent, useRef, useState, useTransition } from "reac
 import Link from "next/link";
 import { utcToZoned } from "@/lib/dates";
 import {
+  ageRibbon,
   DEFAULT_SECTIONS,
   DEFAULT_TEXTS,
+  EVENT_TEXTS,
+  EVENT_TYPES,
+  eventType,
   EXTRAS_CATALOG,
+  isReligious,
   SECTION_LABELS,
   TEXT_LABELS,
   TIMEZONES,
+  toEvent,
+  type EventType,
 } from "@/lib/defaults";
 import type { InvitationInput } from "@/lib/schema";
 import type { Extra, ImageStyle, Invitation, Performer, SectionKey, ShowImageSource, TextKey, Theme } from "@/lib/types";
 import { showImageSource } from "@/lib/view";
-import { deleteInvitation, duplicateInvitation, saveInvitation } from "../../../actions";
+import { duplicateInvitation, saveInvitation } from "../../../actions";
+import { InvitationActions } from "../../../InvitationActions";
 import { CopyLink } from "../../../CopyLink";
 import { MediaField } from "../../../MediaField";
 import { uploadMedia } from "../../../upload";
 import styles from "../../../admin.module.css";
 
-type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style">;
+type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "event_type">;
 
 type Form = {
   published: boolean;
@@ -32,6 +40,7 @@ type Form = {
   date: string;
   time: string;
   timezone: string;
+  event_type: EventType;
   event_label: string;
   venue_name: string;
   address: string;
@@ -51,6 +60,9 @@ type Form = {
   };
   extras: Extra[];
   gallery: { url: string }[];
+  /** Un nombre por renglón */
+  family: { parents: string; godparents: string; parents_photo: string | null; godparents_photo: string | null };
+  ceremony: { enabled: boolean; time: string; place: string; address: string; maps_url: string };
   sections: Record<SectionKey, boolean>;
   texts: Record<TextKey, string>;
 };
@@ -58,6 +70,7 @@ type Form = {
 function toForm(inv: Invitation): Form {
   const { date, time } = utcToZoned(inv.event_at, inv.timezone);
   const lines = [...inv.name_lines, "", "", ""].slice(0, 3) as Form["name_lines"];
+  const type = eventType(inv.event_type);
   return {
     published: inv.published,
     theme_id: inv.theme_id ?? "",
@@ -68,6 +81,7 @@ function toForm(inv: Invitation): Form {
     date,
     time,
     timezone: inv.timezone,
+    event_type: type,
     event_label: inv.event_label,
     venue_name: inv.venue_name ?? "",
     address: inv.address ?? "",
@@ -87,8 +101,23 @@ function toForm(inv: Invitation): Form {
     },
     extras: inv.extras ?? [],
     gallery: inv.gallery ?? [],
+    family: {
+      parents: (inv.family?.parents ?? []).join("\n"),
+      godparents: (inv.family?.godparents ?? []).join("\n"),
+      parents_photo: inv.family?.parents_photo ?? null,
+      godparents_photo: inv.family?.godparents_photo ?? null,
+    },
+    ceremony: {
+      enabled: inv.ceremony?.enabled ?? false,
+      time: inv.ceremony?.time ?? "",
+      place: inv.ceremony?.place ?? "",
+      address: inv.ceremony?.address ?? "",
+      maps_url: inv.ceremony?.maps_url ?? "",
+    },
     sections: { ...DEFAULT_SECTIONS, ...inv.sections },
-    texts: Object.fromEntries((Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [k, inv.texts?.[k] || DEFAULT_TEXTS[k]])) as Form["texts"],
+    texts: Object.fromEntries(
+      (Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [k, inv.texts?.[k] || EVENT_TEXTS[type][k]])
+    ) as Form["texts"],
   };
 }
 
@@ -98,8 +127,36 @@ function toInput(f: Form): InvitationInput {
     theme_id: f.theme_id || null,
     age: f.age === "" ? null : Number(f.age),
     show: { ...f.show, time: f.show.time || null },
+    family: { ...f.family, parents: lines(f.family.parents), godparents: lines(f.family.godparents) },
+    ceremony: { ...f.ceremony, time: f.ceremony.time || null },
     // Solo se guardan los textos cambiados: los demás siguen al texto de ejemplo
-    texts: Object.fromEntries(Object.entries(f.texts).filter(([k, v]) => v.trim() !== DEFAULT_TEXTS[k as TextKey])),
+    texts: Object.fromEntries(
+      Object.entries(f.texts).filter(([k, v]) => v.trim() !== EVENT_TEXTS[f.event_type][k as TextKey])
+    ),
+  };
+}
+
+const lines = (s: string) => s.split("\n").map((l) => l.trim()).filter(Boolean);
+
+/**
+ * Cambia el tipo de evento: lo que seguía el ejemplo del tipo anterior (textos,
+ * nombre del evento, cinta) pasa al del nuevo; lo personalizado se queda.
+ */
+function switchType(f: Form, next: EventType): Form {
+  const prev = f.event_type;
+  const age = f.age === "" ? null : Number(f.age);
+  return {
+    ...f,
+    event_type: next,
+    event_label: f.event_label.trim() === EVENT_TYPES[prev].eventLabel ? EVENT_TYPES[next].eventLabel : f.event_label,
+    age_text: f.age_text.trim() === ageRibbon(age, prev) || !f.age_text.trim() ? ageRibbon(age, next) : f.age_text,
+    texts: Object.fromEntries(
+      (Object.keys(f.texts) as TextKey[]).map((k) => [
+        k,
+        f.texts[k].trim() === EVENT_TEXTS[prev][k] ? EVENT_TEXTS[next][k] : f.texts[k],
+      ])
+    ) as Form["texts"],
+    ceremony: isReligious(next) && !f.ceremony.place && !f.ceremony.address ? { ...f.ceremony, enabled: true } : f.ceremony,
   };
 }
 
@@ -187,6 +244,11 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   }
 
   const theme = themes.find((t) => t.id === form.theme_id);
+  const religious = isReligious(form.event_type);
+  const typeTexts = EVENT_TEXTS[form.event_type];
+  // Temas del tipo de evento primero; los demás siguen disponibles
+  const fitting = themes.filter((t) => !t.event_type || t.event_type === form.event_type);
+  const others = themes.filter((t) => t.event_type && t.event_type !== form.event_type);
   const fullName = form.name_lines.filter(Boolean).join(" ") || "Sin nombre";
   const usedExtras = new Set(form.extras.map((x) => x.label.toLowerCase()));
 
@@ -202,6 +264,11 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
             <span className={`${styles.badge} ${form.published ? styles.badgeOk : ""}`}>
               {form.published ? "Publicada" : "Borrador"}
             </span>{" "}
+            {!invitation.is_active && (
+              <>
+                <span className={`${styles.badge} ${styles.badgeOff}`}>Desactivada</span>{" "}
+              </>
+            )}
             <span className={styles.mono}>/{invitation.slug}</span>
           </p>
         </div>
@@ -214,6 +281,25 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
             <h2 className={styles.cardTitle}>Festejado</h2>
             <p className={styles.cardHint}>Cada renglón del nombre aparece en su propia línea en la portada.</p>
             <div className={styles.grid}>
+              <div className={styles.field}>
+                <span className={styles.label}>Tipo de evento</span>
+                <div className={styles.chips}>
+                  {(Object.keys(EVENT_TYPES) as EventType[]).map((t) => (
+                    <label key={t} className={styles.check}>
+                      <input
+                        type="radio"
+                        name="event_type"
+                        checked={form.event_type === t}
+                        onChange={() => setForm((f) => switchType(f, t))}
+                      />
+                      <span aria-hidden="true">{EVENT_TYPES[t].emoji}</span> {EVENT_TYPES[t].label}
+                    </label>
+                  ))}
+                </div>
+                <span className={styles.help}>
+                  Cambia los textos de ejemplo, los extras sugeridos y las secciones (ceremonia, papás y padrinos).
+                </span>
+              </div>
               <div className={styles.grid3}>
                 {form.name_lines.map((line, i) => (
                   <label key={i} className={styles.field}>
@@ -236,7 +322,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
               </div>
               <div className={styles.grid2}>
                 <label className={styles.field}>
-                  <span className={styles.label}>Edad (número en la foto)</span>
+                  <span className={styles.label}>Edad (número en la foto{religious ? ", opcional" : ""})</span>
                   <input
                     className={styles.input}
                     type="number"
@@ -247,11 +333,11 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                   />
                 </label>
                 <label className={styles.field}>
-                  <span className={styles.label}>Texto de edad</span>
+                  <span className={styles.label}>{religious ? "Cinta bajo el nombre" : "Texto de edad"}</span>
                   <input
                     className={styles.input}
                     value={form.age_text}
-                    placeholder="Mi primer añito"
+                    placeholder={ageRibbon(null, form.event_type)}
                     onChange={(e) => patch({ age_text: e.target.value })}
                   />
                 </label>
@@ -269,7 +355,11 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
           {/* ---------------- Cuándo y dónde ---------------- */}
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Cuándo y dónde</h2>
-            <p className={styles.cardHint}>La cuenta regresiva y el botón de agendar usan esta fecha y hora.</p>
+            <p className={styles.cardHint}>
+              {religious
+                ? "Fecha y hora de la recepción. Si hay ceremonia, la cuenta regresiva llega a la hora de la ceremonia."
+                : "La cuenta regresiva y el botón de agendar usan esta fecha y hora."}
+            </p>
             <div className={styles.grid}>
               <div className={styles.grid3}>
                 <label className={styles.field}>
@@ -292,20 +382,20 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                 </label>
               </div>
               <label className={styles.field}>
-                <span className={styles.label}>Tipo de evento</span>
+                <span className={styles.label}>Nombre del evento</span>
                 <input
                   className={styles.input}
                   value={form.event_label}
-                  placeholder="cumpleaños"
+                  placeholder={EVENT_TYPES[form.event_type].eventLabel}
                   onChange={(e) => patch({ event_label: e.target.value })}
                 />
                 <span className={styles.help}>
-                  Se usa en el mensaje de WhatsApp y el calendario: “confirmo mi asistencia al <b>{form.event_label || "…"}</b> de{" "}
+                  Se usa en el mensaje de WhatsApp y el calendario: “confirmo mi asistencia <b>{toEvent(form.event_label || "…")}</b> de{" "}
                   {fullName}”.
                 </span>
               </label>
               <label className={styles.field}>
-                <span className={styles.label}>Nombre del lugar (opcional)</span>
+                <span className={styles.label}>{religious ? "Lugar de la recepción (opcional)" : "Nombre del lugar (opcional)"}</span>
                 <input
                   className={styles.input}
                   value={form.venue_name}
@@ -349,6 +439,109 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
             </div>
           </section>
 
+          {/* ---------------- Ceremonia religiosa ---------------- */}
+          {(religious || form.ceremony.enabled) && (
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>Ceremonia religiosa</h2>
+              <p className={styles.cardHint}>La misa o celebración en la iglesia, antes de la recepción. Tiene su propio “Cómo llegar”.</p>
+              <label className={styles.switch}>
+                <input
+                  type="checkbox"
+                  checked={form.ceremony.enabled}
+                  onChange={(e) => patch({ ceremony: { ...form.ceremony, enabled: e.target.checked } })}
+                />
+                Habrá ceremonia
+              </label>
+              {form.ceremony.enabled && (
+                <div className={styles.grid} style={{ marginTop: 16 }}>
+                  <div className={styles.grid2}>
+                    <label className={styles.field}>
+                      <span className={styles.label}>Hora de la ceremonia</span>
+                      <input
+                        className={styles.input}
+                        type="time"
+                        value={form.ceremony.time}
+                        onChange={(e) => patch({ ceremony: { ...form.ceremony, time: e.target.value } })}
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span className={styles.label}>Iglesia o parroquia</span>
+                      <input
+                        className={styles.input}
+                        value={form.ceremony.place}
+                        placeholder="Parroquia de San Juan"
+                        onChange={(e) => patch({ ceremony: { ...form.ceremony, place: e.target.value } })}
+                      />
+                    </label>
+                  </div>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Dirección</span>
+                    <input
+                      className={styles.input}
+                      value={form.ceremony.address}
+                      placeholder="Calle 62 #500, Centro, Mérida"
+                      onChange={(e) => patch({ ceremony: { ...form.ceremony, address: e.target.value } })}
+                    />
+                  </label>
+                  <label className={styles.field}>
+                    <span className={styles.label}>Enlace de Google Maps (opcional)</span>
+                    <input
+                      className={styles.input}
+                      value={form.ceremony.maps_url}
+                      placeholder="https://maps.app.goo.gl/…"
+                      onChange={(e) => patch({ ceremony: { ...form.ceremony, maps_url: e.target.value } })}
+                    />
+                  </label>
+                </div>
+              )}
+            </section>
+          )}
+
+          {/* ---------------- Papás y padrinos ---------------- */}
+          {(religious || form.family.parents.trim() || form.family.godparents.trim() || form.family.parents_photo || form.family.godparents_photo) && (
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>Papás y padrinos</h2>
+              <p className={styles.cardHint}>
+                Un nombre por renglón. La foto es opcional: con ella se muestra en círculo arriba de los nombres. Si dejas todo
+                vacío, la sección no aparece.
+              </p>
+              <div className={styles.grid2}>
+                <label className={styles.field}>
+                  <span className={styles.label}>Papás</span>
+                  <textarea
+                    className={styles.textarea}
+                    rows={3}
+                    value={form.family.parents}
+                    placeholder={"Ana López\nCarlos Pérez"}
+                    onChange={(e) => patch({ family: { ...form.family, parents: e.target.value } })}
+                  />
+                </label>
+                <MediaField
+                  label="Foto de los papás (opcional)"
+                  value={form.family.parents_photo}
+                  onChange={(parents_photo) => patch({ family: { ...form.family, parents_photo } })}
+                  folder={`${folder}/familia`}
+                />
+                <label className={styles.field}>
+                  <span className={styles.label}>Padrinos</span>
+                  <textarea
+                    className={styles.textarea}
+                    rows={3}
+                    value={form.family.godparents}
+                    placeholder={"Laura Gómez\nJorge Ruiz"}
+                    onChange={(e) => patch({ family: { ...form.family, godparents: e.target.value } })}
+                  />
+                </label>
+                <MediaField
+                  label="Foto de los padrinos (opcional)"
+                  value={form.family.godparents_photo}
+                  onChange={(godparents_photo) => patch({ family: { ...form.family, godparents_photo } })}
+                  folder={`${folder}/familia`}
+                />
+              </div>
+            </section>
+          )}
+
           {/* ---------------- Tema ---------------- */}
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Tema</h2>
@@ -358,11 +551,22 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                 <span className={styles.label}>Tema</span>
                 <select className={styles.select} value={form.theme_id} onChange={(e) => patch({ theme_id: e.target.value })}>
                   <option value="">Sin tema (colores por defecto)</option>
-                  {themes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
+                  <optgroup label={`Para ${EVENT_TYPES[form.event_type].label.toLowerCase()}`}>
+                    {fitting.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  {others.length > 0 && (
+                    <optgroup label="De otros eventos">
+                      {others.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} · {EVENT_TYPES[t.event_type!].label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </label>
               {theme && (
@@ -534,10 +738,10 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
 
           {/* ---------------- Extras ---------------- */}
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Extras de la fiesta</h2>
+            <h2 className={styles.cardTitle}>{religious ? "Extras de la celebración" : "Extras de la fiesta"}</h2>
             <p className={styles.cardHint}>Toca para agregar; luego puedes cambiar el nombre, el emoji o añadir una nota.</p>
             <div className={styles.chips}>
-              {EXTRAS_CATALOG.map((x) => (
+              {EXTRAS_CATALOG[form.event_type].map((x) => (
                 <button
                   key={x.label}
                   type="button"
@@ -721,11 +925,11 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                       <label className={styles.label} htmlFor={`text-${k}`}>
                         {TEXT_LABELS[k]}
                       </label>
-                      {form.texts[k].trim() !== DEFAULT_TEXTS[k] && (
+                      {form.texts[k].trim() !== typeTexts[k] && (
                         <button
                           type="button"
                           className={styles.restore}
-                          onClick={() => patch({ texts: { ...form.texts, [k]: DEFAULT_TEXTS[k] } })}
+                          onClick={() => patch({ texts: { ...form.texts, [k]: typeTexts[k] } })}
                         >
                           Restaurar
                         </button>
@@ -735,7 +939,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                       id={`text-${k}`}
                       className={styles.input}
                       value={form.texts[k]}
-                      placeholder={DEFAULT_TEXTS[k] || "Según la apertura del tema (ej. Toca el regalo)"}
+                      placeholder={typeTexts[k] || "Según la apertura del tema (ej. Toca el regalo)"}
                       onChange={(e) => patch({ texts: { ...form.texts, [k]: e.target.value } })}
                     />
                   </div>
@@ -749,7 +953,11 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
         <aside className={styles.side}>
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Publicación</h2>
-            <p className={styles.cardHint}>Mientras sea borrador, el enlace lleva a la página principal.</p>
+            <p className={styles.cardHint}>
+              {invitation.is_active
+                ? "Mientras sea borrador, el enlace lleva a la página principal."
+                : "Está desactivada: el enlace lleva a la página principal aunque esté publicada. Actívala abajo."}
+            </p>
             <div className={styles.grid}>
               <label className={styles.switch}>
                 <input
@@ -783,14 +991,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
               <form action={duplicateInvitation.bind(null, invitation.id)}>
                 <button className={`${styles.btn} ${styles.btnSmall}`}>Duplicar</button>
               </form>
-              <form
-                action={deleteInvitation.bind(null, invitation.id)}
-                onSubmit={(e) => {
-                  if (!confirm(`¿Borrar la invitación de ${fullName}? Esto no se puede deshacer.`)) e.preventDefault();
-                }}
-              >
-                <button className={`${styles.btn} ${styles.btnSmall} ${styles.btnDanger}`}>Borrar</button>
-              </form>
+              <InvitationActions id={invitation.id} name={fullName} active={invitation.is_active} />
             </div>
           </section>
         </aside>

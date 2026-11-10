@@ -9,8 +9,8 @@ export const invitationTag = (slug: string) => `inv:${slug}`;
 export const themeTag = (id: string) => `theme:${id}`;
 
 /**
- * Invitación publicada, cacheada hasta que el panel la cambie (updateTag).
- * Devuelve null si no existe o no está publicada.
+ * Invitación publicada, activa y no borrada, cacheada hasta que el panel la
+ * cambie (updateTag). Devuelve null en cualquier otro caso.
  */
 export async function getPublishedInvitation(slug: string): Promise<InvitationWithTheme | null> {
   "use cache";
@@ -22,6 +22,8 @@ export async function getPublishedInvitation(slug: string): Promise<InvitationWi
     .select(INVITATION_SELECT)
     .eq("slug", slug)
     .eq("published", true)
+    .eq("is_active", true)
+    .eq("is_deleted", false)
     .maybeSingle();
 
   if (error) throw error;
@@ -43,6 +45,8 @@ export async function getLandingThemes(): Promise<LandingTheme[]> {
     .from("themes")
     .select("id, name, logo_url, card_url, group_url")
     .or("logo_url.not.is.null,card_url.not.is.null")
+    .eq("is_active", true)
+    .eq("is_deleted", false)
     .order("created_at");
 
   if (error) throw error;

@@ -1,12 +1,12 @@
 "use server";
 
-import { updateTag } from "next/cache";
+import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { invitationTag, themeTag, themesTag } from "@/lib/data";
 import { zonedToUtc } from "@/lib/dates";
-import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATION } from "@/lib/defaults";
+import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, RECEPTION_AFTER_HOURS } from "@/lib/defaults";
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
 import { invitationSlug } from "@/lib/slug";
 import { resolveMapsDestination } from "@/lib/maps";
@@ -31,6 +31,7 @@ export async function createInvitation(_prev: ActionResult | null, formData: For
   const time = String(formData.get("time") ?? "");
   const timezone = String(formData.get("timezone") ?? "America/Merida");
   const themeId = String(formData.get("theme_id") ?? "") || null;
+  const type = eventType(String(formData.get("event_type") ?? ""));
   const ageRaw = Number(formData.get("age") || NaN);
   const age = Number.isInteger(ageRaw) && ageRaw >= 0 && ageRaw <= 120 ? ageRaw : null;
 
@@ -41,17 +42,24 @@ export async function createInvitation(_prev: ActionResult | null, formData: For
   const words = name.split(/\s+/);
   const nameLines = words.length <= 3 ? words : [words.slice(0, -1).join(" "), words.at(-1)!];
 
+  // En los religiosos la hora escrita es la de la ceremonia; la recepción va después
+  const demo = DEMO_INVITATIONS[type];
+  const startsAt = zonedToUtc(date, time, timezone);
+  const religious = demo.ceremony.enabled;
+  const eventAt = religious ? new Date(startsAt.getTime() + RECEPTION_AFTER_HOURS * 36e5) : startsAt;
+
   let id: string | null = null;
   for (let attempt = 0; attempt < 3 && !id; attempt++) {
     const { data, error } = await supabase
       .from("invitations")
       .insert({
-        ...DEMO_INVITATION,
-        age,
-        age_text: ageRibbon(age),
+        ...demo,
+        ceremony: religious ? { ...demo.ceremony, time } : demo.ceremony,
+        age: religious ? null : age,
+        age_text: ageRibbon(religious ? null : age, type),
         slug: invitationSlug(words[0]),
         name_lines: nameLines,
-        event_at: zonedToUtc(date, time, timezone).toISOString(),
+        event_at: eventAt.toISOString(),
         timezone,
         theme_id: themeId,
       })
@@ -72,14 +80,21 @@ export async function saveInvitation(id: string, input: InvitationInput): Promis
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   const { date, time, ...fields } = parsed.data;
 
+  const [mapsDestination, ceremonyDestination] = await Promise.all([
+    resolveMapsDestination(fields.maps_url),
+    resolveMapsDestination(fields.ceremony.maps_url),
+  ]);
+
   const { data, error } = await supabase
     .from("invitations")
     .update({
       ...fields,
       event_at: zonedToUtc(date, time, fields.timezone).toISOString(),
-      maps_destination: await resolveMapsDestination(fields.maps_url),
+      maps_destination: mapsDestination,
+      ceremony: { ...fields.ceremony, destination: ceremonyDestination },
     })
     .eq("id", id)
+    .eq("is_deleted", false)
     .select("slug")
     .single();
   if (error) return { ok: false, error: error.message };
@@ -95,12 +110,12 @@ export async function duplicateInvitation(id: string) {
   if (error) throw error;
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { id: _id, slug: _slug, created_at, updated_at, ...rest } = source;
+  const { id: _id, slug: _slug, created_at, updated_at, is_deleted, deleted_at, ...rest } = source;
   let newId: string | null = null;
   for (let attempt = 0; attempt < 3 && !newId; attempt++) {
     const { data, error: insertError } = await supabase
       .from("invitations")
-      .insert({ ...rest, slug: invitationSlug(source.name_lines[0] ?? ""), published: false })
+      .insert({ ...rest, slug: invitationSlug(source.name_lines[0] ?? ""), published: false, is_active: true })
       .select("id")
       .single();
     if (insertError && insertError.code !== UNIQUE_VIOLATION) throw insertError;
@@ -111,14 +126,37 @@ export async function duplicateInvitation(id: string) {
   redirect(`/admin/invitaciones/${newId}`);
 }
 
+/** Borrado lógico: sale del panel y el enlace deja de funcionar; el registro se conserva. */
 export async function deleteInvitation(id: string) {
   const { supabase } = await requireAdmin();
 
-  const { data, error } = await supabase.from("invitations").delete().eq("id", id).select("slug").single();
+  const { data, error } = await supabase
+    .from("invitations")
+    .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+    .eq("id", id)
+    .select("slug")
+    .single();
   if (error) throw error;
 
   updateTag(invitationTag(data.slug));
   redirect("/admin");
+}
+
+/** Activa o desactiva el enlace público sin tocar el resto de la invitación. */
+export async function setInvitationActive(id: string, active: boolean) {
+  const { supabase } = await requireAdmin();
+
+  const { data, error } = await supabase
+    .from("invitations")
+    .update({ is_active: active })
+    .eq("id", id)
+    .eq("is_deleted", false)
+    .select("slug")
+    .single();
+  if (error) throw error;
+
+  updateTag(invitationTag(data.slug));
+  refresh();
 }
 
 /* ---------------- Temas ---------------- */
@@ -151,10 +189,26 @@ export async function saveTheme(id: string, input: ThemeInput): Promise<ActionRe
   return { ok: true, message: "Tema guardado" };
 }
 
+/** Desactivar: deja de ofrecerse para invitaciones nuevas y en la landing; las que ya lo usan lo conservan. */
+export async function setThemeActive(id: string, active: boolean) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase.from("themes").update({ is_active: active }).eq("id", id).eq("is_deleted", false);
+  if (error) throw error;
+
+  updateTag(themeTag(id));
+  updateTag(themesTag);
+  refresh();
+}
+
+/** Borrado lógico: el tema sale del panel, pero las invitaciones que ya lo usan lo conservan. */
 export async function deleteTheme(id: string) {
   const { supabase } = await requireAdmin();
 
-  const { error } = await supabase.from("themes").delete().eq("id", id);
+  const { error } = await supabase
+    .from("themes")
+    .update({ is_deleted: true, deleted_at: new Date().toISOString() })
+    .eq("id", id);
   if (error) throw error;
 
   updateTag(themeTag(id));

@@ -22,7 +22,7 @@ export default function PreviewPage({ params }: PageProps<"/admin/vista/[id]">) 
 async function Preview({ params }: Pick<PageProps<"/admin/vista/[id]">, "params">) {
   const { id } = await params;
   const { supabase } = await requireAdmin();
-  const { data } = await supabase.from("invitations").select(INVITATION_SELECT).eq("id", id).maybeSingle<InvitationWithTheme>();
+  const { data } = await supabase.from("invitations").select(INVITATION_SELECT).eq("id", id).eq("is_deleted", false).maybeSingle<InvitationWithTheme>();
   if (!data) notFound();
 
   return <Invitation view={buildView(data)} preview />;

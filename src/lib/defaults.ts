@@ -1,6 +1,29 @@
 import type { ThemeColors } from "./types";
 
-/** Textos predeterminados. {nombre} y {edad} se reemplazan al mostrar. */
+/** Tipos de evento. Cada uno trae sus textos, extras y datos de ejemplo. */
+export const EVENT_TYPES = {
+  cumpleanos: { label: "Cumpleaños", eventLabel: "cumpleaños", emoji: "🎂", sample: "¡Feliz cumpleaños!" },
+  bautizo: { label: "Bautizo", eventLabel: "bautizo", emoji: "🕊️", sample: "Mi bautizo" },
+  primera_comunion: { label: "Primera Comunión", eventLabel: "Primera Comunión", emoji: "🕯️", sample: "Mi Primera Comunión" },
+} as const;
+
+export type EventType = keyof typeof EVENT_TYPES;
+
+export const EVENT_TYPE_KEYS = Object.keys(EVENT_TYPES) as [EventType, ...EventType[]];
+
+export function eventType(value: string | null | undefined): EventType {
+  return value && value in EVENT_TYPES ? (value as EventType) : "cumpleanos";
+}
+
+/** Eventos religiosos: llevan ceremonia, papás y padrinos. */
+export const isReligious = (type: EventType) => type !== "cumpleanos";
+
+/** «al cumpleaños», «a la Primera Comunión»: artículo según el nombre del evento */
+export function toEvent(label: string) {
+  return /(a|ión)$/i.test(label.trim()) ? `a la ${label}` : `al ${label}`;
+}
+
+/** Textos predeterminados (cumpleaños). {nombre} y {edad} se reemplazan al mostrar. */
 export const DEFAULT_TEXTS = {
   introKicker: "{nombre} tiene una sorpresa para ti",
   /** Vacío = según la apertura del tema (ver INTRO_HINTS) */
@@ -13,6 +36,7 @@ export const DEFAULT_TEXTS = {
   showTitle: "¡Habrá show!",
   extrasTitle: "¡Lo que te espera!",
   galleryTitle: "Mis recuerdos",
+  familyTitle: "Con el cariño de mi familia",
   messageTitle: "¡La diversión nos espera!",
   messageClosing: "¡Te esperamos!",
   rsvpTitle: "¿Vienes a mi fiesta?",
@@ -30,10 +54,50 @@ export const TEXT_LABELS: Record<keyof typeof DEFAULT_TEXTS, string> = {
   showTitle: "Título del show",
   extrasTitle: "Título de extras",
   galleryTitle: "Título de galería",
+  familyTitle: "Título de papás y padrinos",
   messageTitle: "Título del mensaje",
   messageClosing: "Cierre del mensaje",
   rsvpTitle: "Título de confirmación",
   footer: "Pie de página",
+};
+
+type Texts = Record<keyof typeof DEFAULT_TEXTS, string>;
+
+/** Textos de ejemplo de cada tipo de evento: la voz es la del festejado, más serena en los religiosos. */
+export const EVENT_TEXTS: Record<EventType, Texts> = {
+  cumpleanos: DEFAULT_TEXTS,
+  bautizo: {
+    ...DEFAULT_TEXTS,
+    introKicker: "{nombre} tiene una noticia muy especial",
+    heroPill: "Te invito a mi bautizo",
+    cardKicker: "Acompáñame a recibir el sacramento del Bautismo",
+    countdownTitle: "Falta poco para mi bautizo",
+    countdownDone: "¡Hoy es mi bautizo!",
+    detailsTitle: "Aparta la fecha",
+    extrasTitle: "Celebremos juntos",
+    galleryTitle: "Mis primeros recuerdos",
+    familyTitle: "Con el amor de mi familia",
+    messageTitle: "Un día de bendición",
+    messageClosing: "Te esperamos con cariño",
+    rsvpTitle: "¿Me acompañas?",
+    footer: "Hecho con mucho amor para celebrar mi bautizo",
+  },
+  primera_comunion: {
+    ...DEFAULT_TEXTS,
+    introKicker: "{nombre} quiere compartir contigo un día especial",
+    heroPill: "Te invito a mi Primera Comunión",
+    cardKicker: "Recibiré a Jesús por primera vez y quiero que estés conmigo",
+    countdownTitle: "Falta poco para mi Primera Comunión",
+    countdownDone: "¡Hoy es mi Primera Comunión!",
+    detailsTitle: "Aparta la fecha",
+    extrasTitle: "Celebremos juntos",
+    galleryTitle: "Mis recuerdos",
+    familyTitle: "Me acompañan",
+    messageTitle: "Un día para dar gracias",
+    messageClosing: "Te espero con cariño",
+    rsvpTitle: "¿Me acompañas?",
+    footer: "Hecho con mucho cariño para celebrar mi Primera Comunión",
+  },
 };
 
 /** Secciones que se pueden ocultar. Show, extras y galería se muestran si tienen contenido. */
@@ -91,6 +155,15 @@ export const TITLE_FONTS = {
   rye: "Rye · vaqueros, viejo oeste",
   cinzel: "Cinzel Decorative · princesas, castillos",
   creepster: "Creepster · monstruos, Halloween",
+  greatvibes: "Great Vibes · caligrafía, bautizo",
+  parisienne: "Parisienne · caligrafía suave",
+  pinyon: "Pinyon Script · caligrafía clásica, comunión",
+  alexbrush: "Alex Brush · pincel elegante",
+  dancing: "Dancing Script · manuscrita alegre",
+  cormorant: "Cormorant Garamond · serif clásica",
+  playfair: "Playfair Display · serif elegante",
+  cinzelclassic: "Cinzel · romana, solemne",
+  marcellus: "Marcellus · romana suave",
 } as const;
 
 export type TitleFont = keyof typeof TITLE_FONTS;
@@ -106,10 +179,44 @@ export const TITLE_FONT_WIDTH: Partial<Record<TitleFont, number>> = {
   rye: 0.62,
   cinzel: 0.7,
   creepster: 0.47,
+  greatvibes: 0.44,
+  parisienne: 0.52,
+  pinyon: 0.56,
+  alexbrush: 0.44,
+  dancing: 0.5,
+  cormorant: 0.5,
+  playfair: 0.6,
+  cinzelclassic: 0.78,
+  marcellus: 0.62,
+};
+
+/**
+ * Fuentes finas: no aguantan el volumen de juguete (contorno grueso, canto) ni
+ * botones o números chicos. «script» se escribe de corrido (sin separar letras)
+ * y usa una serif de apoyo para botones, cifras y etiquetas.
+ */
+export const TITLE_FONT_KIND: Partial<Record<TitleFont, "script" | "serif">> = {
+  greatvibes: "script",
+  parisienne: "script",
+  pinyon: "script",
+  alexbrush: "script",
+  dancing: "script",
+  cormorant: "serif",
+  playfair: "serif",
+  cinzelclassic: "serif",
+  marcellus: "serif",
+  cinzel: "serif",
+};
+
+/** Fuentes recomendadas por tipo de evento (van primero en el selector del tema). */
+export const EVENT_FONTS: Record<EventType, TitleFont[]> = {
+  cumpleanos: ["lilita", "luckiest", "titan", "chewy", "fredoka", "bubblegum", "sniglet"],
+  bautizo: ["greatvibes", "parisienne", "alexbrush", "dancing", "cormorant", "playfair", "marcellus", "sniglet"],
+  primera_comunion: ["pinyon", "greatvibes", "alexbrush", "cinzelclassic", "cormorant", "playfair", "marcellus"],
 };
 
 /** Atajos para la sección de extras; cada uno se puede editar después de agregarlo. */
-export const EXTRAS_CATALOG = [
+const PARTY_EXTRAS = [
   { emoji: "🎡", label: "Miniferia" },
   { emoji: "🏰", label: "Brincolines" },
   { emoji: "🏊", label: "Alberca" },
@@ -132,6 +239,31 @@ export const EXTRAS_CATALOG = [
   { emoji: "🎮", label: "Videojuegos" },
 ];
 
+const CELEBRATION_EXTRAS = [
+  { emoji: "🍽️", label: "Comida" },
+  { emoji: "🌮", label: "Taquiza" },
+  { emoji: "🎂", label: "Pastel" },
+  { emoji: "🍰", label: "Mesa de postres" },
+  { emoji: "🥂", label: "Brindis" },
+  { emoji: "🍹", label: "Bebidas" },
+  { emoji: "🎶", label: "Música en vivo" },
+  { emoji: "🎺", label: "Mariachi" },
+  { emoji: "🎧", label: "DJ" },
+  { emoji: "📸", label: "Cabina de fotos" },
+  { emoji: "🎁", label: "Recuerdito" },
+  { emoji: "🍭", label: "Mesa de dulces" },
+  { emoji: "🏰", label: "Brincolines" },
+  { emoji: "🎨", label: "Pintacaritas" },
+  { emoji: "🧸", label: "Área de bebés" },
+  { emoji: "👔", label: "Código de vestimenta" },
+];
+
+export const EXTRAS_CATALOG: Record<EventType, { emoji: string; label: string }[]> = {
+  cumpleanos: PARTY_EXTRAS,
+  bautizo: CELEBRATION_EXTRAS,
+  primera_comunion: CELEBRATION_EXTRAS,
+};
+
 export const TIMEZONES = [
   { id: "America/Merida", label: "Mérida" },
   { id: "America/Cancun", label: "Cancún / Quintana Roo" },
@@ -143,38 +275,95 @@ export const TIMEZONES = [
   { id: "America/Tijuana", label: "Tijuana" },
 ];
 
+const NO_SHOW = {
+  enabled: false,
+  time: null,
+  title: "",
+  description: "",
+  performers: [],
+  image_source: "theme" as const,
+  image_url: null,
+  image_style: "framed" as const,
+};
+
 /**
  * Contenido de ejemplo con el que nace cada invitación nueva: el panel lo muestra
  * ya escrito para solo ajustarlo (o borrarlo). Los personajes del show y la galería
  * dependen del tema, así que empiezan vacíos.
  */
-export const DEMO_INVITATION = {
-  event_label: "cumpleaños",
-  venue_name: "Salón Arcoíris",
-  address: "Calle 60 #500, por 61 y 63",
-  area: "Centro, Mérida, Yucatán",
-  message: "Ven a compartir sonrisas y momentos inolvidables conmigo. ¡Habrá juegos, música y muchas sorpresas!",
-  show: {
-    enabled: true,
-    time: "19:00",
-    title: "¡Show sorpresa!",
-    description: "Canciones, bailes y concursos con mis personajes favoritos.",
-    performers: [],
-    image_source: "theme" as const,
-    image_url: null,
-    image_style: "framed" as const,
+export const DEMO_INVITATIONS = {
+  cumpleanos: {
+    event_type: "cumpleanos" as EventType,
+    event_label: "cumpleaños",
+    venue_name: "Salón Arcoíris",
+    address: "Calle 60 #500, por 61 y 63",
+    area: "Centro, Mérida, Yucatán",
+    message: "Ven a compartir sonrisas y momentos inolvidables conmigo. ¡Habrá juegos, música y muchas sorpresas!",
+    show: {
+      enabled: true,
+      time: "19:00",
+      title: "¡Show sorpresa!",
+      description: "Canciones, bailes y concursos con mis personajes favoritos.",
+      performers: [],
+      image_source: "theme" as const,
+      image_url: null,
+      image_style: "framed" as const,
+    },
+    extras: [
+      { emoji: "🎡", label: "Miniferia", note: "Juegos para los peques" },
+      { emoji: "🏰", label: "Brincolines", note: "" },
+      { emoji: "🎨", label: "Pintacaritas", note: "" },
+      { emoji: "🍭", label: "Mesa de dulces", note: "" },
+      { emoji: "🪅", label: "Piñata", note: "" },
+    ],
+    family: {},
+    ceremony: { enabled: false },
   },
-  extras: [
-    { emoji: "🎡", label: "Miniferia", note: "Juegos para los peques" },
-    { emoji: "🏰", label: "Brincolines", note: "" },
-    { emoji: "🎨", label: "Pintacaritas", note: "" },
-    { emoji: "🍭", label: "Mesa de dulces", note: "" },
-    { emoji: "🪅", label: "Piñata", note: "" },
-  ],
-};
+  bautizo: {
+    event_type: "bautizo" as EventType,
+    event_label: "bautizo",
+    venue_name: "Jardín Los Olivos",
+    address: "Calle 21 #300, por 18 y 20",
+    area: "García Ginerés, Mérida, Yucatán",
+    message:
+      "Con mucha alegría, mis papás y mis padrinos te invitan a acompañarme a recibir el sacramento del Bautismo y a celebrar después con nosotros.",
+    show: NO_SHOW,
+    extras: [
+      { emoji: "🍽️", label: "Comida", note: "Al terminar la ceremonia" },
+      { emoji: "🎂", label: "Pastel", note: "" },
+      { emoji: "🍰", label: "Mesa de postres", note: "" },
+      { emoji: "🧸", label: "Área de bebés", note: "" },
+    ],
+    family: { parents: ["Ana López", "Carlos Pérez"], godparents: ["Laura Gómez", "Jorge Ruiz"] },
+    ceremony: { enabled: true, time: null, place: "Parroquia de San Juan", address: "Calle 62 #500, Centro, Mérida", maps_url: null },
+  },
+  primera_comunion: {
+    event_type: "primera_comunion" as EventType,
+    event_label: "Primera Comunión",
+    venue_name: "Jardín Los Olivos",
+    address: "Calle 21 #300, por 18 y 20",
+    area: "García Ginerés, Mérida, Yucatán",
+    message:
+      "Este día recibiré a Jesús en mi corazón por primera vez. Me hará muy feliz que me acompañes en la misa y en la celebración.",
+    show: NO_SHOW,
+    extras: [
+      { emoji: "🍽️", label: "Comida", note: "Al terminar la misa" },
+      { emoji: "🎂", label: "Pastel", note: "" },
+      { emoji: "🍭", label: "Mesa de dulces", note: "" },
+      { emoji: "🏰", label: "Brincolines", note: "Para los niños" },
+    ],
+    family: { parents: ["Ana López", "Carlos Pérez"], godparents: ["Laura Gómez", "Jorge Ruiz"] },
+    ceremony: { enabled: true, time: null, place: "Parroquia de San Juan", address: "Calle 62 #500, Centro, Mérida", maps_url: null },
+  },
+} satisfies Record<EventType, object>;
 
-/** Frase de la cinta según la edad: "Mi primer añito", "¡Cumplo 5 años!"… */
-export function ageRibbon(age: number | null) {
+/** Horas que la recepción va después de la ceremonia en una invitación nueva */
+export const RECEPTION_AFTER_HOURS = 2;
+
+/** Frase de la cinta: "Mi primer añito", "¡Cumplo 5 años!", "Mi bautizo"… */
+export function ageRibbon(age: number | null, type: EventType = "cumpleanos") {
+  if (type === "bautizo") return "Mi bautizo";
+  if (type === "primera_comunion") return "Mi Primera Comunión";
   if (age === null) return "¡Es mi cumpleaños!";
   return age === 1 ? "Mi primer añito" : `¡Cumplo ${age} años!`;
 }

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps<"/[slug]">): Promis
     robots: { index: false, follow: false },
     openGraph: {
       type: "website",
-      title: `¡${v.firstName} te invita a su fiesta!`,
+      title: `¡${v.firstName} te invita a su ${v.eventType === "cumpleanos" ? "fiesta" : v.eventLabel}!`,
       description,
       images: image ? [image] : undefined,
     },

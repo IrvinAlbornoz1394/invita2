@@ -20,13 +20,19 @@ async function Editor({ params }: Pick<PageProps<"/admin/invitaciones/[id]">, "p
   const { id } = await params;
   const { supabase } = await requireAdmin();
 
-  const [inv, themes] = await Promise.all([
-    supabase.from("invitations").select("*").eq("id", id).maybeSingle<Invitation>(),
-    supabase.from("themes").select("id, name, colors, show_url, show_style").order("name").returns<Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style">[]>(),
-  ]);
+  const inv = await supabase.from("invitations").select("*").eq("id", id).eq("is_deleted", false).maybeSingle<Invitation>();
   if (inv.error) throw inv.error;
-  if (themes.error) throw themes.error;
   if (!inv.data) notFound();
+
+  // Temas activos y no borrados, más el que ya usa la invitación aunque esté desactivado o borrado
+  const keep = inv.data.theme_id ? `,id.eq.${inv.data.theme_id}` : "";
+  const themes = await supabase
+    .from("themes")
+    .select("id, name, colors, show_url, show_style, event_type")
+    .or(`and(is_active.eq.true,is_deleted.eq.false)${keep}`)
+    .order("name")
+    .returns<Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "event_type">[]>();
+  if (themes.error) throw themes.error;
 
   return <InvitationEditor invitation={inv.data} themes={themes.data} />;
 }

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DECOR_MAX, DEFAULT_SECTIONS, DEFAULT_TEXTS, TITLE_FONTS } from "./defaults";
+import { DECOR_MAX, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TYPE_KEYS, TITLE_FONTS } from "./defaults";
 
 const text = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) =>
@@ -21,6 +21,12 @@ const optionalAsset = assetUrl
 const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora no válida");
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color no válido");
 
+/** Lista de nombres (papás, padrinos): se quitan los renglones vacíos */
+const names = z
+  .array(text(80))
+  .max(8)
+  .transform((list) => list.filter(Boolean));
+
 const textKeys = Object.keys(DEFAULT_TEXTS) as [keyof typeof DEFAULT_TEXTS, ...(keyof typeof DEFAULT_TEXTS)[]];
 const sectionKeys = Object.keys(DEFAULT_SECTIONS) as [keyof typeof DEFAULT_SECTIONS, ...(keyof typeof DEFAULT_SECTIONS)[]];
 
@@ -37,7 +43,8 @@ export const invitationInput = z.object({
   date: z.iso.date("Fecha no válida"),
   time: hhmm,
   timezone: z.string().min(1).max(64),
-  event_label: text(40).min(1, "Indica el tipo de evento"),
+  event_type: z.enum(EVENT_TYPE_KEYS),
+  event_label: text(40).min(1, "Indica cómo se llama el evento"),
   venue_name: optionalText(120),
   address: optionalText(200),
   area: optionalText(200),
@@ -62,6 +69,19 @@ export const invitationInput = z.object({
     .array(z.object({ emoji: text(16), label: text(60).min(1, "Cada extra necesita nombre"), note: text(140) }))
     .max(30),
   gallery: z.array(z.object({ url: assetUrl })).max(40),
+  family: z.object({
+    parents: names,
+    godparents: names,
+    parents_photo: optionalAsset,
+    godparents_photo: optionalAsset,
+  }),
+  ceremony: z.object({
+    enabled: z.boolean(),
+    time: hhmm.nullable().or(z.literal("").transform(() => null)),
+    place: optionalText(120),
+    address: optionalText(200),
+    maps_url: optionalAsset,
+  }),
   sections: z.record(z.enum(sectionKeys), z.boolean()),
   texts: z
     .partialRecord(z.enum(textKeys), text(200))
@@ -75,6 +95,7 @@ const decorImages = z.array(optionalAsset).max(DECOR_MAX);
 
 export const themeInput = z.object({
   name: text(80).min(1, "Ponle nombre al tema"),
+  event_type: z.enum(EVENT_TYPE_KEYS).nullable(),
   colors: z.object({
     primary: hex,
     secondary: hex,

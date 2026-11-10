@@ -30,7 +30,8 @@ Es un servicio hecho a mano: el operador arma la invitación por el cliente, con
 
 - Stack existente: Next.js 16 + Supabase (BD, auth, archivos), desplegado en Vercel. Invitaciones cacheadas con `"use cache"` + `cacheTag`.
 - Superficies: landing `/`, invitación `/<slug>`, panel `/admin` (login, invitaciones, temas, vista previa).
-- La invitación es **dirigida por tema**: cada tema aporta 6 colores, fondo (rayos, degradado, lunares o imagen), tipografía de títulos (Lilita, Luckiest Guy, Titan One, Chewy, Fredoka, Bubblegum), logo, imagen de tarjeta, imagen de grupo, elementos flotantes por sección y música. Cualquier rediseño de la invitación debe seguir funcionando con todos estos parámetros.
+- **Tipos de evento**: cumpleaños, bautizo y primera comunión. Cada invitación tiene su tipo (textos de ejemplo, cinta, extras sugeridos y datos de ejemplo); los religiosos agregan ceremonia (iglesia con hora y “Cómo llegar” propios) y papás y padrinos. Los temas pueden marcarse para un tipo y aparecen primero al crear una invitación de ese tipo.
+- La invitación es **dirigida por tema**: cada tema aporta 6 colores, fondo (rayos, degradado, lunares o imagen), tipografía de títulos (infantiles como Lilita o Luckiest Guy; elegantes caligráficas como Great Vibes o Pinyon Script y serif como Cormorant o Cinzel, que quitan el volumen de juguete al nombre), logo, imagen de tarjeta, imagen de grupo, elementos flotantes por sección y música. Cualquier rediseño de la invitación debe seguir funcionando con todos estos parámetros.
 - Secciones de la invitación: apertura (regalo, globo o imagen), portada, tarjeta, cuenta regresiva, fecha/lugar/mapa, show, extras, galería, mensaje, confirmación, pie. Varias se pueden ocultar; los textos son editables y admiten `{nombre}` y `{edad}`.
 - Variables opcionales de la landing: `NEXT_PUBLIC_DEMO_SLUG` (ejemplo) y `NEXT_PUBLIC_CONTACT_WHATSAPP` (cotizar); la landing debe verse bien sin ellas.
 

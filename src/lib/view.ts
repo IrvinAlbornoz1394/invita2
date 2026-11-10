@@ -1,11 +1,14 @@
 import type { CSSProperties } from "react";
-import { DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, INTRO_STYLES, TITLE_FONT_WIDTH, TITLE_FONTS, type TitleFont } from "./defaults";
+import {
+  DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TEXTS, eventType, INTRO_STYLES, isReligious,
+  TITLE_FONT_KIND, TITLE_FONT_WIDTH, TITLE_FONTS, toEvent, type TitleFont,
+} from "./defaults";
 import { resolveBackground, textOn } from "./background";
-import { clockLabel, longDate, shortDate, timeOf } from "./dates";
+import { clockLabel, longDate, shortDate, timeOf, utcToZoned, zonedToUtc } from "./dates";
 import type { DecorKey, IntroStyle, InvitationWithTheme, Show, ShowImageSource, TextKey, ThemeDecor } from "./types";
 
 export type Tone = "surface" | "secondary" | "accent" | "highlight";
-export type BlockKey = "card" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
+export type BlockKey = "card" | "family" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
 
 /** Todo lo que la página pública necesita, ya calculado. Es serializable. */
 export type InvitationView = ReturnType<typeof buildView>;
@@ -20,6 +23,9 @@ export function buildView(inv: InvitationWithTheme) {
   const introStyle: IntroStyle =
     INTRO_STYLES.find((s) => s.value === theme?.intro?.style && (s.value !== "image" || introImage))?.value ?? "gift";
   const font = (theme && theme.title_font in TITLE_FONTS ? theme.title_font : "lilita") as TitleFont;
+  const fontKind = TITLE_FONT_KIND[font] ?? "fun";
+  const type = eventType(inv.event_type);
+  const defaults = EVENT_TEXTS[type];
 
   const nameLines = inv.name_lines.filter(Boolean);
   const fullName = nameLines.join(" ");
@@ -29,7 +35,7 @@ export function buildView(inv: InvitationWithTheme) {
   const texts = Object.fromEntries(
     (Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [
       k,
-      fill(inv.texts?.[k] || DEFAULT_TEXTS[k] || (k === "introHint" ? INTRO_STYLES.find((s) => s.value === introStyle)!.hint : "")),
+      fill(inv.texts?.[k] || defaults[k] || (k === "introHint" ? INTRO_STYLES.find((s) => s.value === introStyle)!.hint : "")),
     ])
   ) as Record<TextKey, string>;
 
@@ -57,8 +63,33 @@ export function buildView(inv: InvitationWithTheme) {
   const destination = inv.maps_destination || mapQuery;
   const q = encodeURIComponent(destination);
 
+  // Ceremonia religiosa: tarjeta propia en «fecha y lugar» y la cuenta regresiva llega a ella
+  const cer = inv.ceremony?.enabled ? inv.ceremony : null;
+  const ceremonyAt = cer?.time ? zonedToUtc(utcToZoned(inv.event_at, inv.timezone).date, cer.time, inv.timezone).toISOString() : null;
+  const ceremonyQuery = cer ? cer.destination || [cer.place, cer.address].filter(Boolean).join(", ") : "";
+  const ceremony = cer && (cer.place || cer.address)
+    ? {
+        place: cer.place || cer.address || "",
+        address: cer.place ? cer.address || null : null,
+        timeLabel: cer.time ? clockLabel(cer.time) : null,
+        mapsUrl: ceremonyQuery
+          ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(ceremonyQuery)}&travelmode=driving`
+          : null,
+      }
+    : null;
+  const startsAt = ceremonyAt && ceremony && ceremonyAt < inv.event_at ? ceremonyAt : inv.event_at;
+
+  const clean = (list: string[] | undefined) => (list ?? []).map((n) => n.trim()).filter(Boolean);
+  const family = {
+    parents: clean(inv.family?.parents),
+    godparents: clean(inv.family?.godparents),
+    parentsPhoto: inv.family?.parents_photo || null,
+    godparentsPhoto: inv.family?.godparents_photo || null,
+  };
+
   const visible: Record<BlockKey, boolean> = {
     card: sections.card,
+    family: Boolean(family.parents.length || family.godparents.length || family.parentsPhoto || family.godparentsPhoto),
     countdown: sections.countdown,
     details: sections.details,
     show: show.enabled,
@@ -98,6 +129,8 @@ export function buildView(inv: InvitationWithTheme) {
     "--bg-img": bg.imageUrl ? `url("${encodeURI(bg.imageUrl)}")` : "none",
     "--f-title": `var(--font-${font}), var(--font-lilita), system-ui, sans-serif`,
     "--f-ratio": TITLE_FONT_WIDTH[font] ?? 0.6,
+    // Las caligráficas no sirven para botones ni cifras: ahí va una serif de apoyo
+    ...(fontKind === "script" ? { "--f-label": "var(--font-cormorant), Georgia, serif" } : {}),
   } as CSSProperties;
 
   return {
@@ -110,7 +143,16 @@ export function buildView(inv: InvitationWithTheme) {
     ageText: inv.age_text,
     photoUrl: inv.photo_url,
     eventAt: inv.event_at,
+    /** Inicio real: la ceremonia si va antes de la recepción */
+    startsAt,
+    eventType: type,
+    /** Bautizo y comunión: piezas serenas en vez de las de juguete */
+    elegant: isReligious(type),
     eventLabel: inv.event_label,
+    /** «al cumpleaños», «a la Primera Comunión» */
+    toEvent: toEvent(inv.event_label),
+    ceremony,
+    family,
     longDate: longDate(inv.event_at, inv.timezone),
     shortDate: shortDate(inv.event_at, inv.timezone),
     time: timeOf(inv.event_at, inv.timezone),
@@ -136,6 +178,7 @@ export function buildView(inv: InvitationWithTheme) {
     theme: {
       name: theme?.name ?? "",
       logoUrl: theme?.logo_url ?? null,
+      fontKind,
       bgStyle: bg.style,
       introStyle,
       introImage,

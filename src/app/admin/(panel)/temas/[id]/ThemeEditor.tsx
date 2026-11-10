@@ -3,11 +3,14 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { autoBackground, BACKGROUND_STYLES, DEFAULT_SOFTEN, resolveBackground } from "@/lib/background";
-import { COLOR_LABELS, DECOR_SECTIONS, INTRO_STYLES, TITLE_FONTS, type TitleFont } from "@/lib/defaults";
+import {
+  COLOR_LABELS, DECOR_SECTIONS, EVENT_FONTS, EVENT_TYPES, INTRO_STYLES, TITLE_FONTS, type EventType, type TitleFont,
+} from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
 import { themeDecor } from "@/lib/view";
 import type { DecorKey, ImageStyle, LogoStyle, Theme, ThemeColors } from "@/lib/types";
-import { deleteTheme, saveTheme } from "../../../actions";
+import { saveTheme } from "../../../actions";
+import { ThemeActions } from "../../../ThemeActions";
 import { MediaField } from "../../../MediaField";
 import styles from "../../../admin.module.css";
 
@@ -24,6 +27,7 @@ const LOGO_STYLES: { value: LogoStyle; label: string }[] = [
 function toForm(t: Theme): ThemeInput {
   return {
     name: t.name,
+    event_type: t.event_type ?? null,
     colors: t.colors,
     title_font: (t.title_font in TITLE_FONTS ? t.title_font : "lilita") as TitleFont,
     logo_url: t.logo_url,
@@ -59,6 +63,8 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
 
   const dirty = JSON.stringify(form) !== saved;
   const folder = `temas/${theme.id}`;
+  const recommended = EVENT_FONTS[form.event_type ?? "cumpleanos"];
+  const otherFonts = (Object.keys(TITLE_FONTS) as TitleFont[]).filter((k) => !recommended.includes(k));
   const patch = (p: Partial<ThemeInput>) => setForm((f) => ({ ...f, ...p }));
   const patchBg = (p: Partial<ThemeInput["background"]>) => setForm((f) => ({ ...f, background: { ...f.background, ...p } }));
   const autoBg = autoBackground(form.colors);
@@ -100,6 +106,12 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
           <p className={styles.pageSub}>
             {uses === 0 ? "Ninguna invitación lo usa" : uses === 1 ? "Lo usa 1 invitación" : `Lo usan ${uses} invitaciones`}
             {uses > 0 && " · los cambios se ven en todas al guardar"}
+            {theme.is_active === false && (
+              <>
+                {" "}
+                <span className={`${styles.badge} ${styles.badgeOff}`}>Desactivado</span>
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -114,20 +126,45 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 <input className={styles.input} value={form.name} onChange={(e) => patch({ name: e.target.value })} />
               </label>
               <label className={styles.field}>
+                <span className={styles.label}>Tipo de evento</span>
+                <select
+                  className={styles.select}
+                  value={form.event_type ?? ""}
+                  onChange={(e) => patch({ event_type: (e.target.value || null) as EventType | null })}
+                >
+                  <option value="">Cualquier evento</option>
+                  {(Object.keys(EVENT_TYPES) as EventType[]).map((t) => (
+                    <option key={t} value={t}>
+                      {EVENT_TYPES[t].label}
+                    </option>
+                  ))}
+                </select>
+                <span className={styles.help}>Al crear una invitación de ese tipo, este tema aparece primero.</span>
+              </label>
+              <label className={styles.field}>
                 <span className={styles.label}>Tipografía de títulos</span>
                 <select
                   className={styles.select}
                   value={form.title_font}
                   onChange={(e) => patch({ title_font: e.target.value as TitleFont })}
                 >
-                  {Object.entries(TITLE_FONTS).map(([key, name]) => (
-                    <option key={key} value={key}>
-                      {name}
-                    </option>
-                  ))}
+                  <optgroup label={form.event_type ? `Recomendadas para ${EVENT_TYPES[form.event_type].label.toLowerCase()}` : "Infantiles"}>
+                    {recommended.map((key) => (
+                      <option key={key} value={key}>
+                        {TITLE_FONTS[key]}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Todas las demás">
+                    {otherFonts.map((key) => (
+                      <option key={key} value={key}>
+                        {TITLE_FONTS[key]}
+                      </option>
+                    ))}
+                  </optgroup>
                 </select>
                 <span className={styles.fontSample} style={{ fontFamily: `var(--font-${form.title_font})` }}>
-                  ¡Feliz cumpleaños!
+                  {EVENT_TYPES[form.event_type ?? "cumpleanos"].sample}
                 </span>
               </label>
             </div>
@@ -420,18 +457,9 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
             <ThemeSample form={form} />
           </section>
           <section className={styles.card}>
-            <form
-              action={deleteTheme.bind(null, theme.id)}
-              onSubmit={(e) => {
-                const msg =
-                  uses > 0
-                    ? `${uses === 1 ? "1 invitación usa" : `${uses} invitaciones usan`} este tema y se quedarán con los colores por defecto. ¿Borrarlo?`
-                    : "¿Borrar este tema?";
-                if (!confirm(msg)) e.preventDefault();
-              }}
-            >
-              <button className={`${styles.btn} ${styles.btnSmall} ${styles.btnDanger}`}>Borrar tema</button>
-            </form>
+            <div className={styles.uploadActions}>
+              <ThemeActions id={theme.id} name={form.name || theme.name} active={theme.is_active !== false} uses={uses} />
+            </div>
           </section>
         </aside>
       </div>

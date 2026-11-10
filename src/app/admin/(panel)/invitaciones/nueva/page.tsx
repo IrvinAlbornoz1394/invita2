@@ -26,7 +26,7 @@ export default function NewInvitationPage() {
 
 async function FormWithThemes() {
   const { supabase } = await requireAdmin();
-  const { data: themes, error } = await supabase.from("themes").select("id, name").order("name");
+  const { data: themes, error } = await supabase.from("themes").select("id, name, event_type").eq("is_active", true).eq("is_deleted", false).order("name");
   if (error) throw error;
   return <NewInvitationForm themes={themes} />;
 }

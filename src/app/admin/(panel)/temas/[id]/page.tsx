@@ -21,8 +21,8 @@ async function Editor({ params }: Pick<PageProps<"/admin/temas/[id]">, "params">
   const { supabase } = await requireAdmin();
 
   const [theme, uses] = await Promise.all([
-    supabase.from("themes").select("*").eq("id", id).maybeSingle<Theme>(),
-    supabase.from("invitations").select("id", { count: "exact", head: true }).eq("theme_id", id),
+    supabase.from("themes").select("*").eq("id", id).eq("is_deleted", false).maybeSingle<Theme>(),
+    supabase.from("invitations").select("id", { count: "exact", head: true }).eq("theme_id", id).eq("is_deleted", false),
   ]);
   if (theme.error) throw theme.error;
   if (!theme.data) notFound();

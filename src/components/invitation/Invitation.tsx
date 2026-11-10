@@ -110,9 +110,10 @@ export function Invitation({ view, preview = false }: Props) {
   useEffect(() => startMapFx(rootRef.current!), []);
 
   // Al abrir: globos en la portada
+  // (los eventos religiosos tienen su propia portada, sin globos)
   useEffect(() => {
-    if (!started) return;
-    return startBalloons(balloonsRef.current!, palette);
+    if (!started || !balloonsRef.current) return;
+    return startBalloons(balloonsRef.current, palette);
   }, [started, palette]);
 
   // Entradas al hacer scroll
@@ -150,13 +151,26 @@ export function Invitation({ view, preview = false }: Props) {
     // Acercamiento a la página del libro o a la carta: se mide dónde quedó
     if (t.zoom != null) {
       setTimeout(() => {
-        const page = rootRef.current!.querySelector<HTMLElement>(".book__first, .env3d__letter");
+        const root = rootRef.current!;
+        const page = root.querySelector<HTMLElement>(style === "book" ? ".book__first" : ".env3d__letter");
+        const intro = root.querySelector<HTMLElement>(".intro")!;
+        const inner = root.querySelector<HTMLElement>(".intro__inner") ?? intro;
         const pr = page?.getBoundingClientRect();
-        const intro = rootRef.current!.querySelector<HTMLElement>(".intro")!;
+        const ir = inner.getBoundingClientRect();
         // la carta asoma solo por arriba del sobre: se entra por su parte visible
         const fy = style === "envelope" ? 0.28 : 0.5;
-        intro.style.setProperty("--zx", `${pr ? pr.left + pr.width / 2 : cx}px`);
-        intro.style.setProperty("--zy", `${pr ? pr.top + pr.height * fy : cy}px`);
+        const px = pr ? pr.left + pr.width / 2 : cx;
+        const py = pr ? pr.top + pr.height * fy : cy;
+        // transform-origin es relativo a la caja que se escala, no a la pantalla
+        intro.style.setProperty("--zx", `${px - ir.left}px`);
+        intro.style.setProperty("--zy", `${py - ir.top}px`);
+        // y además se lleva el objetivo al centro: así la cámara entra derecho a la hoja
+        intro.style.setProperty("--zdx", `${innerWidth / 2 - px}px`);
+        intro.style.setProperty("--zdy", `${innerHeight / 2 - py}px`);
+        // la escala justa para que la hoja (no el objeto entero) llene la pantalla
+        const visibleH = pr ? (style === "envelope" ? pr.height * 0.56 : pr.height) : 100;
+        const fill = pr ? Math.max(innerWidth / pr.width, innerHeight / visibleH) * 1.15 : 9;
+        intro.style.setProperty("--zs", String(Math.min(14, Math.max(3, fill))));
         setZooming(true);
       }, reducedMotion() ? 0 : t.zoom);
     }
@@ -212,7 +226,11 @@ export function Invitation({ view, preview = false }: Props) {
   const bands = view.blocks.map((b) => (CLASSIC.has(b.key) && b.tone !== "surface" ? b.tone : null));
 
   return (
-    <div ref={rootRef} className={`inv${started ? " is-started" : ""}${showDock ? " has-dock" : ""}`} style={view.style}>
+    <div
+      ref={rootRef}
+      className={`inv inv--${theme.fontKind} inv--${view.eventType}${view.elegant ? " inv--elegant" : ""}${started ? " is-started" : ""}${showDock ? " has-dock" : ""}`}
+      style={view.style}
+    >
       {preview && !view.published && <div className="preview-flag">Vista previa · borrador sin publicar</div>}
 
       {/* ===================== Apertura (se elige en el tema) ===================== */}
@@ -247,60 +265,69 @@ export function Invitation({ view, preview = false }: Props) {
 
       <main>
         {/* ===================== Portada ===================== */}
-        <header className="hero" id="inicio">
-          <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
-          <div className="hero__glow" aria-hidden="true" />
-          <div className="orbs" aria-hidden="true">
-            {ORBS.map((o, i) => (
-              <span
-                key={i}
-                className={`orb orb--${o.tone}`}
-                style={
-                  {
-                    left: `${o.left}%`,
-                    top: `${o.top}%`,
-                    "--s": `${Math.round(o.size * 1.6 * o.depth)}px`,
-                    "--z": o.depth,
-                    "--d": `${o.delay}s`,
-                    "--t": `${o.duration * 2.4}s`,
-                  } as CSSProperties
-                }
+        {view.elegant ? (
+          <SacredHero view={view} onTap={(x, y) => fx.burst(x, y, 40)} />
+        ) : (
+          <header className="hero" id="inicio">
+            <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
+            <div className="hero__glow" aria-hidden="true" />
+            <div className="orbs" aria-hidden="true">
+              {ORBS.map((o, i) => (
+                <span
+                  key={i}
+                  className={`orb orb--${o.tone}`}
+                  style={
+                    {
+                      left: `${o.left}%`,
+                      top: `${o.top}%`,
+                      "--s": `${Math.round(o.size * 1.6 * o.depth)}px`,
+                      "--z": o.depth,
+                      "--d": `${o.delay}s`,
+                      "--t": `${o.duration * 2.4}s`,
+                    } as CSSProperties
+                  }
+                />
+              ))}
+            </div>
+            <div className="balloons" ref={balloonsRef} aria-hidden="true" />
+
+            <div className="hero__inner">
+              {theme.logoUrl && (
+                <div className={`logo-badge logo-badge--${theme.logoStyle} pop`} style={{ "--d": ".1s" } as CSSProperties}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={theme.logoUrl} alt={theme.name} />
+                </div>
+              )}
+
+              <Title
+                lines={view.nameLines}
+                label={view.fullName}
+                whole={theme.fontKind === "script"}
+                onTap={(x, y) => fx.burst(x, y, 60)}
               />
-            ))}
-          </div>
-          <div className="balloons" ref={balloonsRef} aria-hidden="true" />
 
-          <div className="hero__inner">
-            {theme.logoUrl && (
-              <div className={`logo-badge logo-badge--${theme.logoStyle} pop`} style={{ "--d": ".1s" } as CSSProperties}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={theme.logoUrl} alt={theme.name} />
-              </div>
-            )}
+              {view.ageText && (
+                <p className="age pop" style={{ "--d": ".9s" } as CSSProperties}>
+                  {view.ageText}
+                </p>
+              )}
 
-            <Title lines={view.nameLines} label={view.fullName} onTap={(x, y) => fx.burst(x, y, 60)} />
+              {view.photoUrl && (
+                <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
+                  <Orbit layer="back" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={view.photoUrl} alt={view.firstName} />
+                  <Orbit layer="front" />
+                  {view.age != null && <span className="portrait__age">{view.age}</span>}
+                </div>
+              )}
 
-            {view.ageText && (
-              <p className="age pop" style={{ "--d": ".9s" } as CSSProperties}>
-                {view.ageText}
+              <p className="summary pop" style={{ "--d": "1.2s" } as CSSProperties}>
+                {view.shortDate} · {view.time}
               </p>
-            )}
-
-            {view.photoUrl && (
-              <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
-                <Orbit layer="back" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={view.photoUrl} alt={view.firstName} />
-                <Orbit layer="front" />
-                {view.age != null && <span className="portrait__age">{view.age}</span>}
-              </div>
-            )}
-
-            <p className="summary pop" style={{ "--d": "1.2s" } as CSSProperties}>
-              {view.shortDate} · {view.time}
-            </p>
-          </div>
-        </header>
+            </div>
+          </header>
+        )}
 
         {/* ===================== Hoja con el contenido ===================== */}
         <div className="sheet">
@@ -366,6 +393,109 @@ export function Invitation({ view, preview = false }: Props) {
   );
 }
 
+/* ======================================================================
+   Portadas de bautizo y primera comunión: cada una con su propia escena
+   ====================================================================== */
+
+/** Destellos fijos (SSR y cliente coinciden) */
+const GLINTS = stars(9).map((g, i) => ({ ...g, depth: 0.5 + (i % 3) * 0.25 }));
+
+function SacredHero({ view, onTap }: { view: InvitationView; onTap: (x: number, y: number) => void }) {
+  const { theme } = view;
+  const communion = view.eventType === "primera_comunion";
+  return (
+    <header className={`hero hero--sacred hero--${view.eventType}`} id="inicio">
+      <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
+      <div className="hero__glow" aria-hidden="true" />
+      {communion ? <span className="sacred__rays" aria-hidden="true" /> : <Clouds />}
+      <div className="glints" aria-hidden="true">
+        {GLINTS.map((g, i) => (
+          <span
+            key={i}
+            className={communion ? "glint glint--star" : "glint glint--bokeh"}
+            style={
+              {
+                left: `${g.left}%`,
+                top: `${g.top}%`,
+                "--s": `${Math.round(g.size * (communion ? 0.7 : 2.2) * g.depth)}px`,
+                "--d": `${g.delay}s`,
+                "--t": `${g.duration * 2}s`,
+              } as CSSProperties
+            }
+          />
+        ))}
+      </div>
+
+      <div className="hero__inner sacred">
+        {theme.logoUrl ? (
+          <div className={`sacred__logo sacred__logo--${theme.logoStyle} pop`} style={{ "--d": ".1s" } as CSSProperties}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={theme.logoUrl} alt={theme.name} />
+          </div>
+        ) : (
+          communion && <Chalice />
+        )}
+
+        {view.ageText && (
+          <p className="sacred__kicker pop" style={{ "--d": ".25s" } as CSSProperties}>
+            {view.ageText}
+          </p>
+        )}
+
+        <Title lines={view.nameLines} label={view.fullName} whole={theme.fontKind === "script"} calm onTap={onTap} />
+
+        <span className="sacred__rule pop" style={{ "--d": ".9s" } as CSSProperties} aria-hidden="true">
+          <i />
+          <b />
+          <i />
+        </span>
+
+        {view.photoUrl && (
+          <div className={`sacred__photo sacred__photo--${view.eventType} pop`} style={{ "--d": "1.05s" } as CSSProperties}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={view.photoUrl} alt={view.firstName} />
+          </div>
+        )}
+
+        <p className="sacred__date pop" style={{ "--d": "1.2s" } as CSSProperties}>
+          <span>{view.longDate}</span>
+          <small>{view.ceremony?.timeLabel ? `Ceremonia · ${view.ceremony.timeLabel}` : view.time}</small>
+        </p>
+      </div>
+    </header>
+  );
+}
+
+/** Nubes suaves al pie de la portada del bautizo (tres capas que se mecen) */
+function Clouds() {
+  return (
+    <span className="clouds" aria-hidden="true">
+      {[0, 1, 2].map((i) => (
+        <svg key={i} className={`clouds__layer clouds__layer--${i}`} viewBox="0 0 400 80" preserveAspectRatio="none">
+          <path d="M0 80V52c18-14 40-16 58-4 10-20 40-26 60-8 14-18 46-20 62 0 16-22 52-22 66 0 14-14 40-14 54 2 16-16 46-14 58 4 14-8 30-6 42 4v30z" />
+        </svg>
+      ))}
+    </span>
+  );
+}
+
+/** Cáliz con la hostia y rayos (primera comunión sin logo en el tema) */
+function Chalice() {
+  return (
+    <svg className="chalice pop" viewBox="0 -10 64 82" aria-hidden="true" style={{ "--d": ".1s" } as CSSProperties}>
+      <g className="chalice__rays">
+        {[-60, -30, 0, 30, 60].map((a) => (
+          <line key={a} x1="32" y1="4" x2="32" y2="-6" transform={`rotate(${a} 32 18)`} />
+        ))}
+      </g>
+      <circle className="chalice__host" cx="32" cy="18" r="9" />
+      <path className="chalice__host-cross" d="M32 13v10M27 18h10" />
+      <path className="chalice__cup" d="M14 30h36c0 12-7 20-18 20S14 42 14 30z" />
+      <path className="chalice__stem" d="M32 50v10M22 66c0-4 4-6 10-6s10 2 10 6z" />
+    </svg>
+  );
+}
+
 /**
  * Estrellitas que giran alrededor de la foto. Se pinta dos veces: la capa de
  * atrás queda bajo la foto y la de adelante solo muestra la mitad inferior
@@ -384,7 +514,21 @@ function Orbit({ layer }: { layer: "back" | "front" }) {
 }
 
 /* ---------------- Nombre: cada letra cae en su lugar al abrir ---------------- */
-function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap: (x: number, y: number) => void }) {
+function Title({
+  lines,
+  label,
+  whole,
+  calm = false,
+  onTap,
+}: {
+  lines: string[];
+  label: string;
+  /** Sin inclinación de letras (portadas religiosas) */
+  calm?: boolean;
+  /** Caligráficas: la palabra entera cae junta para no romper los enlaces entre letras */
+  whole: boolean;
+  onTap: (x: number, y: number) => void;
+}) {
   let n = 0;
   return (
     <h1
@@ -401,13 +545,13 @@ function Title({ lines, label, onTap }: { lines: string[]; label: string; onTap:
     >
       {lines.map((word, w) => (
         <span key={w} className="word" aria-hidden="true" style={{ "--len": Math.max(word.length, 5) } as CSSProperties}>
-          {[...word].map((ch, c) => {
+          {(whole ? [word] : [...word]).map((ch, c) => {
             const i = n++;
             return (
               <span
                 key={c}
                 className="ch"
-                style={{ "--d": `${0.35 + i * 0.05}s`, "--r": `${ROT[i % ROT.length]}deg` } as CSSProperties}
+                style={{ "--d": `${0.35 + i * (whole ? 0.18 : 0.05)}s`, "--r": `${whole || calm ? 0 : ROT[i % ROT.length]}deg` } as CSSProperties}
               >
                 {ch === " " ? " " : ch}
               </span>
@@ -502,13 +646,15 @@ function Block({ name, view, fx, say }: BlockProps) {
   switch (name) {
     case "card":
       return <Card view={view} />;
+    case "family":
+      return <FamilyBlock view={view} />;
     case "countdown":
       return (
         <>
           <h2 className="heading" data-reveal="up">
             {view.texts.countdownTitle}
           </h2>
-          <Countdown target={view.eventAt} doneText={view.texts.countdownDone} />
+          <Countdown target={view.startsAt} doneText={view.texts.countdownDone} />
         </>
       );
     case "details":
@@ -555,6 +701,41 @@ function Block({ name, view, fx, say }: BlockProps) {
   }
 }
 
+/* ---------------- Papás y padrinos (bautizo, primera comunión) ---------------- */
+function FamilyBlock({ view }: { view: InvitationView }) {
+  const { family } = view;
+  const groups = [
+    { label: "Mis papás", names: family.parents, photo: family.parentsPhoto },
+    { label: family.godparents.length === 1 ? "Mi padrino" : "Mis padrinos", names: family.godparents, photo: family.godparentsPhoto },
+  ].filter((g) => g.names.length > 0 || g.photo);
+
+  return (
+    <>
+      <Heading text={view.texts.familyTitle} />
+      <div className="family">
+        {groups.map((g) => (
+          <div key={g.label} className={`panel family__group${g.photo ? " has-photo" : ""}`} data-reveal="up">
+            {g.photo && (
+              <span className="family__photo">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={g.photo} alt={g.names.length ? g.names.join(" y ") : g.label} loading="lazy" />
+              </span>
+            )}
+            <p className="family__label">{g.label}</p>
+            {g.names.length > 0 && (
+              <ul className="family__names">
+                {g.names.map((n, i) => (
+                  <li key={i}>{n}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 /* ---------------- Tarjeta del tema, con inclinación leve ---------------- */
 function Card({ view }: { view: InvitationView }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -576,7 +757,9 @@ function Card({ view }: { view: InvitationView }) {
         <p className="card__kicker">{view.texts.cardKicker}</p>
         <p className="card__name">{view.firstName}</p>
         <p className="card__date">{view.longDate}</p>
-        <p className="card__time">A partir de las {view.time}</p>
+        <p className="card__time">
+          {view.ceremony?.timeLabel ? `Ceremonia a las ${view.ceremony.timeLabel}` : `A partir de las ${view.time}`}
+        </p>
       </div>
     </div>
   );
@@ -587,15 +770,38 @@ function Card({ view }: { view: InvitationView }) {
 function Details({ view, decor }: { view: InvitationView; decor: (string | null)[] }) {
   const placeValue = view.venueName || view.address;
   const placeSub = view.venueName ? [view.address, view.area].filter(Boolean).join(", ") : view.area;
-  const cards: { tone: string; icon: IconName; label: string; value: string; sub?: string | null }[] = [
-    { tone: "primary", icon: "calendar", label: "Fecha", value: view.longDate },
-    { tone: "secondary", icon: "clock", label: "Hora", value: `A partir de las ${view.time}` },
-    ...(placeValue ? [{ tone: "accent", icon: "pin" as const, label: "Lugar", value: placeValue, sub: placeSub }] : []),
-  ];
+  type InfoCard = { tone: string; icon: IconName; label: string; value: string; sub?: string | null; href?: string | null };
+  const cer = view.ceremony;
+  // Con ceremonia: fecha, ceremonia y recepción (cada una con su hora y su ruta)
+  const cards: InfoCard[] = cer
+    ? [
+        { tone: "primary", icon: "calendar", label: "Fecha", value: view.longDate },
+        {
+          tone: "secondary",
+          icon: "church",
+          label: cer.timeLabel ? `Ceremonia · ${cer.timeLabel}` : "Ceremonia",
+          value: cer.place,
+          sub: cer.address,
+          href: cer.mapsUrl,
+        },
+        {
+          tone: "accent",
+          icon: "pin",
+          label: `Recepción · ${view.time}`,
+          value: placeValue || "Por confirmar",
+          sub: placeSub,
+          href: view.mapsUrl,
+        },
+      ]
+    : [
+        { tone: "primary", icon: "calendar", label: "Fecha", value: view.longDate },
+        { tone: "secondary", icon: "clock", label: "Hora", value: `A partir de las ${view.time}` },
+        ...(placeValue ? [{ tone: "accent", icon: "pin" as const, label: "Lugar", value: placeValue, sub: placeSub }] : []),
+      ];
 
   function addToCalendar() {
-    const start = new Date(view.eventAt);
-    const end = new Date(start.getTime() + 5 * 36e5);
+    const start = new Date(view.startsAt);
+    const end = new Date(new Date(view.eventAt).getTime() + 5 * 36e5);
     const title = `${view.eventLabel.charAt(0).toUpperCase()}${view.eventLabel.slice(1)} de ${view.fullName}`;
     const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
 
@@ -624,19 +830,17 @@ function Details({ view, decor }: { view: InvitationView; decor: (string | null)
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
   }
 
-  const [live, setLive] = useState(false);
-
   return (
-    <div className={`place${view.mapEmbed ? "" : " place--nomap"}${live ? " is-live" : ""}`}>
+    <div className={`place${view.mapEmbed ? "" : " place--nomap"}${cer ? " place--ceremony" : ""}`}>
       {/* El mapa ocupa la pantalla y se queda fijo; la información pasa encima */}
       <div className="place__map" data-l="map">
         {view.mapEmbed ? (
-          <iframe src={view.mapEmbed} title="Mapa del lugar" loading="lazy" referrerPolicy="no-referrer-when-downgrade" tabIndex={live ? 0 : -1} />
+          <iframe src={view.mapEmbed} title="Mapa del lugar" loading="lazy" referrerPolicy="no-referrer-when-downgrade" tabIndex={-1} />
         ) : (
           <div className={`sunburst sunburst--${view.theme.bgStyle}`} aria-hidden="true" />
         )}
         <span className="place__veil" aria-hidden="true" />
-        {view.mapEmbed && !live && (
+        {view.mapEmbed && (
           <span className="place__pin" aria-hidden="true">
             <span className="place__pin-head">
               <Icon name="pin" />
@@ -665,6 +869,12 @@ function Details({ view, decor }: { view: InvitationView; decor: (string | null)
                 <small>{c.label}</small>
                 <strong>{c.value}</strong>
                 {c.sub && <em>{c.sub}</em>}
+                {c.href && (
+                  <a className="glass__link" href={c.href} target="_blank" rel="noopener">
+                    <Icon name="navigate" />
+                    Cómo llegar
+                  </a>
+                )}
               </span>
             </article>
           ))}
@@ -672,7 +882,7 @@ function Details({ view, decor }: { view: InvitationView; decor: (string | null)
 
         {/* Acciones fijas al pie mientras el mapa está en pantalla */}
         <div className="place__actions">
-          {view.mapsUrl && (
+          {view.mapsUrl && !cer && (
             <a className="btn btn--primary" href={view.mapsUrl} target="_blank" rel="noopener">
               <Icon name="navigate" />
               Cómo llegar
@@ -682,11 +892,6 @@ function Details({ view, decor }: { view: InvitationView; decor: (string | null)
             <Icon name="calendarAdd" />
             Agendar
           </button>
-          {view.mapEmbed && (
-            <button className="place__toggle" type="button" onClick={() => setLive((v) => !v)} aria-pressed={live}>
-              {live ? "Listo" : "Mover el mapa"}
-            </button>
-          )}
         </div>
       </div>
     </div>

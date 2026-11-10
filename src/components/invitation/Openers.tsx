@@ -22,8 +22,8 @@ export const OPENERS: Record<IntroStyle, { start: number; gone: number; iris?: b
   gift: { start: 1100, gone: 1100, iris: true, confetti: 0 },
   balloon: { start: 520, gone: 520, iris: true, confetti: 0 },
   image: { start: 800, gone: 800, iris: true, confetti: 0 },
-  book: { start: 1900, gone: 1900, zoom: 1250, confetti: 450 },
-  envelope: { start: 1850, gone: 1850, zoom: 1150, confetti: 300 },
+  book: { start: 2150, gone: 2150, zoom: 1250, confetti: 450 },
+  envelope: { start: 2050, gone: 2050, zoom: 1150, confetti: 300 },
   curtain: { start: 250, gone: 1350, confetti: 500 },
 };
 

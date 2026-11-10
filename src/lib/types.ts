@@ -1,4 +1,6 @@
-import type { DEFAULT_TEXTS, DEFAULT_SECTIONS, DECOR_SECTIONS } from "./defaults";
+import type { DEFAULT_TEXTS, DEFAULT_SECTIONS, DECOR_SECTIONS, EventType } from "./defaults";
+
+export type { EventType };
 
 export type ThemeColors = {
   primary: string;
@@ -48,6 +50,12 @@ export type LogoStyle = "badge" | "plain";
 export type Theme = {
   id: string;
   name: string;
+  /** false = no se ofrece para invitaciones nuevas ni en la landing; las que ya lo usan lo conservan */
+  is_active?: boolean;
+  /** Borrado lógico: no aparece en el panel */
+  is_deleted?: boolean;
+  /** Para qué evento es el tema; null = cualquiera */
+  event_type?: EventType | null;
   colors: ThemeColors;
   title_font: string;
   logo_url: string | null;
@@ -78,6 +86,21 @@ export type Show = {
   image_style?: ImageStyle;
 };
 
+/** Papás y padrinos (eventos religiosos), un nombre por renglón */
+export type Family = { parents?: string[]; godparents?: string[]; parents_photo?: string | null; godparents_photo?: string | null };
+
+/** Ceremonia religiosa antes de la recepción */
+export type Ceremony = {
+  enabled: boolean;
+  /** Hora local "HH:MM" */
+  time?: string | null;
+  place?: string | null;
+  address?: string | null;
+  maps_url?: string | null;
+  /** "lat,lng" sacado de maps_url al guardar */
+  destination?: string | null;
+};
+
 export type Extra = { emoji: string; label: string; note: string };
 
 export type GalleryItem = { url: string };
@@ -92,6 +115,10 @@ export type Invitation = {
   id: string;
   slug: string;
   published: boolean;
+  /** false = el enlace deja de funcionar aunque esté publicada */
+  is_active: boolean;
+  /** Borrado lógico: no aparece en el panel ni en la página pública */
+  is_deleted: boolean;
   theme_id: string | null;
   name_lines: string[];
   age: number | null;
@@ -99,6 +126,7 @@ export type Invitation = {
   photo_url: string | null;
   event_at: string;
   timezone: string;
+  event_type?: EventType;
   event_label: string;
   venue_name: string | null;
   address: string | null;
@@ -111,6 +139,8 @@ export type Invitation = {
   show: Show;
   extras: Extra[];
   gallery: GalleryItem[];
+  family?: Family | null;
+  ceremony?: Ceremony | null;
   sections: Partial<Sections>;
   texts: Texts;
   updated_at: string;

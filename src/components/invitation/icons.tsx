@@ -12,6 +12,7 @@ const paths = {
   close: <path d="M6 6l12 12M18 6L6 18" />,
   prev: <path d="M15 18l-6-6 6-6" />,
   next: <path d="M9 18l6-6-6-6" />,
+  church: <><path d="M12 2v4M10 4h4M12 6l-6 5v10h12V11z" /><path d="M10 21v-4a2 2 0 0 1 4 0v4M3 21h18" /></>,
   sparkle: <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z" />,
 };
 

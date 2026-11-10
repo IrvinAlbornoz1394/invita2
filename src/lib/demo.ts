@@ -1,7 +1,7 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { themesTag, themeTag } from "./data";
-import { DEMO_INVITATION } from "./defaults";
+import { ageRibbon, DEMO_INVITATIONS, eventType, RECEPTION_AFTER_HOURS } from "./defaults";
 import { createPublicClient } from "./supabase/public";
 import type { InvitationWithTheme, Theme } from "./types";
 
@@ -22,7 +22,7 @@ export async function getDemoTheme(id: string): Promise<Theme | null> {
   cacheTag(themesTag, themeTag(id));
 
   if (!UUID.test(id)) return null;
-  const { data, error } = await createPublicClient().from("themes").select("*").eq("id", id).maybeSingle<Theme>();
+  const { data, error } = await createPublicClient().from("themes").select("*").eq("id", id).eq("is_active", true).eq("is_deleted", false).maybeSingle<Theme>();
   if (error) throw error;
   return data;
 }
@@ -33,25 +33,36 @@ export async function getDemoTheme(id: string): Promise<Theme | null> {
  * regresiva. El show usa la imagen del tema si ya la tiene.
  */
 export function demoInvitation(theme: Theme, kid: DemoKid, eventAt: string): InvitationWithTheme {
+  const type = eventType(theme.event_type);
+  const demo = DEMO_INVITATIONS[type];
+  const religious = demo.ceremony.enabled;
+  // Religiosos: misa a la hora de la demo y recepción después
+  const at = religious ? new Date(new Date(eventAt).getTime() + RECEPTION_AFTER_HOURS * 36e5).toISOString() : eventAt;
+  const startTime = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Merida", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(eventAt));
   return {
     id: `demo-${theme.id}`,
     slug: `demo/${theme.id}`,
     published: true,
+    is_active: true,
+    is_deleted: false,
     theme_id: theme.id,
     ...KIDS[kid],
-    age_text: null,
+    ...(religious ? { age: null, age_text: ageRibbon(null, type) } : { age_text: null }),
     photo_url: null,
-    event_at: eventAt,
+    event_at: at,
     timezone: "America/Merida",
-    event_label: DEMO_INVITATION.event_label,
-    venue_name: DEMO_INVITATION.venue_name,
-    address: DEMO_INVITATION.address,
-    area: DEMO_INVITATION.area,
+    event_type: type,
+    event_label: demo.event_label,
+    venue_name: demo.venue_name,
+    address: demo.address,
+    area: demo.area,
     maps_url: null,
-    message: DEMO_INVITATION.message,
+    message: demo.message,
     whatsapp: null,
-    show: { ...DEMO_INVITATION.show, title: `Show de ${theme.name}`, performers: [] },
-    extras: DEMO_INVITATION.extras,
+    show: religious ? demo.show : { ...demo.show, title: `Show de ${theme.name}`, performers: [] },
+    extras: demo.extras,
+    family: demo.family,
+    ceremony: religious ? { ...demo.ceremony, time: startTime } : demo.ceremony,
     gallery: [],
     sections: {},
     texts: {},
