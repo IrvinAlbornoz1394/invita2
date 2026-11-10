@@ -40,6 +40,7 @@ const ROT = [-3, 2, -2, 3, -2, 1, -3, 2, -1];
 export function Invitation({ view, preview = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const balloonsRef = useRef<HTMLDivElement>(null);
+  const balloonsFrontRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const confettiRef = useRef<ReturnType<typeof createConfetti> | null>(null);
   const musicRef = useRef<ReturnType<typeof createMusic> | null>(null);
@@ -113,8 +114,8 @@ export function Invitation({ view, preview = false }: Props) {
   // (los eventos religiosos tienen su propia portada, sin globos)
   useEffect(() => {
     if (!started || !balloonsRef.current) return;
-    return startBalloons(balloonsRef.current, palette);
-  }, [started, palette]);
+    return startBalloons(balloonsRef.current, balloonsFrontRef.current, palette, (x, y) => fx.burst(x, y, 36));
+  }, [started, palette, fx]);
 
   // Entradas al hacer scroll
   useEffect(() => {
@@ -266,7 +267,7 @@ export function Invitation({ view, preview = false }: Props) {
       <main>
         {/* ===================== Portada ===================== */}
         {view.elegant ? (
-          <SacredHero view={view} onTap={(x, y) => fx.burst(x, y, 40)} />
+          <SacredHero view={view} />
         ) : (
           <header className="hero" id="inicio">
             <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
@@ -303,7 +304,6 @@ export function Invitation({ view, preview = false }: Props) {
                 lines={view.nameLines}
                 label={view.fullName}
                 whole={theme.fontKind === "script"}
-                onTap={(x, y) => fx.burst(x, y, 60)}
               />
 
               {view.ageText && (
@@ -313,18 +313,15 @@ export function Invitation({ view, preview = false }: Props) {
               )}
 
               {view.photoUrl && (
-                <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={view.photoUrl} alt={view.firstName} />
-                  <span className="portrait__shine" aria-hidden="true" />
-                  {view.age != null && <span className="portrait__age">{view.age}</span>}
-                </div>
+                <Portrait url={view.photoUrl} alt={view.firstName} age={view.age} />
               )}
 
               <p className="summary pop" style={{ "--d": "1.2s" } as CSSProperties}>
                 {view.shortDate} · {view.time}
               </p>
             </div>
+            {/* Algunos globos pasan por delante del nombre y la foto */}
+            <div className="balloons balloons--front" ref={balloonsFrontRef} aria-hidden="true" />
           </header>
         )}
 
@@ -399,7 +396,7 @@ export function Invitation({ view, preview = false }: Props) {
 /** Destellos fijos (SSR y cliente coinciden) */
 const GLINTS = stars(9).map((g, i) => ({ ...g, depth: 0.5 + (i % 3) * 0.25 }));
 
-function SacredHero({ view, onTap }: { view: InvitationView; onTap: (x: number, y: number) => void }) {
+function SacredHero({ view }: { view: InvitationView }) {
   const { theme } = view;
   const communion = view.eventType === "primera_comunion";
   return (
@@ -441,7 +438,7 @@ function SacredHero({ view, onTap }: { view: InvitationView; onTap: (x: number, 
           </p>
         )}
 
-        <Title lines={view.nameLines} label={view.fullName} whole={theme.fontKind === "script"} calm onTap={onTap} />
+        <Title lines={view.nameLines} label={view.fullName} whole={theme.fontKind === "script"} calm />
 
         <span className="sacred__rule pop" style={{ "--d": ".9s" } as CSSProperties} aria-hidden="true">
           <i />
@@ -495,13 +492,33 @@ function Chalice() {
   );
 }
 
+/**
+ * Foto del festejado en 3D: se inclina hacia el dedo o el puntero y sus capas
+ * se separan en profundidad (halo atrás, filete, foto, brillo y sello al frente).
+ * Sin tocarla, se mece apenas. El «pop» de entrada va en el contenedor de
+ * afuera para no pisar el transform de la inclinación.
+ */
+function Portrait({ url, alt, age }: { url: string; alt: string; age: number | null }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const tilt = useTilt(ref, 16);
+  return (
+    <div className="portrait pop" style={{ "--d": "1.05s" } as CSSProperties}>
+      <div ref={ref} className="portrait__tilt" {...tilt}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt={alt} />
+        <span className="portrait__shine" aria-hidden="true" />
+        {age != null && <span className="portrait__age">{age}</span>}
+      </div>
+    </div>
+  );
+}
+
 /* ---------------- Nombre: cada letra cae en su lugar al abrir ---------------- */
 function Title({
   lines,
   label,
   whole,
   calm = false,
-  onTap,
 }: {
   lines: string[];
   label: string;
@@ -509,22 +526,10 @@ function Title({
   calm?: boolean;
   /** Caligráficas: la palabra entera cae junta para no romper los enlaces entre letras */
   whole: boolean;
-  onTap: (x: number, y: number) => void;
 }) {
   let n = 0;
   return (
-    <h1
-      className="title"
-      aria-label={label}
-      onClick={(e) => {
-        onTap(e.clientX, e.clientY);
-        const ch = (e.target as HTMLElement).closest<HTMLElement>(".ch");
-        if (!ch) return;
-        ch.classList.remove("is-boing");
-        void ch.offsetWidth;
-        ch.classList.add("is-boing");
-      }}
-    >
+    <h1 className="title" aria-label={label}>
       {lines.map((word, w) => (
         <span key={w} className="word" aria-hidden="true" style={{ "--len": Math.max(word.length, 5) } as CSSProperties}>
           {(whole ? [word] : [...word]).map((ch, c) => {

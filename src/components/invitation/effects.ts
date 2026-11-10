@@ -102,36 +102,55 @@ export function burstFrom(fx: Fx, el: Element, count = 24, yFactor = 1 / 3) {
 }
 
 /* ---------------- Globos ---------------- */
-export function startBalloons(box: HTMLElement, colors: string[]) {
+/**
+ * Globos que suben por la portada. Cuatro de cada cinco salen por delante del
+ * contenido, más grandes; el resto va detrás. Todos se revientan al tocarlos.
+ */
+export function startBalloons(back: HTMLElement, front: HTMLElement | null, colors: string[], onPop?: (x: number, y: number) => void) {
   if (reducedMotion()) return () => {};
   const timers = new Set<ReturnType<typeof setTimeout>>();
+  let count = 0;
+
+  function later(fn: () => void, ms: number) {
+    const t = setTimeout(() => {
+      timers.delete(t);
+      fn();
+    }, ms);
+    timers.add(t);
+  }
+
+  function pop(b: HTMLElement, e: PointerEvent) {
+    if (b.classList.contains("is-popping")) return;
+    e.stopPropagation();
+    b.classList.add("is-popping");
+    const r = b.querySelector(".balloon__body")!.getBoundingClientRect();
+    onPop?.(r.left + r.width / 2, r.top + r.height / 2);
+    navigator.vibrate?.(12);
+    later(() => b.remove(), 650);
+  }
 
   function spawn() {
+    // cuatro de cada cinco salen por delante
+    const inFront = Boolean(front) && count++ % 5 !== 0;
     const c = colors[(Math.random() * colors.length) | 0];
     const b = document.createElement("div");
-    b.className = "balloon";
+    b.className = `balloon${inFront ? " balloon--front" : ""}`;
     const dur = 13 + Math.random() * 7;
     b.style.left = `${Math.random() * 90}%`;
     // Globo «3D»: esfera con luz y sombra en CSS; los pequeños quedan al fondo (más tenues y lentos)
-    const depth = 0.55 + Math.random() * 0.6;
+    const depth = inFront ? 1.15 + Math.random() * 0.25 : 0.55 + Math.random() * 0.6;
     b.style.setProperty("--c", c);
     b.style.setProperty("--z", depth.toFixed(2));
     b.style.width = `${Math.round(34 + depth * 30)}px`;
     b.style.animationDuration = `${(dur / depth).toFixed(1)}s`;
     b.style.zIndex = depth > 0.9 ? "1" : "0";
     b.innerHTML = '<span class="balloon__body"></span><span class="balloon__string"></span>';
-    box.appendChild(b);
-    const t = setTimeout(() => {
-      b.remove();
-      timers.delete(t);
-    }, (dur / depth) * 1000 + 500);
-    timers.add(t);
+    b.addEventListener("pointerdown", (e) => pop(b, e));
+    (inFront ? front! : back).appendChild(b);
+    later(() => b.remove(), (dur / depth) * 1000 + 500);
   }
 
-  for (let i = 0; i < 4; i++) {
-    const t = setTimeout(spawn, i * 500);
-    timers.add(t);
-  }
+  for (let i = 0; i < 4; i++) later(spawn, i * 500);
   const id = setInterval(() => {
     if (!document.hidden && scrollY < innerHeight) spawn();
   }, 3000);
@@ -139,7 +158,8 @@ export function startBalloons(box: HTMLElement, colors: string[]) {
   return () => {
     clearInterval(id);
     timers.forEach(clearTimeout);
-    box.replaceChildren();
+    back.replaceChildren();
+    front?.replaceChildren();
   };
 }
 

@@ -520,6 +520,14 @@ html.inv-iris .intro.is-gone { transition: none; }
   background: color-mix(in srgb, var(--c) 80%, #000); clip-path: polygon(50% 0, 100% 100%, 0 100%);
 }
 .balloon__string { display: block; width: 1.5px; height: 70px; background: linear-gradient(color-mix(in srgb, var(--c-ink) 40%, transparent), transparent); }
+/* Los de adelante pasan sobre el nombre y la foto; el contenedor deja pasar los toques */
+.balloons--front { z-index: 2; }
+.balloon--front { opacity: 1; filter: drop-shadow(0 14px 16px color-mix(in srgb, var(--c-ink) 22%, transparent)); }
+/* Se revientan al tocarlos: solo el globo recibe el toque, no el hilo ni el hueco */
+.balloon__body { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.balloon.is-popping { animation-play-state: paused; }
+.balloon.is-popping .balloon__body { animation: inv-pop .32s cubic-bezier(.3, 0, .8, .5) forwards; pointer-events: none; }
+.balloon.is-popping .balloon__string { animation: inv-fall .6s ease-in forwards; }
 
 /* ==========================================================================
    Portada
@@ -569,7 +577,7 @@ html.inv-iris .intro.is-gone { transition: none; }
 }
 
 /* ----- Nombre: letras de juguete con volumen ----- */
-.title { margin-top: 4px; font-weight: 400; line-height: .95; cursor: pointer; user-select: none; }
+.title { margin-top: 4px; font-weight: 400; line-height: .95; user-select: none; }
 .title .word {
   display: block; white-space: nowrap;
   font-size: min(clamp(3.6rem, 18vw, 6rem), calc(86vw / (var(--len) * var(--f-ratio, .6))));
@@ -589,7 +597,6 @@ html.inv-iris .intro.is-gone { transition: none; }
   opacity: 0;
 }
 .is-started .ch { animation: inv-drop .8s var(--spring) both; animation-delay: var(--d); }
-.is-started .ch.is-boing { animation: inv-boing .6s var(--spring); }
 
 .age {
   font-family: var(--f-label); font-size: clamp(1.15rem, 5vw, 1.4rem); line-height: 1.2;
@@ -625,21 +632,37 @@ html.inv-iris .intro.is-gone { transition: none; }
     0 2px 4px color-mix(in srgb, var(--c-ink) 10%, transparent),
     0 26px 44px -20px color-mix(in srgb, var(--c-primary) 60%, var(--c-ink));
 }
-.portrait::before, .portrait::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
+/* Capas en profundidad: el contenedor conserva el 3D de sus hijos */
+.portrait__tilt {
+  position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  transition: transform .5s var(--ease);
+}
+.portrait__tilt.is-tilting { transition: transform .08s linear; }
+.is-started .portrait__tilt:not(.is-tilting) { animation: inv-sway 9s ease-in-out 2s infinite; }
+.portrait__tilt img { transform: translateZ(0); }
+.portrait__tilt::before, .portrait__tilt::after { content: ""; position: absolute; border-radius: 50%; pointer-events: none; }
 /* halo: luz de color que respira detrás */
-.portrait::before {
-  inset: -16%; z-index: -1;
+.portrait__tilt::before {
+  inset: -16%; transform: translateZ(-60px) scale(1.12);
   background: radial-gradient(closest-side, color-mix(in srgb, var(--c-highlight) 70%, transparent), color-mix(in srgb, var(--c-secondary) 30%, transparent) 60%, transparent);
   filter: blur(14px); opacity: .7;
   animation: inv-breathe 6s ease-in-out infinite;
 }
 /* filete: anillo de 3 px con los colores del tema, a unos pixeles de la foto */
-.portrait::after {
-  inset: -9px;
+.portrait__tilt::after {
+  inset: -9px; transform: translateZ(18px);
   background: conic-gradient(from 210deg, var(--c-primary), var(--c-highlight), var(--c-secondary), var(--c-accent), var(--c-primary));
   -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
   mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 2.5px));
   animation: inv-turn 30s linear infinite;
+}
+/* el brillo y el sello flotan por delante de la foto */
+.portrait__tilt .portrait__shine { transform: translateZ(6px); }
+.portrait__tilt .portrait__age { transform: translateZ(46px); }
+@keyframes inv-sway {
+  0%, 100% { transform: perspective(900px) rotateX(0deg) rotateY(0deg); }
+  25% { transform: perspective(900px) rotateX(5deg) rotateY(-8deg); }
+  75% { transform: perspective(900px) rotateX(-4deg) rotateY(8deg); }
 }
 /* brillo que cruza la foto */
 .portrait__shine {
@@ -1255,7 +1278,6 @@ html.inv-iris .intro.is-gone { transition: none; }
 @keyframes inv-breathe { 50% { transform: scale(1.04); } }
 @keyframes inv-rise { from { opacity: 0; transform: translateY(22px) scale(.96); } to { opacity: 1; transform: none; } }
 @keyframes inv-drop { from { opacity: 0; transform: translateY(-.6em) rotate(var(--r)) scale(.9, 1.15); } 60% { opacity: 1; transform: translateY(.04em) rotate(var(--r)) scale(1.06, .92); } to { opacity: 1; transform: rotate(var(--r)); } }
-@keyframes inv-boing { 0% { transform: rotate(var(--r)); } 30% { transform: translateY(-.22em) rotate(calc(var(--r) * -2)) scale(.94, 1.1); } 60% { transform: translateY(0) rotate(var(--r)) scale(1.1, .9); } 100% { transform: rotate(var(--r)); } }
 @keyframes inv-dock { from { opacity: 0; translate: 0 140%; } to { opacity: 1; translate: 0 0; } }
 @keyframes inv-giftShake { 0%, 100% { transform: none; } 25% { transform: rotate(-9deg) scale(1.08); } 50% { transform: rotate(9deg) scale(1.08); } 75% { transform: rotate(-5deg); } }
 @keyframes inv-giftSpin { from { transform: translateY(16px) rotateX(-18deg) rotateY(0deg); } to { transform: translateY(16px) rotateX(-18deg) rotateY(360deg); } }
