@@ -925,6 +925,10 @@ details.more > summary {
 .themeFeatured {
   padding: 0 14px 10px;
 }
+/* Ojito de la demo: abajo a la derecha de la tarjeta del tema */
+.themeDemo {
+  margin-left: auto;
+}
 
 /* ---------- Botones de icono en las filas ---------- */
 .actionIcon {

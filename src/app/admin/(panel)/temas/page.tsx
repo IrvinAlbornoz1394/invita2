@@ -7,6 +7,7 @@ import type { Theme } from "@/lib/types";
 import { createTheme } from "../../actions";
 import { ThemeActions } from "../../ThemeActions";
 import { FeaturedSwitch } from "../../FeaturedSwitch";
+import { AdminIcon } from "../../AdminIcon";
 import { FilterableList, type FilterSelect, type FilterTag } from "../../FilterableList";
 import styles from "../../admin.module.css";
 
@@ -102,6 +103,15 @@ async function ThemesList() {
           )}
           <div className={styles.themeActions}>
             <ThemeActions id={t.id} name={t.name} active={t.is_active !== false} uses={uses} />
+            <a
+              className={`${styles.actionIcon} ${styles.themeDemo}`}
+              href={`/admin/vista/tema/${t.id}`}
+              target="_blank"
+              aria-label={`Ver demo de ${t.name}`}
+              title="Ver demo"
+            >
+              <AdminIcon name="eye" />
+            </a>
           </div>
         </div>
       ),
