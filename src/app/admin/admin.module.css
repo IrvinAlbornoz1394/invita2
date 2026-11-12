@@ -614,6 +614,8 @@ details.more > summary {
 }
 .themeCard {
   display: grid;
+  /* La foto y el texto crecen; el destacado y los botones quedan al pie, a su altura */
+  grid-template-rows: 1fr auto auto;
   overflow: hidden;
   background: var(--card);
   border: 1px solid var(--line);
@@ -623,12 +625,14 @@ details.more > summary {
 }
 .themeLink {
   display: grid;
+  align-content: start;
   color: inherit;
   text-decoration: none;
 }
 .themeActions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
   padding: 0 14px 12px;
 }
@@ -756,4 +760,351 @@ details.more > summary {
 }
 .restore:hover {
   color: inherit;
+}
+
+/* ---------- Filtros de las listas (búsqueda + etiquetas de estado) ---------- */
+.filters {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+@media (min-width: 900px) {
+  .filters {
+    grid-template-columns: minmax(260px, 360px) 1fr;
+    align-items: center;
+  }
+  /* Con selector: búsqueda · selector · etiquetas */
+  .filters:has(.filterSelect) {
+    grid-template-columns: minmax(240px, 320px) auto 1fr;
+  }
+}
+.filterSelect {
+  width: auto;
+  min-width: 200px;
+  font-weight: 600;
+}
+.search {
+  position: relative;
+  display: block;
+}
+.search svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  translate: 0 -50%;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+.search .input {
+  padding-left: 38px;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 5px 8px 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, color 0.15s;
+}
+.tag:hover {
+  border-color: var(--brand);
+}
+.tag[aria-pressed="true"] {
+  border-color: var(--ink);
+  background: var(--ink);
+  color: #fff;
+}
+.tag:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.tagCount {
+  min-width: 22px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.tag[aria-pressed="true"] .tagCount {
+  background: rgb(255 255 255 / 0.18);
+  color: #fff;
+}
+/* Envoltura de cada fila: no altera la rejilla ni la lista */
+.filterItem {
+  display: contents;
+}
+
+/* ---------- Interruptor (al estilo de Ant Design) ---------- */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle[data-disabled] {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.toggleTrack {
+  position: relative;
+  flex: none;
+  width: 44px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 100px;
+  background: rgb(0 0 0 / 0.25);
+  cursor: inherit;
+  transition: background-color 0.2s;
+}
+.toggle:hover .toggleTrack:not(:disabled) {
+  background: rgb(0 0 0 / 0.45);
+}
+.toggleTrack[aria-checked="true"] {
+  background: var(--brand);
+}
+.toggle:hover .toggleTrack[aria-checked="true"]:not(:disabled) {
+  background: var(--brand-d);
+}
+.toggleTrack:disabled {
+  opacity: 0.4;
+}
+.toggleTrack[aria-busy="true"] {
+  opacity: 0.7;
+  cursor: progress;
+}
+.toggleKnob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 4px rgb(0 35 11 / 0.2);
+  transition: left 0.2s ease-in-out;
+}
+.toggleTrack[aria-checked="true"] .toggleKnob {
+  left: calc(100% - 20px);
+}
+.toggleTrack:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .toggleTrack,
+  .toggleKnob {
+    transition: none;
+  }
+}
+.themeFeatured {
+  padding: 0 14px 10px;
+}
+
+/* ---------- Botones de icono en las filas ---------- */
+.actionIcon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s;
+}
+.actionIcon svg {
+  width: 18px;
+  height: 18px;
+}
+.actionIcon:hover {
+  border-color: var(--ink);
+}
+.actionIcon:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.actionIcon:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.actionIconDanger {
+  color: var(--danger);
+}
+.actionIconDanger:hover {
+  border-color: var(--danger);
+  background: #fdecea;
+}
+.actionIconDone {
+  border-color: var(--ok);
+  color: var(--ok);
+  background: var(--ok-bg);
+}
+.actionIconSlot {
+  width: 36px;
+  height: 36px;
+}
+
+/* ---------- Confirmación en burbuja (al estilo del Popconfirm de Ant Design) ---------- */
+.popAnchor {
+  display: inline-flex;
+}
+.pop {
+  display: none;
+  /* popover: fuera de los estilos del navegador, posición fija calculada al abrir */
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  max-width: min(320px, calc(100vw - 16px));
+  padding: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  overflow: visible;
+  box-shadow: 0 6px 16px 0 rgb(0 0 0 / 0.08), 0 3px 6px -4px rgb(0 0 0 / 0.12), 0 9px 28px 8px rgb(0 0 0 / 0.05);
+  font-size: 14px;
+  line-height: 1.5;
+}
+.pop:popover-open {
+  display: block;
+  animation: pop-in 0.2s cubic-bezier(0.08, 0.82, 0.17, 1);
+}
+.pop[data-placement="top"] {
+  transform-origin: var(--arrow) 100%;
+}
+.pop[data-placement="bottom"] {
+  transform-origin: var(--arrow) 0;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop:popover-open {
+    animation: none;
+  }
+}
+/* Flecha hacia el botón */
+.pop::after {
+  content: "";
+  position: absolute;
+  left: var(--arrow);
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: #fff;
+  rotate: 45deg;
+}
+.pop[data-placement="top"]::after {
+  bottom: -5px;
+  box-shadow: 3px 3px 7px rgb(0 0 0 / 0.07);
+}
+.pop[data-placement="bottom"]::after {
+  top: -5px;
+  box-shadow: -2px -2px 5px rgb(0 0 0 / 0.06);
+}
+.popBody {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.popIcon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: #faad14;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+.popTitle {
+  display: block;
+  margin: 0;
+  font-weight: 600;
+  color: rgb(0 0 0 / 0.88);
+}
+.popText {
+  display: block;
+  margin: 4px 0 0;
+  color: rgb(0 0 0 / 0.65);
+}
+.popButtons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.popBtn {
+  height: 24px;
+  padding: 0 7px;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  background: #fff;
+  color: rgb(0 0 0 / 0.88);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background-color 0.2s;
+}
+.popBtn:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.popBtn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
+.popBtnPrimary {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: #fff;
+}
+.popBtnPrimary:hover {
+  border-color: var(--brand-d);
+  background: var(--brand-d);
+  color: #fff;
+}
+.popBtnDanger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+.popBtnDanger:hover {
+  border-color: #a8221a;
+  background: #a8221a;
+  color: #fff;
 }

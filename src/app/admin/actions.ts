@@ -89,6 +89,8 @@ export async function saveInvitation(id: string, input: InvitationInput): Promis
     .from("invitations")
     .update({
       ...fields,
+      // Publicar también reactiva: solo hay «publicada» o «inactiva»
+      ...(fields.published ? { is_active: true } : {}),
       event_at: zonedToUtc(date, time, fields.timezone).toISOString(),
       maps_destination: mapsDestination,
       ceremony: { ...fields.ceremony, destination: ceremonyDestination },
@@ -100,7 +102,7 @@ export async function saveInvitation(id: string, input: InvitationInput): Promis
   if (error) return { ok: false, error: error.message };
 
   updateTag(invitationTag(data.slug));
-  return { ok: true, message: fields.published ? "Guardado y publicado" : "Guardado como borrador" };
+  return { ok: true, message: fields.published ? "Guardado y publicado" : "Guardado (inactiva)" };
 }
 
 export async function duplicateInvitation(id: string) {
@@ -142,13 +144,17 @@ export async function deleteInvitation(id: string) {
   redirect("/admin");
 }
 
-/** Activa o desactiva el enlace público sin tocar el resto de la invitación. */
-export async function setInvitationActive(id: string, active: boolean) {
+/**
+ * Publicada (el enlace funciona) o inactiva (lleva a la página principal).
+ * Es el único estado que maneja el panel: publicar también reactiva las que
+ * se habían desactivado antes de existir esta opción.
+ */
+export async function setInvitationPublished(id: string, published: boolean) {
   const { supabase } = await requireAdmin();
 
   const { data, error } = await supabase
     .from("invitations")
-    .update({ is_active: active })
+    .update({ published, is_active: true })
     .eq("id", id)
     .eq("is_deleted", false)
     .select("slug")
@@ -187,6 +193,18 @@ export async function saveTheme(id: string, input: ThemeInput): Promise<ActionRe
   updateTag(themeTag(id));
   updateTag(themesTag);
   return { ok: true, message: "Tema guardado" };
+}
+
+/** Destacado: aparece en la landing antes de «Ver todos». */
+export async function setThemeFeatured(id: string, featured: boolean) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase.from("themes").update({ featured }).eq("id", id).eq("is_deleted", false);
+  if (error) throw error;
+
+  updateTag(themeTag(id));
+  updateTag(themesTag);
+  refresh();
 }
 
 /** Desactivar: deja de ofrecerse para invitaciones nuevas y en la landing; las que ya lo usan lo conservan. */

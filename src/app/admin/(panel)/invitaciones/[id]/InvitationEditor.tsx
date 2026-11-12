@@ -22,7 +22,9 @@ import type { InvitationInput } from "@/lib/schema";
 import type { Extra, ImageStyle, Invitation, Performer, SectionKey, ShowImageSource, ShowSource, TextKey, Theme } from "@/lib/types";
 import { showImageSource, showSource, themeHasShow, themeShowContent } from "@/lib/view";
 import { duplicateInvitation, saveInvitation } from "../../../actions";
-import { InvitationActions } from "../../../InvitationActions";
+import { InvitationActions, UNPUBLISH_CONFIRM } from "../../../InvitationActions";
+import { Popconfirm } from "../../../Popconfirm";
+import { Switch } from "../../../Switch";
 import { CopyLink } from "../../../CopyLink";
 import { MediaField } from "../../../MediaField";
 import { ItemTools, move, PerformersField } from "../../../PerformersField";
@@ -173,6 +175,9 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   const [toast, setToast] = useState<string | null>(null);
   const [previewKey, setPreviewKey] = useState(0);
   const [uploading, setUploading] = useState<string | null>(null);
+  // Las desactivadas de antes: al publicar, el servidor las reactiva
+  const [active, setActive] = useState(invitation.is_active);
+  const live = form.published && active;
   const galleryInput = useRef<HTMLInputElement>(null);
 
   const dirty = JSON.stringify(form) !== saved;
@@ -205,9 +210,16 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
         return;
       }
       setSaved(JSON.stringify(next));
+      if (next.published) setActive(true);
       setToast(res.message ?? "Guardado");
       setPreviewKey((k) => k + 1);
     });
+  }
+
+  function setPublished(published: boolean) {
+    const next = { ...form, published };
+    setForm(next);
+    save(next);
   }
 
   // Ctrl/Cmd + S guarda
@@ -272,14 +284,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
         <div>
           <h1 className={styles.pageTitle}>{fullName}</h1>
           <p className={styles.pageSub}>
-            <span className={`${styles.badge} ${form.published ? styles.badgeOk : ""}`}>
-              {form.published ? "Publicada" : "Borrador"}
-            </span>{" "}
-            {!invitation.is_active && (
-              <>
-                <span className={`${styles.badge} ${styles.badgeOff}`}>Desactivada</span>{" "}
-              </>
-            )}
+            <span className={`${styles.badge} ${live ? styles.badgeOk : styles.badgePast}`}>{live ? "Publicada" : "Inactiva"}</span>{" "}
             <span className={styles.mono}>/{invitation.slug}</span>
           </p>
         </div>
@@ -958,24 +963,20 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>Publicación</h2>
             <p className={styles.cardHint}>
-              {invitation.is_active
-                ? "Mientras sea borrador, el enlace lleva a la página principal."
-                : "Está desactivada: el enlace lleva a la página principal aunque esté publicada. Actívala abajo."}
+              {live ? "El enlace funciona: compártelo." : "Inactiva: el enlace lleva a la página principal hasta que la publiques."}
             </p>
             <div className={styles.grid}>
-              <label className={styles.switch}>
-                <input
-                  type="checkbox"
-                  checked={form.published}
-                  onChange={(e) => {
-                    const next = { ...form, published: e.target.checked };
-                    setForm(next);
-                    save(next);
-                  }}
-                  disabled={saving}
-                />
-                {form.published ? "Publicada" : "Borrador"}
-              </label>
+              {/* Publicar con cambios sin guardar también los guarda; apagarla pide confirmación */}
+              <Popconfirm {...UNPUBLISH_CONFIRM} danger onConfirm={() => setPublished(false)}>
+                {(confirm) => (
+                  <Switch
+                    checked={live}
+                    loading={saving}
+                    label={live ? "Publicada" : "Inactiva"}
+                    onChange={(on) => (on ? setPublished(true) : confirm())}
+                  />
+                )}
+              </Popconfirm>
               <div className={styles.linkBox}>
                 <input className={styles.input} readOnly value={`/${invitation.slug}`} aria-label="Enlace" />
                 <CopyLink slug={invitation.slug} className={`${styles.btn} ${styles.btnSmall}`} />
@@ -995,7 +996,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
               <form action={duplicateInvitation.bind(null, invitation.id)}>
                 <button className={`${styles.btn} ${styles.btnSmall}`}>Duplicar</button>
               </form>
-              <InvitationActions id={invitation.id} name={fullName} active={invitation.is_active} />
+              <InvitationActions id={invitation.id} name={fullName} />
             </div>
           </section>
         </aside>

@@ -39,4 +39,4 @@ const { error: invitationError } = await to.client
   .upsert(withoutTimestamps(await moveFiles(invitation)));
 if (invitationError) throw invitationError;
 
-console.log(`Listo: /${slug} copiada a ${to.url}${invitation.published ? "" : " (como borrador)"}`);
+console.log(`Listo: /${slug} copiada a ${to.url}${invitation.published ? "" : " (inactiva)"}`);

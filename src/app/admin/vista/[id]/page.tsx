@@ -10,7 +10,7 @@ import { InvitationLoading } from "@/components/invitation/Loading";
 
 export const metadata: Metadata = { title: "Vista previa", robots: { index: false } };
 
-/** Vista previa para el admin: muestra también borradores, sin caché. */
+/** Vista previa para el admin: muestra también las inactivas, sin caché. */
 export default function PreviewPage({ params }: PageProps<"/admin/vista/[id]">) {
   return (
     <Suspense fallback={<InvitationLoading />}>
