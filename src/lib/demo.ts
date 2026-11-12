@@ -30,14 +30,18 @@ const DEMO_FAMILY_PHOTOS = { parents_photo: demoPhoto("papas.jpg"), godparents_p
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Tema para la demo pública; null si el id no es válido o no existe. */
+/**
+ * Tema para la demo pública; null si el id no es válido, no existe o se eliminó.
+ * Los desactivados también tienen demo: así se comparte con un cliente un tema
+ * que todavía no sale en la landing.
+ */
 export async function getDemoTheme(id: string): Promise<Theme | null> {
   "use cache";
   cacheLife("days");
   cacheTag(themesTag, themeTag(id));
 
   if (!UUID.test(id)) return null;
-  const { data, error } = await createPublicClient().from("themes").select("*").eq("id", id).eq("is_active", true).eq("is_deleted", false).maybeSingle<Theme>();
+  const { data, error } = await createPublicClient().from("themes").select("*").eq("id", id).eq("is_deleted", false).maybeSingle<Theme>();
   if (error) throw error;
   return data;
 }

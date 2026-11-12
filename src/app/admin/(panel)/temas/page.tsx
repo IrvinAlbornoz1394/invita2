@@ -105,10 +105,10 @@ async function ThemesList() {
             <ThemeActions id={t.id} name={t.name} active={t.is_active !== false} uses={uses} />
             <a
               className={`${styles.actionIcon} ${styles.themeDemo}`}
-              href={`/admin/vista/tema/${t.id}`}
+              href={`/demo/${t.id}`}
               target="_blank"
-              aria-label={`Ver demo de ${t.name}`}
-              title="Ver demo"
+              aria-label={`Ver demo pública de ${t.name}`}
+              title="Ver demo pública (se puede compartir)"
             >
               <AdminIcon name="eye" />
             </a>
