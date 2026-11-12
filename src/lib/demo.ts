@@ -9,6 +9,24 @@ import type { InvitationWithTheme, Theme } from "./types";
 /** Festejado de la demo: siempre el mismo, para que cada personaje se compare con los mismos datos. */
 const DEMO_KID = { name_lines: ["Mateo"], age: 6 };
 
+/** Fotos de ejemplo (public/temas/demo): perfil para la foto principal, el resto en la galería. */
+const DEMO_PHOTOS = "/temas/demo/";
+const demoPhoto = (file: string) => encodeURI(DEMO_PHOTOS + file);
+const DEMO_PHOTO = demoPhoto("perfil.jpg");
+const DEMO_GALLERY = [
+  "images (2).jpg",
+  "images (1).jpg",
+  "two-happy-excited-darkskinned-latino-260nw-2484330879.webp",
+  "young-latino-boy-between-1-260nw-2645144735.webp",
+  "images (4).jpg",
+  "images.jpg",
+  "images (3).jpg",
+  "1.webp",
+  "istockphoto-1397872098-612x612.jpg",
+].map((file) => ({ url: demoPhoto(file) }));
+/** Foto de los papás en bautizo y comunión */
+const DEMO_PARENTS_PHOTO = demoPhoto("istockphoto-638924066-612x612.jpg");
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Tema para la demo pública; null si el id no es válido o no existe. */
@@ -50,7 +68,7 @@ export function demoInvitation(theme: Theme, eventAt: string): InvitationWithThe
     theme_id: theme.id,
     ...DEMO_KID,
     ...(religious ? { age: null, age_text: ageRibbon(null, type) } : { age_text: null }),
-    photo_url: null,
+    photo_url: DEMO_PHOTO,
     event_at: at,
     timezone: "America/Merida",
     event_type: type,
@@ -64,9 +82,9 @@ export function demoInvitation(theme: Theme, eventAt: string): InvitationWithThe
     rsvp_ask_people: true,
     show,
     extras: demo.extras,
-    family: demo.family,
+    family: religious ? { ...demo.family, parents_photo: DEMO_PARENTS_PHOTO } : demo.family,
     ceremony: religious ? { ...demo.ceremony, time: startTime } : demo.ceremony,
-    gallery: [],
+    gallery: DEMO_GALLERY,
     sections: {},
     texts: {},
     updated_at: eventAt,
