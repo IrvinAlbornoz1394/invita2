@@ -102,24 +102,41 @@ export function burstFrom(fx: Fx, el: Element, count = 24, yFactor = 1 / 3) {
 }
 
 /* ---------------- Globos ---------------- */
-/**
- * Globos que suben por la portada. Cuatro de cada cinco salen por delante del
- * contenido, más grandes; el resto va detrás. Todos se revientan al tocarlos.
- */
-export function startBalloons(back: HTMLElement, front: HTMLElement | null, colors: string[], onPop?: (x: number, y: number) => void) {
-  if (reducedMotion()) return () => {};
-  const timers = new Set<ReturnType<typeof setTimeout>>();
-  let count = 0;
+type Later = (fn: () => void, ms: number) => void;
 
-  function later(fn: () => void, ms: number) {
+/** Temporizadores que se cancelan juntos al desmontar. */
+function timerSet() {
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  const later: Later = (fn, ms) => {
     const t = setTimeout(() => {
       timers.delete(t);
       fn();
     }, ms);
     timers.add(t);
-  }
+  };
+  return { later, clear: () => timers.forEach(clearTimeout) };
+}
 
-  function pop(b: HTMLElement, e: PointerEvent) {
+/**
+ * Crea un globo «3D» (esfera con luz y sombra en CSS) que sube por `layer` y se
+ * revienta al tocarlo. depth: < 0.9 queda al fondo (más tenue, chico y lento).
+ */
+function launchBalloon(
+  layer: HTMLElement,
+  { color, depth, left, dur, front }: { color: string; depth: number; left: number; dur: number; front: boolean },
+  later: Later,
+  onPop?: (x: number, y: number) => void
+) {
+  const b = document.createElement("div");
+  b.className = `balloon${front ? " balloon--front" : ""}`;
+  b.style.left = `${left}%`;
+  b.style.setProperty("--c", color);
+  b.style.setProperty("--z", depth.toFixed(2));
+  b.style.width = `${Math.round(34 + depth * 30)}px`;
+  b.style.animationDuration = `${dur.toFixed(1)}s`;
+  b.style.zIndex = depth > 0.9 ? "1" : "0";
+  b.innerHTML = '<span class="balloon__body"></span><span class="balloon__string"></span>';
+  b.addEventListener("pointerdown", (e) => {
     if (b.classList.contains("is-popping")) return;
     e.stopPropagation();
     b.classList.add("is-popping");
@@ -127,27 +144,28 @@ export function startBalloons(back: HTMLElement, front: HTMLElement | null, colo
     onPop?.(r.left + r.width / 2, r.top + r.height / 2);
     navigator.vibrate?.(12);
     later(() => b.remove(), 650);
-  }
+  });
+  layer.appendChild(b);
+  later(() => b.remove(), dur * 1000 + 500);
+}
+
+const pick = (colors: string[]) => colors[(Math.random() * colors.length) | 0];
+
+/**
+ * Globos que suben por la portada. Cuatro de cada cinco salen por delante del
+ * contenido, más grandes; el resto va detrás. Todos se revientan al tocarlos.
+ */
+export function startBalloons(back: HTMLElement, front: HTMLElement | null, colors: string[], onPop?: (x: number, y: number) => void) {
+  if (reducedMotion()) return () => {};
+  const { later, clear } = timerSet();
+  let count = 0;
 
   function spawn() {
     // cuatro de cada cinco salen por delante
     const inFront = Boolean(front) && count++ % 5 !== 0;
-    const c = colors[(Math.random() * colors.length) | 0];
-    const b = document.createElement("div");
-    b.className = `balloon${inFront ? " balloon--front" : ""}`;
-    const dur = 13 + Math.random() * 7;
-    b.style.left = `${Math.random() * 90}%`;
-    // Globo «3D»: esfera con luz y sombra en CSS; los pequeños quedan al fondo (más tenues y lentos)
     const depth = inFront ? 1.15 + Math.random() * 0.25 : 0.55 + Math.random() * 0.6;
-    b.style.setProperty("--c", c);
-    b.style.setProperty("--z", depth.toFixed(2));
-    b.style.width = `${Math.round(34 + depth * 30)}px`;
-    b.style.animationDuration = `${(dur / depth).toFixed(1)}s`;
-    b.style.zIndex = depth > 0.9 ? "1" : "0";
-    b.innerHTML = '<span class="balloon__body"></span><span class="balloon__string"></span>';
-    b.addEventListener("pointerdown", (e) => pop(b, e));
-    (inFront ? front! : back).appendChild(b);
-    later(() => b.remove(), (dur / depth) * 1000 + 500);
+    const dur = (13 + Math.random() * 7) / depth;
+    launchBalloon(inFront ? front! : back, { color: pick(colors), depth, left: Math.random() * 90, dur, front: inFront }, later, onPop);
   }
 
   for (let i = 0; i < 4; i++) later(spawn, i * 500);
@@ -157,9 +175,49 @@ export function startBalloons(back: HTMLElement, front: HTMLElement | null, colo
 
   return () => {
     clearInterval(id);
-    timers.forEach(clearTimeout);
+    clear();
     back.replaceChildren();
     front?.replaceChildren();
+  };
+}
+
+/** Cada cuánto sube una tanda de globos después de la portada, y cuántos trae. */
+const SKY_EVERY_MS = 9000;
+const SKY_PER_WAVE = 3;
+
+/**
+ * Pasada la portada, cada tanto sube una tanda de pocos globos sobre toda la
+ * invitación (capa fija). En la portada no, que ya tiene los suyos. Cada globo
+ * va en su tercio del ancho para que no se amontonen; también se revientan.
+ */
+export function startSkyBalloons(layer: HTMLElement, colors: string[], onPop?: (x: number, y: number) => void) {
+  if (reducedMotion()) return () => {};
+  const { later, clear } = timerSet();
+  let last = -Infinity;
+
+  function wave() {
+    last = Date.now();
+    const lane = 100 / SKY_PER_WAVE;
+    // Carriles en orden al azar, para que no siempre suba primero el de la izquierda
+    const lanes = [...Array(SKY_PER_WAVE).keys()].sort(() => Math.random() - 0.5);
+    lanes.forEach((l, i) =>
+      later(() => {
+        const depth = 0.95 + Math.random() * 0.25;
+        const left = l * lane + Math.random() * (lane - 16);
+        launchBalloon(layer, { color: pick(colors), depth, left, dur: 10 + Math.random() * 4, front: true }, later, onPop);
+      }, i * 700)
+    );
+  }
+
+  // La primera tanda sale en cuanto se deja la portada; luego, una cada SKY_EVERY_MS
+  const id = setInterval(() => {
+    if (!document.hidden && scrollY > innerHeight * 0.85 && Date.now() - last >= SKY_EVERY_MS) wave();
+  }, 500);
+
+  return () => {
+    clearInterval(id);
+    clear();
+    layer.replaceChildren();
   };
 }
 

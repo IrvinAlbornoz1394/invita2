@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { flushSync } from "react-dom";
 import type { BlockKey, InvitationView } from "@/lib/view";
-import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, startFloaters, stars, type Fx } from "./effects";
+import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, startFloaters, startSkyBalloons, stars, type Fx } from "./effects";
 import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
@@ -40,6 +40,7 @@ export function Invitation({ view, preview = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const balloonsRef = useRef<HTMLDivElement>(null);
   const balloonsFrontRef = useRef<HTMLDivElement>(null);
+  const skyRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const confettiRef = useRef<ReturnType<typeof createConfetti> | null>(null);
   const musicRef = useRef<ReturnType<typeof createMusic> | null>(null);
@@ -120,6 +121,12 @@ export function Invitation({ view, preview = false }: Props) {
     }
     return startBalloons(balloonsRef.current, balloonsFrontRef.current, palette, (x, y) => fx.burst(x, y, 36));
   }, [started, palette, fx, view.elegant, view.eventType]);
+
+  // Pasada la portada, pocos globos de vez en cuando sobre toda la invitación (solo cumpleaños)
+  useEffect(() => {
+    if (!started || view.elegant || !skyRef.current) return;
+    return startSkyBalloons(skyRef.current, palette, (x, y) => fx.burst(x, y, 30));
+  }, [started, palette, fx, view.elegant]);
 
   // Entradas al hacer scroll
   useEffect(() => {
@@ -363,6 +370,8 @@ export function Invitation({ view, preview = false }: Props) {
           </footer>
         </div>
       </main>
+
+      {!view.elegant && <div className="balloons balloons--sky" ref={skyRef} aria-hidden="true" />}
 
       {/* ===================== Barra inferior ===================== */}
       {showDock && (

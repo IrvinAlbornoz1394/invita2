@@ -522,6 +522,8 @@ html.inv-iris .intro.is-gone { transition: none; }
 .balloon__string { display: block; width: 1.5px; height: 70px; background: linear-gradient(color-mix(in srgb, var(--c-ink) 40%, transparent), transparent); }
 /* Los de adelante pasan sobre el nombre y la foto; el contenedor deja pasar los toques */
 .balloons--front { z-index: 2; }
+/* Después de la portada: capa fija sobre toda la invitación, debajo del dock (80) y el confeti (90) */
+.balloons.balloons--sky { position: fixed; z-index: 70; }
 .balloon--front { opacity: 1; filter: drop-shadow(0 14px 16px color-mix(in srgb, var(--c-ink) 22%, transparent)); }
 /* Se revientan al tocarlos: solo el globo recibe el toque, no el hilo ni el hueco */
 .balloon__body { pointer-events: auto; cursor: pointer; -webkit-tap-highlight-color: transparent; }
