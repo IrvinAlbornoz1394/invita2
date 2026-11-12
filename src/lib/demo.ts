@@ -23,9 +23,10 @@ const DEMO_GALLERY = [
   "images (3).jpg",
   "1.webp",
   "istockphoto-1397872098-612x612.jpg",
+  "istockphoto-638924066-612x612.jpg",
 ].map((file) => ({ url: demoPhoto(file) }));
-/** Foto de los papás en bautizo y comunión */
-const DEMO_PARENTS_PHOTO = demoPhoto("istockphoto-638924066-612x612.jpg");
+/** Fotos de los papás y los padrinos: solo en bautizo y comunión */
+const DEMO_FAMILY_PHOTOS = { parents_photo: demoPhoto("papas.jpg"), godparents_photo: demoPhoto("padrinos.jpg") };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -82,7 +83,7 @@ export function demoInvitation(theme: Theme, eventAt: string): InvitationWithThe
     rsvp_ask_people: true,
     show,
     extras: demo.extras,
-    family: religious ? { ...demo.family, parents_photo: DEMO_PARENTS_PHOTO } : demo.family,
+    family: religious ? { ...demo.family, ...DEMO_FAMILY_PHOTOS } : demo.family,
     ceremony: religious ? { ...demo.ceremony, time: startTime } : demo.ceremony,
     gallery: DEMO_GALLERY,
     sections: {},
