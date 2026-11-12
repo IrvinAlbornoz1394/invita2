@@ -163,6 +163,74 @@ export function startBalloons(back: HTMLElement, front: HTMLElement | null, colo
   };
 }
 
+/**
+ * Elementos que flotan en las portadas religiosas y se pueden tocar:
+ *   bubble  burbujas de jabón que suben (bautizo: el agua)
+ *   petal   pétalos que caen girando (primera comunión)
+ * Algo más de la mitad pasa por delante del contenido.
+ */
+export type FloaterKind = "bubble" | "petal";
+
+export function startFloaters(
+  back: HTMLElement,
+  front: HTMLElement | null,
+  kind: FloaterKind,
+  onPop?: (x: number, y: number) => void
+) {
+  if (reducedMotion()) return () => {};
+  const timers = new Set<ReturnType<typeof setTimeout>>();
+  let count = 0;
+
+  function later(fn: () => void, ms: number) {
+    const t = setTimeout(() => {
+      timers.delete(t);
+      fn();
+    }, ms);
+    timers.add(t);
+  }
+
+  function pop(el: HTMLElement, e: PointerEvent) {
+    if (el.classList.contains("is-popping")) return;
+    e.stopPropagation();
+    el.classList.add("is-popping");
+    const r = el.querySelector(".floater__body")!.getBoundingClientRect();
+    onPop?.(r.left + r.width / 2, r.top + r.height / 2);
+    navigator.vibrate?.(8);
+    later(() => el.remove(), 700);
+  }
+
+  function spawn() {
+    const inFront = Boolean(front) && count++ % 5 < 3;
+    const el = document.createElement("div");
+    el.className = `floater floater--${kind}${inFront ? " floater--front" : ""}`;
+    const bubble = kind === "bubble";
+    // Los de adelante, más grandes y un poco más rápidos
+    const size = bubble ? (inFront ? 46 + Math.random() * 34 : 22 + Math.random() * 22) : inFront ? 20 + Math.random() * 10 : 13 + Math.random() * 7;
+    const dur = (bubble ? 11 : 13) + Math.random() * 6 - (inFront ? 2 : 0);
+    el.style.left = `${Math.random() * 92}%`;
+    el.style.setProperty("--w", `${Math.round(size)}px`);
+    el.style.setProperty("--sway", `${(Math.random() * 2 + 2.4).toFixed(1)}s`);
+    el.style.setProperty("--tone", Math.random() < 0.5 ? "var(--c-highlight)" : "var(--c-accent)");
+    el.style.animationDuration = `${dur.toFixed(1)}s`;
+    el.innerHTML = '<span class="floater__body"></span>';
+    el.addEventListener("pointerdown", (e) => pop(el, e));
+    (inFront ? front! : back).appendChild(el);
+    later(() => el.remove(), dur * 1000 + 500);
+  }
+
+  for (let i = 0; i < 5; i++) later(spawn, i * 450);
+  const id = setInterval(() => {
+    if (!document.hidden && scrollY < innerHeight) spawn();
+  }, 2400);
+
+  return () => {
+    clearInterval(id);
+    timers.forEach(clearTimeout);
+    back.replaceChildren();
+    front?.replaceChildren();
+  };
+}
+
 /* ---------------- Música (empieza en el segundo indicado y repite desde ahí) ---------------- */
 export function createMusic(src: string, start: number) {
   const audio = new Audio(`${src}#t=${start}`);

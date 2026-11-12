@@ -27,6 +27,11 @@ const names = z
   .max(8)
   .transform((list) => list.filter(Boolean));
 
+const performers = z
+  .array(z.object({ name: text(60), image_url: optionalAsset }))
+  .max(12)
+  .transform((list) => list.filter((p) => p.name || p.image_url));
+
 const textKeys = Object.keys(DEFAULT_TEXTS) as [keyof typeof DEFAULT_TEXTS, ...(keyof typeof DEFAULT_TEXTS)[]];
 const sectionKeys = Object.keys(DEFAULT_SECTIONS) as [keyof typeof DEFAULT_SECTIONS, ...(keyof typeof DEFAULT_SECTIONS)[]];
 
@@ -55,12 +60,14 @@ export const invitationInput = z.object({
     .transform((v) => v.replace(/\D/g, ""))
     .refine((v) => v === "" || /^[0-9]{8,15}$/.test(v), "Número de WhatsApp no válido (8 a 15 dígitos con lada)")
     .transform((v) => v || null),
+  rsvp_ask_people: z.boolean(),
   show: z.object({
     enabled: z.boolean(),
+    source: z.enum(["theme", "custom"]),
     time: hhmm.nullable().or(z.literal("").transform(() => null)),
     title: text(120),
     description: text(600),
-    performers: z.array(z.object({ name: text(60), image_url: optionalAsset })).max(12),
+    performers: performers,
     image_source: z.enum(["theme", "custom"]),
     image_url: optionalAsset,
     image_style: z.enum(["framed", "plain"]),
@@ -111,6 +118,8 @@ export const themeInput = z.object({
   group_url: optionalAsset,
   show_url: optionalAsset,
   show_style: z.enum(["framed", "plain"]),
+  show: z.object({ title: text(120), description: text(600), performers }),
+  featured: z.boolean(),
   music_url: optionalAsset,
   music_start: z.number().int().min(0).max(600),
   background: z.object({

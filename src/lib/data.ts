@@ -1,5 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
+import { eventType, isReligious } from "./defaults";
 import { createPublicClient } from "./supabase/public";
 import type { InvitationWithTheme } from "./types";
 
@@ -33,7 +34,25 @@ export async function getPublishedInvitation(slug: string): Promise<InvitationWi
 
 export const themesTag = "themes";
 
-export type LandingTheme = { id: string; name: string; logoUrl: string | null; cardUrl: string | null; groupUrl: string | null };
+export type LandingTheme = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  cardUrl: string | null;
+  groupUrl: string | null;
+  featured: boolean;
+  /** Bautizo y comunión: no entran a «Personajes», tienen su mención aparte */
+  religious: boolean;
+};
+
+/** Cuántos personajes muestra la landing si no hay ninguno destacado. */
+export const LANDING_THEMES_FALLBACK = 6;
+
+/** Los que la landing muestra antes de «Ver todos»: los destacados o, si no hay, los primeros. */
+export function landingPicks(characters: LandingTheme[]) {
+  const featured = characters.filter((t) => t.featured);
+  return featured.length ? featured : characters.slice(0, LANDING_THEMES_FALLBACK);
+}
 
 /** Temas con imagen, para la landing (logos y tarjetas de personajes). */
 export async function getLandingThemes(): Promise<LandingTheme[]> {
@@ -43,7 +62,7 @@ export async function getLandingThemes(): Promise<LandingTheme[]> {
 
   const { data, error } = await createPublicClient()
     .from("themes")
-    .select("id, name, logo_url, card_url, group_url")
+    .select("id, name, logo_url, card_url, group_url, featured, event_type")
     .or("logo_url.not.is.null,card_url.not.is.null")
     .eq("is_active", true)
     .eq("is_deleted", false)
@@ -56,5 +75,7 @@ export async function getLandingThemes(): Promise<LandingTheme[]> {
     logoUrl: t.logo_url,
     cardUrl: t.card_url,
     groupUrl: t.group_url,
+    featured: t.featured,
+    religious: isReligious(eventType(t.event_type)),
   }));
 }

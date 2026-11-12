@@ -66,7 +66,14 @@ function Flip({ value }: { value: string }) {
       {n > 0 && (
         <span key={n} className="flip__fold" aria-hidden="true">
           <span className="flip__half flip__half--top flip__leaf-out">{from}</span>
-          <span className="flip__half flip__half--bottom flip__leaf-in">{to}</span>
+          {/* Al terminar, la mitad fija también pasa al número nuevo: si el navegador
+              pinta la fija encima de la hoja (misma profundidad 3D), no se queda el viejo */}
+          <span
+            className="flip__half flip__half--bottom flip__leaf-in"
+            onAnimationEnd={() => setPair((p) => (p.n === n ? { ...p, from: p.to } : p))}
+          >
+            {to}
+          </span>
         </span>
       )}
     </span>

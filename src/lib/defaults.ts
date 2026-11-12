@@ -277,6 +277,7 @@ export const TIMEZONES = [
 
 const NO_SHOW = {
   enabled: false,
+  source: "theme" as const,
   time: null,
   title: "",
   description: "",
@@ -301,6 +302,7 @@ export const DEMO_INVITATIONS = {
     message: "Ven a compartir sonrisas y momentos inolvidables conmigo. ¡Habrá juegos, música y muchas sorpresas!",
     show: {
       enabled: true,
+      source: "theme" as const,
       time: "19:00",
       title: "¡Show sorpresa!",
       description: "Canciones, bailes y concursos con mis personajes favoritos.",

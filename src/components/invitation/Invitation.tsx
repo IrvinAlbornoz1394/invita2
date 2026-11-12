@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { flushSync } from "react-dom";
 import type { BlockKey, InvitationView } from "@/lib/view";
-import { calendarStamp } from "@/lib/dates";
-import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, stars, type Fx } from "./effects";
+import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, startFloaters, stars, type Fx } from "./effects";
 import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
@@ -114,8 +113,13 @@ export function Invitation({ view, preview = false }: Props) {
   // (los eventos religiosos tienen su propia portada, sin globos)
   useEffect(() => {
     if (!started || !balloonsRef.current) return;
+    // Bautizo: burbujas; comunión: pétalos; cumpleaños: globos
+    if (view.elegant) {
+      const kind = view.eventType === "primera_comunion" ? "petal" : "bubble";
+      return startFloaters(balloonsRef.current, balloonsFrontRef.current, kind, (x, y) => fx.burst(x, y, 22));
+    }
     return startBalloons(balloonsRef.current, balloonsFrontRef.current, palette, (x, y) => fx.burst(x, y, 36));
-  }, [started, palette, fx]);
+  }, [started, palette, fx, view.elegant, view.eventType]);
 
   // Entradas al hacer scroll
   useEffect(() => {
@@ -267,7 +271,7 @@ export function Invitation({ view, preview = false }: Props) {
       <main>
         {/* ===================== Portada ===================== */}
         {view.elegant ? (
-          <SacredHero view={view} />
+          <SacredHero view={view} backRef={balloonsRef} frontRef={balloonsFrontRef} />
         ) : (
           <header className="hero" id="inicio">
             <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
@@ -396,7 +400,15 @@ export function Invitation({ view, preview = false }: Props) {
 /** Destellos fijos (SSR y cliente coinciden) */
 const GLINTS = stars(9).map((g, i) => ({ ...g, depth: 0.5 + (i % 3) * 0.25 }));
 
-function SacredHero({ view }: { view: InvitationView }) {
+function SacredHero({
+  view,
+  backRef,
+  frontRef,
+}: {
+  view: InvitationView;
+  backRef: React.RefObject<HTMLDivElement | null>;
+  frontRef: React.RefObject<HTMLDivElement | null>;
+}) {
   const { theme } = view;
   const communion = view.eventType === "primera_comunion";
   return (
@@ -421,6 +433,9 @@ function SacredHero({ view }: { view: InvitationView }) {
           />
         ))}
       </div>
+
+      {/* Burbujas o pétalos: los de atrás aquí, los de adelante al final */}
+      <div className="balloons" ref={backRef} aria-hidden="true" />
 
       <div className="hero__inner sacred">
         {theme.logoUrl ? (
@@ -458,6 +473,7 @@ function SacredHero({ view }: { view: InvitationView }) {
           <small>{view.ceremony?.timeLabel ? `Ceremonia · ${view.ceremony.timeLabel}` : view.time}</small>
         </p>
       </div>
+      <div className="balloons balloons--front" ref={frontRef} aria-hidden="true" />
     </header>
   );
 }
@@ -786,39 +802,8 @@ function Details({ view, decor }: { view: InvitationView; decor: (string | null)
         ...(placeValue ? [{ tone: "accent", icon: "pin" as const, label: "Lugar", value: placeValue, sub: placeSub }] : []),
       ];
 
-  function addToCalendar() {
-    const start = new Date(view.startsAt);
-    const end = new Date(new Date(view.eventAt).getTime() + 5 * 36e5);
-    const title = `${view.eventLabel.charAt(0).toUpperCase()}${view.eventLabel.slice(1)} de ${view.fullName}`;
-    const apple = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
-
-    if (!apple) {
-      window.open(
-        "https://calendar.google.com/calendar/render?action=TEMPLATE" +
-          `&text=${encodeURIComponent(title)}&dates=${calendarStamp(start)}/${calendarStamp(end)}` +
-          `&location=${encodeURIComponent(view.place)}`,
-        "_blank"
-      );
-      return;
-    }
-    const esc = (s: string) => s.replace(/[\\;,]/g, (c) => `\\${c}`);
-    const ics = [
-      "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Invitacion//ES", "BEGIN:VEVENT",
-      `UID:${view.slug}@invitacion`, `DTSTAMP:${calendarStamp(new Date())}`,
-      `DTSTART:${calendarStamp(start)}`, `DTEND:${calendarStamp(end)}`,
-      `SUMMARY:${esc(title)}`, `LOCATION:${esc(view.place)}`,
-      "BEGIN:VALARM", "TRIGGER:-P1D", "ACTION:DISPLAY", `DESCRIPTION:${esc(title)}`, "END:VALARM",
-      "END:VEVENT", "END:VCALENDAR",
-    ].join("\r\n");
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-    a.download = `${view.slug}.ics`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  }
-
   return (
-    <div className={`place${view.mapEmbed ? "" : " place--nomap"}${cer ? " place--ceremony" : ""}`}>
+    <div className={`place${view.mapEmbed ? "" : " place--nomap"}`}>
       {/* El mapa ocupa la pantalla y se queda fijo; la información pasa encima */}
       <div className="place__map" data-l="map">
         {view.mapEmbed ? (
@@ -867,19 +852,15 @@ function Details({ view, decor }: { view: InvitationView; decor: (string | null)
           ))}
         </div>
 
-        {/* Acciones fijas al pie mientras el mapa está en pantalla */}
-        <div className="place__actions">
-          {view.mapsUrl && !cer && (
+        {/* «Cómo llegar» fijo al pie mientras el mapa está en pantalla; con ceremonia, cada tarjeta trae el suyo */}
+        {view.mapsUrl && !cer && (
+          <div className="place__actions">
             <a className="btn btn--primary" href={view.mapsUrl} target="_blank" rel="noopener">
               <Icon name="navigate" />
               Cómo llegar
             </a>
-          )}
-          <button className="btn btn--secondary" type="button" onClick={addToCalendar}>
-            <Icon name="calendarAdd" />
-            Agendar
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -71,8 +71,3 @@ export function clockLabel(hhmm: string) {
     minute: "2-digit",
   });
 }
-
-/** Formato UTC para calendarios: 20261113T220000Z */
-export function calendarStamp(d: Date) {
-  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
-}

@@ -1,12 +1,14 @@
 import Image, { type StaticImageData } from "next/image";
+import Link from "next/link";
 import { BrandIcon, Isologo, Logo, type BrandIconName } from "@/components/brand/icons";
 import { PartyScene, type PartySceneClasses } from "@/components/brand/PartyScene";
-import { getLandingThemes } from "@/lib/data";
-import apertura from "../../public/landing/pantalla-apertura.jpg";
-import confirmar from "../../public/landing/pantalla-confirmar.jpg";
-import cuenta from "../../public/landing/pantalla-cuenta.jpg";
-import fecha from "../../public/landing/pantalla-fecha.jpg";
-import portada from "../../public/landing/pantalla-portada.jpg";
+import { getLandingThemes, landingPicks } from "@/lib/data";
+import sonicApertura from "../../public/landing/sonic-apertura.jpg";
+import blueyConfirmar from "../../public/landing/bluey-confirmar.jpg";
+import pawPortada from "../../public/landing/pawpatrol-portada.jpg";
+import blueyFecha from "../../public/landing/bluey-fecha.jpg";
+import blueyGrupo from "../../public/landing/bluey-grupo.webp";
+import huntrixPortada from "../../public/landing/huntrix-portada.jpg";
 import styles from "./landing.module.css";
 
 const SCENE_CLASSES: PartySceneClasses = {
@@ -21,10 +23,10 @@ const SCENE_CLASSES: PartySceneClasses = {
 };
 
 const FEATURES: { icon: BrandIconName; title: string; text: string }[] = [
-  { icon: "gift", title: "Apertura sorpresa", text: "Se abre como regalo, como globo que revienta o con una imagen, con confeti." },
+  { icon: "gift", title: "Apertura sorpresa", text: "Regalo, globo que se revienta, libro, sobre, telón o una imagen propia. Un toque y llueve confeti." },
   { icon: "music", title: "Su canción", text: "Suena la música de sus personajes favoritos desde el primer toque." },
   { icon: "clock", title: "Cuenta regresiva", text: "Días, horas y minutos para la fiesta, siempre a la vista." },
-  { icon: "pin", title: "Mapa y agenda", text: "Cómo llegar con un toque y recordatorio en el calendario del celular." },
+  { icon: "pin", title: "Mapa", text: "El lugar en el mapa y cómo llegar con un toque." },
   { icon: "mic", title: "Show", text: "Anuncia el show con su horario, descripción y los personajes que vendrán." },
   { icon: "party", title: "Extras", text: "Miniferia, brincolines, alberca, mesa de dulces, piñata… lo que habrá." },
   { icon: "image", title: "Galería", text: "Las mejores fotos del festejado en un álbum que se ve increíble." },
@@ -56,7 +58,7 @@ const FAQ = [
   },
   {
     q: "¿Qué personajes tienen?",
-    a: "Los que ves en esta página ya están listos. Si tu peque quiere otro, pregúntanos por WhatsApp.",
+    a: "Todos los de la sección de personajes ya están listos y puedes ver su demo. Si tu peque quiere otro, pregúntanos por WhatsApp.",
   },
   {
     q: "¿Cuánto cuesta?",
@@ -98,17 +100,23 @@ export default async function Landing() {
   const contact = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
   const quote = contact ? waLink(contact, "¡Hola! Quiero cotizar una invitación digital para una fiesta.") : null;
   const themes = await getLandingThemes();
-  // "Ver un ejemplo": la invitación configurada o, si no hay, la demo del primer personaje
-  const demo = process.env.NEXT_PUBLIC_DEMO_SLUG || (themes[0] ? `demo/${themes[0].id}` : null);
-  const group = themes.find((t) => t.groupUrl)?.groupUrl ?? null;
+  // Personajes de fiesta; bautizo y comunión van en su mención aparte
+  const characters = themes.filter((t) => !t.religious);
+  const picks = landingPicks(characters);
+  const hasMore = characters.length > picks.length;
+  // "Ver personajes": baja a la sección de personajes, donde cada uno abre su demo
+  const demo = characters.length > 0 ? "#personajes" : null;
+  const faith = contact
+    ? waLink(contact, "¡Hola! Quiero cotizar una invitación digital para un bautizo / primera comunión.")
+    : null;
 
   // Sin WhatsApp configurado, el ejemplo pasa a ser la acción principal
   const primary = quote
     ? { href: quote, label: "Cotizar por WhatsApp", external: true }
     : demo
-      ? { href: `/${demo}`, label: "Ver un ejemplo", external: false }
+      ? { href: demo, label: "Ver personajes", external: false }
       : null;
-  const secondary = quote && demo ? { href: `/${demo}`, label: "Ver un ejemplo" } : null;
+  const secondary = quote && demo ? { href: demo, label: "Ver personajes" } : null;
   const ext = { target: "_blank", rel: "noopener" };
 
   return (
@@ -120,7 +128,7 @@ export default async function Landing() {
         <nav className={styles.links} aria-label="Secciones">
           <a href="#funciones">Funciones</a>
           <a href="#como-funciona">Cómo funciona</a>
-          {themes.length > 0 && <a href="#personajes">Personajes</a>}
+          {characters.length > 0 && <a href="#personajes">Personajes</a>}
           <a href="#preguntas">Preguntas</a>
         </nav>
         <div className={styles.navActions}>
@@ -144,7 +152,7 @@ export default async function Landing() {
       <main id="inicio">
         {/* ============ Portada ============ */}
         <section className={styles.hero}>
-          <h1 className={styles.heroTitle}>Invitaciones que se abren como regalo</h1>
+          <h1 className={styles.heroTitle}>Invitaciones que se abren con sorpresa</h1>
 
           <div className={styles.heroPitch}>
             <p className={styles.heroLead}>
@@ -177,14 +185,14 @@ export default async function Landing() {
           <div className={styles.heroDevices}>
             <span className={styles.halo} aria-hidden="true" />
             <Phone
-              src={portada}
-              alt="Portada de una invitación de ejemplo: «¡Cumplo 5 años!, Sofía»"
+              src={huntrixPortada}
+              alt="Portada de una invitación de Huntrix para Valentina, con la fecha de la fiesta"
               className={styles.phoneBack}
               priority
             />
             <Phone
-              src={cuenta}
-              alt="Cuenta regresiva de la invitación: días, horas, minutos y segundos"
+              src={pawPortada}
+              alt="Portada de una invitación de Paw Patrol para Mateo, con la fecha de la fiesta"
               className={styles.phoneFront}
               priority
             />
@@ -211,14 +219,14 @@ export default async function Landing() {
         </section>
 
         {/* ============ Personajes ============ */}
-        {themes.length > 0 && (
+        {characters.length > 0 && (
           <section className={styles.strip} id="personajes" aria-labelledby="personajes-t">
             <h2 id="personajes-t" className={styles.stripTitle}>
               Personajes disponibles
             </h2>
             <p className={styles.stripHint}>Toca uno para ver su invitación de ejemplo</p>
             <ul className={styles.stripList}>
-              {themes.map((t) => (
+              {picks.map((t) => (
                 <li key={t.id}>
                   <a className={styles.stripDemo} href={`/demo/${t.id}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -236,8 +244,34 @@ export default async function Landing() {
                 </li>
               )}
             </ul>
+            {hasMore && (
+              <Link className={`${styles.btn} ${styles.btnSand} ${styles.stripMore}`} href="/personajes">
+                Ver los {characters.length} personajes
+              </Link>
+            )}
           </section>
         )}
+
+        {/* ============ Bautizo y Primera Comunión: mención aparte ============ */}
+        <section className={styles.faith} aria-labelledby="faith-t">
+          <div className={styles.faithCard}>
+            <div>
+              <h2 id="faith-t" className={styles.faithTitle}>
+                ¿Bautizo o Primera Comunión?
+              </h2>
+              <p className={styles.faithText}>
+                También hacemos invitaciones elegantes para celebraciones religiosas: con la ceremonia, papás y padrinos, y
+                la recepción, en tonos serenos.
+              </p>
+            </div>
+            {faith && (
+              <a className={`${styles.btn} ${styles.btnPurple}`} href={faith} {...ext}>
+                <BrandIcon name="chat" />
+                Pregúntanos por WhatsApp
+              </a>
+            )}
+          </div>
+        </section>
 
         {/* ============ Como una app ============ */}
         <section className={styles.about}>
@@ -267,8 +301,8 @@ export default async function Landing() {
           <div className={styles.aboutDevice}>
             <span className={styles.aboutBlock} aria-hidden="true" />
             <Phone
-              src={fecha}
-              alt="Sección «¡Aparta la fecha!» con fecha, hora y lugar de la fiesta"
+              src={blueyFecha}
+              alt="Invitación de Bluey: sección «¡Aparta la fecha!» con mapa, fecha, hora y lugar de la fiesta"
               className={styles.phoneTilt}
             />
           </div>
@@ -284,9 +318,9 @@ export default async function Landing() {
           </p>
           <div className={styles.bento}>
             <article className={`${styles.tile} ${styles.tileSand}`}>
-              <h3>Se abre como regalo</h3>
-              <p>Un toque y llueve confeti.</p>
-              <Phone src={apertura} alt="Pantalla de apertura con un regalo para tocar" className={styles.tilePhone} />
+              <h3>Se abre con sorpresa</h3>
+              <p>Regalo, globo, libro y más.</p>
+              <Phone src={sonicApertura} alt="Pantalla de apertura de la invitación de Sonic: un anillo dorado para tocar" className={styles.tilePhone} />
             </article>
             <article className={`${styles.tile} ${styles.tilePurple}`}>
               <p className={styles.tileBig}>0</p>
@@ -296,10 +330,7 @@ export default async function Landing() {
             <article className={`${styles.tile} ${styles.tileWhite}`}>
               <h3>Con sus personajes favoritos</h3>
               <p>Cada tema pone sus colores, su música y sus ilustraciones.</p>
-              {group && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img className={styles.tileImg} src={group} alt="" loading="lazy" />
-              )}
+              <Image className={styles.tileImg} src={blueyGrupo} alt="Personajes de Bluey" sizes="(min-width: 900px) 320px, 80vw" />
             </article>
           </div>
         </section>
@@ -344,7 +375,7 @@ export default async function Landing() {
             </ol>
             <div className={styles.howDevice}>
               <span className={styles.halo} aria-hidden="true" />
-              <Phone src={confirmar} alt="Formulario para confirmar asistencia por WhatsApp" />
+              <Phone src={blueyConfirmar} alt="Invitación de Bluey: formulario para confirmar asistencia por WhatsApp" />
             </div>
           </div>
         </section>
@@ -396,7 +427,7 @@ export default async function Landing() {
               <nav className={styles.footLinks} aria-label="Pie de página">
                 <a href="#funciones">Funciones</a>
                 <a href="#como-funciona">Cómo funciona</a>
-                {themes.length > 0 && <a href="#personajes">Personajes</a>}
+                {characters.length > 0 && <a href="#personajes">Personajes</a>}
                 <a href="#preguntas">Preguntas</a>
               </nav>
             </div>
@@ -409,8 +440,8 @@ export default async function Landing() {
                   </a>
                 )}
                 {demo && (
-                  <a className={styles.footDemo} href={`/${demo}`}>
-                    Ver un ejemplo
+                  <a className={styles.footDemo} href={demo}>
+                    Ver personajes
                   </a>
                 )}
               </div>

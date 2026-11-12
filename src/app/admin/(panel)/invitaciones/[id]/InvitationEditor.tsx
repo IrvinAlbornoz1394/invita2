@@ -19,16 +19,17 @@ import {
   type EventType,
 } from "@/lib/defaults";
 import type { InvitationInput } from "@/lib/schema";
-import type { Extra, ImageStyle, Invitation, Performer, SectionKey, ShowImageSource, TextKey, Theme } from "@/lib/types";
-import { showImageSource } from "@/lib/view";
+import type { Extra, ImageStyle, Invitation, Performer, SectionKey, ShowImageSource, ShowSource, TextKey, Theme } from "@/lib/types";
+import { showImageSource, showSource, themeHasShow, themeShowContent } from "@/lib/view";
 import { duplicateInvitation, saveInvitation } from "../../../actions";
 import { InvitationActions } from "../../../InvitationActions";
 import { CopyLink } from "../../../CopyLink";
 import { MediaField } from "../../../MediaField";
+import { ItemTools, move, PerformersField } from "../../../PerformersField";
 import { uploadMedia } from "../../../upload";
 import styles from "../../../admin.module.css";
 
-type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "event_type">;
+export type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "show" | "event_type">;
 
 type Form = {
   published: boolean;
@@ -48,8 +49,10 @@ type Form = {
   maps_url: string;
   message: string;
   whatsapp: string;
+  rsvp_ask_people: boolean;
   show: {
     enabled: boolean;
+    source: ShowSource;
     time: string;
     title: string;
     description: string;
@@ -89,8 +92,10 @@ function toForm(inv: Invitation): Form {
     maps_url: inv.maps_url ?? "",
     message: inv.message ?? "",
     whatsapp: inv.whatsapp ?? "",
+    rsvp_ask_people: inv.rsvp_ask_people ?? true,
     show: {
       enabled: inv.show?.enabled ?? false,
+      source: showSource(inv.show),
       time: inv.show?.time ?? "",
       title: inv.show?.title ?? "",
       description: inv.show?.description ?? "",
@@ -160,14 +165,6 @@ function switchType(f: Form, next: EventType): Form {
   };
 }
 
-function move<T>(list: T[], i: number, step: number) {
-  const j = i + step;
-  if (j < 0 || j >= list.length) return list;
-  const copy = [...list];
-  [copy[i], copy[j]] = [copy[j], copy[i]];
-  return copy;
-}
-
 export function InvitationEditor({ invitation, themes }: { invitation: Invitation; themes: ThemeOption[] }) {
   const [form, setForm] = useState<Form>(() => toForm(invitation));
   const [saved, setSaved] = useState(() => JSON.stringify(toForm(invitation)));
@@ -184,6 +181,20 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
   const patchShow = (p: Partial<Form["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
   const themeShowUrl = themes.find((t) => t.id === form.theme_id)?.show_url ?? null;
+
+  /** Pasar a show propio: si está vacío, arranca con el del tema para no escribir todo de nuevo. */
+  function switchToCustomShow() {
+    setForm((f) => {
+      const t = themes.find((x) => x.id === f.theme_id);
+      const empty = !f.show.title && !f.show.description && !f.show.performers.length;
+      if (!empty || !themeHasShow(t)) return { ...f, show: { ...f.show, source: "custom" } };
+      const c = themeShowContent(t);
+      return {
+        ...f,
+        show: { ...f.show, source: "custom", title: c.title, description: c.description, performers: c.performers, image_source: "theme" },
+      };
+    });
+  }
 
   function save(next: Form = form) {
     setError(null);
@@ -358,7 +369,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
             <p className={styles.cardHint}>
               {religious
                 ? "Fecha y hora de la recepción. Si hay ceremonia, la cuenta regresiva llega a la hora de la ceremonia."
-                : "La cuenta regresiva y el botón de agendar usan esta fecha y hora."}
+                : "La cuenta regresiva usa esta fecha y hora."}
             </p>
             <div className={styles.grid}>
               <div className={styles.grid3}>
@@ -592,146 +603,131 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
             </label>
             {form.show.enabled && (
               <div className={styles.grid} style={{ marginTop: 16 }}>
-                <div className={styles.grid2}>
-                  <label className={styles.field}>
-                    <span className={styles.label}>Hora del show</span>
-                    <input
-                      className={styles.input}
-                      type="time"
-                      value={form.show.time}
-                      onChange={(e) => patchShow({ time: e.target.value })}
-                    />
-                    <span className={styles.help}>Aparece como “Show programado a las 7:00 p.m.”</span>
-                  </label>
-                  <label className={styles.field}>
-                    <span className={styles.label}>Nombre del show</span>
-                    <input
-                      className={styles.input}
-                      value={form.show.title}
-                      placeholder="Show de Bely y Beto"
-                      onChange={(e) => patchShow({ title: e.target.value })}
-                    />
-                  </label>
-                </div>
                 <label className={styles.field}>
-                  <span className={styles.label}>Descripción (opcional)</span>
-                  <textarea
-                    className={styles.textarea}
-                    value={form.show.description}
-                    placeholder="Canciones, bailes y concursos…"
-                    onChange={(e) => patchShow({ description: e.target.value })}
+                  <span className={styles.label}>Hora del show</span>
+                  <input
+                    className={styles.input}
+                    type="time"
+                    value={form.show.time}
+                    onChange={(e) => patchShow({ time: e.target.value })}
                   />
+                  <span className={styles.help}>Aparece como “Show programado a las 7:00 p.m.”</span>
                 </label>
 
-<div className={styles.field}>
-                  <span className={styles.label}>Imagen del show</span>
-                  <div className={styles.chips}>
-                    {(
-                      [
-                        ["theme", "La del tema"],
-                        ["custom", "Personalizada"],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <label key={value} className={styles.check}>
-                        <input
-                          type="radio"
-                          name="show_image_source"
-                          checked={form.show.image_source === value}
-                          onChange={() => patchShow({ image_source: value })}
-                        />
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                  {form.show.image_source === "theme" && (
-                    <span className={styles.help}>
-                      {!themeShowUrl
-                        ? "Este tema no tiene imagen de show: el show se verá sin imagen. Agrégala en el tema o elige Personalizada."
-                        : "Se usa la imagen del show del tema, con el estilo (marco o sin marco) que tiene el tema."}
-                    </span>
-                  )}
-                  {form.show.image_source === "theme" && themeShowUrl && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={themeShowUrl} alt="" style={{ maxWidth: 160, maxHeight: 120, objectFit: "contain", marginTop: 8 }} />
-                  )}
-                </div>
-                {form.show.image_source === "custom" && (
-                  <MediaField
-                    label="Imagen personalizada (opcional)"
-                    help="Un póster, los personajes o el escenario. Si la dejas vacía, el show va sin imagen."
-                    value={form.show.image_url}
-                    onChange={(image_url) => patchShow({ image_url })}
-                    folder={folder}
-                  />
-                )}
-                {form.show.image_source === "custom" && form.show.image_url && (
-                  <div className={styles.field}>
-                    <span className={styles.label}>Estilo de la imagen</span>
-                    <div className={styles.chips}>
-                      {(
-                        [
-                          ["framed", "Con marco"],
-                          ["plain", "Sin marco (PNG sin fondo)"],
-                        ] as const
-                      ).map(([value, label]) => (
-                        <label key={value} className={styles.check}>
-                          <input
-                            type="radio"
-                            name="show_image_style"
-                            checked={form.show.image_style === value}
-                            onChange={() => patchShow({ image_style: value })}
-                          />
-                          {label}
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <div className={styles.field}>
-                  <span className={styles.label}>Personajes / artistas (opcional)</span>
-                  <div className={styles.items}>
-                    {form.show.performers.map((p, i) => (
-                      <div key={i} className={styles.item}>
-                        <div className={styles.grid}>
-                          <input
-                            className={styles.input}
-                            value={p.name}
-                            placeholder="Nombre"
-                            onChange={(e) =>
-                              patchShow({
-                                performers: form.show.performers.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)),
-                              })
-                            }
-                          />
-                          <MediaField
-                            value={p.image_url}
-                            folder={`${folder}/show`}
-                            onChange={(image_url) =>
-                              patchShow({ performers: form.show.performers.map((x, j) => (j === i ? { ...x, image_url } : x)) })
-                            }
-                          />
-                        </div>
-                        <ItemTools
-                          index={i}
-                          count={form.show.performers.length}
-                          onMove={(step) => patchShow({ performers: move(form.show.performers, i, step) })}
-                          onRemove={() => patchShow({ performers: form.show.performers.filter((_, j) => j !== i) })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <button
-                      type="button"
-                      className={`${styles.btn} ${styles.btnSmall}`}
-                      onClick={() => patchShow({ performers: [...form.show.performers, { name: "", image_url: null }] })}
-                      disabled={form.show.performers.length >= 12}
-                    >
-                      + Agregar personaje
-                    </button>
+                  <span className={styles.label}>¿Qué show?</span>
+                  <div className={styles.chips}>
+                    <label className={styles.check}>
+                      <input
+                        type="radio"
+                        name="show_source"
+                        checked={form.show.source === "theme"}
+                        onChange={() => patchShow({ source: "theme" })}
+                      />
+                      El del tema
+                    </label>
+                    <label className={styles.check}>
+                      <input type="radio" name="show_source" checked={form.show.source === "custom"} onChange={switchToCustomShow} />
+                      Uno diferente
+                    </label>
                   </div>
                 </div>
+
+                {form.show.source === "theme" ? (
+                  <ThemeShowSummary theme={theme} />
+                ) : (
+                  <>
+                    <label className={styles.field}>
+                      <span className={styles.label}>Nombre del show</span>
+                      <input
+                        className={styles.input}
+                        value={form.show.title}
+                        placeholder="Show de Bely y Beto"
+                        onChange={(e) => patchShow({ title: e.target.value })}
+                      />
+                    </label>
+                    <label className={styles.field}>
+                      <span className={styles.label}>Descripción (opcional)</span>
+                      <textarea
+                        className={styles.textarea}
+                        value={form.show.description}
+                        placeholder="Canciones, bailes y concursos…"
+                        onChange={(e) => patchShow({ description: e.target.value })}
+                      />
+                    </label>
+
+                    <div className={styles.field}>
+                      <span className={styles.label}>Imagen del show</span>
+                      <div className={styles.chips}>
+                        {(
+                          [
+                            ["theme", "La del tema"],
+                            ["custom", "Personalizada"],
+                          ] as const
+                        ).map(([value, label]) => (
+                          <label key={value} className={styles.check}>
+                            <input
+                              type="radio"
+                              name="show_image_source"
+                              checked={form.show.image_source === value}
+                              onChange={() => patchShow({ image_source: value })}
+                            />
+                            {label}
+                          </label>
+                        ))}
+                      </div>
+                      {form.show.image_source === "theme" && (
+                        <span className={styles.help}>
+                          {!themeShowUrl
+                            ? "Este tema no tiene imagen de show: el show se verá sin imagen. Agrégala en el tema o elige Personalizada."
+                            : "Se usa la imagen del show del tema, con el estilo (marco o sin marco) que tiene el tema."}
+                        </span>
+                      )}
+                      {form.show.image_source === "theme" && themeShowUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={themeShowUrl} alt="" style={{ maxWidth: 160, maxHeight: 120, objectFit: "contain", marginTop: 8 }} />
+                      )}
+                    </div>
+                    {form.show.image_source === "custom" && (
+                      <MediaField
+                        label="Imagen personalizada (opcional)"
+                        help="Un póster, los personajes o el escenario. Si la dejas vacía, el show va sin imagen."
+                        value={form.show.image_url}
+                        onChange={(image_url) => patchShow({ image_url })}
+                        folder={folder}
+                      />
+                    )}
+                    {form.show.image_source === "custom" && form.show.image_url && (
+                      <div className={styles.field}>
+                        <span className={styles.label}>Estilo de la imagen</span>
+                        <div className={styles.chips}>
+                          {(
+                            [
+                              ["framed", "Con marco"],
+                              ["plain", "Sin marco (PNG sin fondo)"],
+                            ] as const
+                          ).map(([value, label]) => (
+                            <label key={value} className={styles.check}>
+                              <input
+                                type="radio"
+                                name="show_image_style"
+                                checked={form.show.image_style === value}
+                                onChange={() => patchShow({ image_style: value })}
+                              />
+                              {label}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <PerformersField
+                      value={form.show.performers}
+                      onChange={(performers) => patchShow({ performers })}
+                      folder={`${folder}/show`}
+                    />
+                  </>
+                )}
               </div>
             )}
           </section>
@@ -890,6 +886,14 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                   contacto.
                 </span>
               </label>
+              <label className={styles.check}>
+                <input
+                  type="checkbox"
+                  checked={form.rsvp_ask_people}
+                  onChange={(e) => patch({ rsvp_ask_people: e.target.checked })}
+                />
+                Preguntar cuántas personas asistirán
+              </label>
             </div>
           </section>
 
@@ -1015,28 +1019,30 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   );
 }
 
-function ItemTools({
-  index,
-  count,
-  onMove,
-  onRemove,
-}: {
-  index: number;
-  count: number;
-  onMove: (step: number) => void;
-  onRemove: () => void;
-}) {
+/** Lo que trae el show del tema elegido, para saber qué se verá sin tener que abrir el tema. */
+function ThemeShowSummary({ theme }: { theme: ThemeOption | undefined }) {
+  if (!theme) return <p className={styles.help}>Elige un tema para usar su show, o escribe uno diferente.</p>;
+  const c = themeShowContent(theme);
+  const has = themeHasShow(theme);
   return (
-    <div className={styles.itemTools}>
-      <button type="button" className={styles.iconBtn} aria-label="Subir" disabled={index === 0} onClick={() => onMove(-1)}>
-        ↑
-      </button>
-      <button type="button" className={styles.iconBtn} aria-label="Bajar" disabled={index === count - 1} onClick={() => onMove(1)}>
-        ↓
-      </button>
-      <button type="button" className={styles.iconBtn} aria-label="Quitar" onClick={onRemove}>
-        ✕
-      </button>
+    <div className={styles.item} style={{ alignItems: "start" }}>
+      {c.image_url && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={c.image_url} alt="" style={{ width: 96, height: 96, objectFit: "contain", borderRadius: 8 }} />
+      )}
+      <div className={styles.grid} style={{ gap: 4 }}>
+        <strong>{c.title}</strong>
+        {c.description && <span className={styles.help}>{c.description}</span>}
+        {c.performers.length > 0 && (
+          <span className={styles.help}>Personajes: {c.performers.map((p) => p.name || "sin nombre").join(", ")}</span>
+        )}
+        {!has && (
+          <span className={styles.help}>
+            El tema «{theme.name}» todavía no tiene show: se verá solo el nombre. Complétalo en{" "}
+            <Link href={`/admin/temas/${theme.id}`}>el tema</Link> o elige “Uno diferente”.
+          </span>
+        )}
+      </div>
     </div>
   );
 }

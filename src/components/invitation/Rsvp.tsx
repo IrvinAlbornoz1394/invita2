@@ -18,8 +18,9 @@ export function Rsvp({ view, fx }: { view: InvitationView; fx: Fx }) {
     const form = e.currentTarget;
     const name = String(new FormData(form).get("nombre") ?? "").trim();
     const of = `${view.toEvent} de ${view.fullName}`;
+    const count = view.rsvpAskPeople ? ` Asistiremos ${people} ${people === 1 ? "persona" : "personas"}.` : "";
     const msg = attending
-      ? `¡Hola! Soy ${name} y confirmo mi asistencia ${of} el ${view.shortDate}. Asistiremos ${people} ${people === 1 ? "persona" : "personas"}.`
+      ? `¡Hola! Soy ${name} y confirmo mi asistencia ${of} el ${view.shortDate}.${count}`
       : `¡Hola! Soy ${name}. Lamentablemente no podré asistir ${of}. ¡Muchas felicidades!`;
     burstFrom(fx, form.querySelector("[type=submit]")!, 90, 0);
     window.open(`https://wa.me/${view.whatsapp ?? ""}?text=${encodeURIComponent(msg)}`, "_blank");
@@ -42,7 +43,7 @@ export function Rsvp({ view, fx }: { view: InvitationView; fx: Fx }) {
           <span>No podré</span>
         </label>
       </div>
-      {attending && (
+      {attending && view.rsvpAskPeople && (
         <div className="field">
           <span id="personas-label">¿Cuántos vienen?</span>
           <div className="stepper">

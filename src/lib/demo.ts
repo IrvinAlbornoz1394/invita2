@@ -2,16 +2,12 @@ import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { themesTag, themeTag } from "./data";
 import { ageRibbon, DEMO_INVITATIONS, eventType, RECEPTION_AFTER_HOURS } from "./defaults";
+import { themeHasShow } from "./view";
 import { createPublicClient } from "./supabase/public";
 import type { InvitationWithTheme, Theme } from "./types";
 
-/** Para quién es la demo: cambia el nombre y la edad del festejado. */
-export type DemoKid = "nino" | "nina";
-
-const KIDS: Record<DemoKid, { name_lines: string[]; age: number }> = {
-  nino: { name_lines: ["Mateo"], age: 6 },
-  nina: { name_lines: ["Valentina"], age: 5 },
-};
+/** Festejado de la demo: siempre el mismo, para que cada personaje se compare con los mismos datos. */
+const DEMO_KID = { name_lines: ["Mateo"], age: 6 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -30,14 +26,20 @@ export async function getDemoTheme(id: string): Promise<Theme | null> {
 /**
  * Invitación de ejemplo con el tema: los datos de prueba de cada invitación
  * nueva, con la fiesta siempre dentro de 3 semanas para que corra la cuenta
- * regresiva. El show usa la imagen del tema si ya la tiene.
+ * regresiva. Si el tema trae show, la demo lo muestra (también en bautizo y
+ * comunión); si no, un show de ejemplo con el nombre del tema.
  */
-export function demoInvitation(theme: Theme, kid: DemoKid, eventAt: string): InvitationWithTheme {
+export function demoInvitation(theme: Theme, eventAt: string): InvitationWithTheme {
   const type = eventType(theme.event_type);
   const demo = DEMO_INVITATIONS[type];
   const religious = demo.ceremony.enabled;
   // Religiosos: misa a la hora de la demo y recepción después
   const at = religious ? new Date(new Date(eventAt).getTime() + RECEPTION_AFTER_HOURS * 36e5).toISOString() : eventAt;
+  const show = themeHasShow(theme)
+    ? { ...demo.show, enabled: true, time: demo.show.time ?? "19:00", source: "theme" as const }
+    : religious
+      ? demo.show
+      : { ...demo.show, source: "custom" as const, title: `Show de ${theme.name}`, performers: [] };
   const startTime = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Merida", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(eventAt));
   return {
     id: `demo-${theme.id}`,
@@ -46,7 +48,7 @@ export function demoInvitation(theme: Theme, kid: DemoKid, eventAt: string): Inv
     is_active: true,
     is_deleted: false,
     theme_id: theme.id,
-    ...KIDS[kid],
+    ...DEMO_KID,
     ...(religious ? { age: null, age_text: ageRibbon(null, type) } : { age_text: null }),
     photo_url: null,
     event_at: at,
@@ -59,7 +61,8 @@ export function demoInvitation(theme: Theme, kid: DemoKid, eventAt: string): Inv
     maps_url: null,
     message: demo.message,
     whatsapp: null,
-    show: religious ? demo.show : { ...demo.show, title: `Show de ${theme.name}`, performers: [] },
+    rsvp_ask_people: true,
+    show,
     extras: demo.extras,
     family: demo.family,
     ceremony: religious ? { ...demo.ceremony, time: startTime } : demo.ceremony,
@@ -79,8 +82,4 @@ export async function demoEventAt(): Promise<string> {
   const at = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000);
   at.setUTCHours(22, 0, 0, 0);
   return at.toISOString();
-}
-
-export function demoKid(value: string | string[] | undefined): DemoKid {
-  return value === "nina" ? "nina" : "nino";
 }

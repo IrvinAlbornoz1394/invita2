@@ -433,6 +433,8 @@
 /* ---------- Personajes ---------- */
 
 .strip {
+  /* Al llegar desde «Ver personajes», que la barra fija no tape el título */
+  scroll-margin-top: 72px;
   padding: 34px var(--gutter) 38px;
   background: var(--white);
   border-block: 1px solid var(--line);
@@ -533,6 +535,52 @@
 .stripAsk svg {
   width: 18px;
   height: 18px;
+}
+
+/* «Ver todos» debajo de los destacados */
+.stripMore {
+  margin-top: 20px;
+}
+
+/* ---------- Bautizo y Primera Comunión ---------- */
+
+.faith {
+  padding: 28px var(--gutter) 0;
+  max-width: var(--max);
+  margin: 0 auto;
+}
+
+.faithCard {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--white);
+}
+
+.faithTitle {
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.faithText {
+  margin-top: 6px;
+  max-width: 60ch;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+@media (min-width: 760px) {
+  .faithCard {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 28px 32px;
+  }
 }
 
 /* ---------- Como una app ---------- */
@@ -699,6 +747,7 @@
   display: block;
   width: 100%;
   max-height: 230px;
+  height: auto;
   margin-top: 14px;
   object-fit: contain;
 }
@@ -1394,4 +1443,19 @@
   .faqIcon {
     transition: none;
   }
+}
+
+/* ---------- /personajes ---------- */
+
+.allCharacters {
+  min-height: 70vh;
+  padding-top: 40px;
+  border-bottom: 0;
+}
+
+.allTitle {
+  font-size: clamp(26px, 6vw, 36px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--ink);
 }

@@ -5,7 +5,7 @@ import {
 } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf, utcToZoned, zonedToUtc } from "./dates";
-import type { DecorKey, IntroStyle, InvitationWithTheme, Show, ShowImageSource, TextKey, ThemeDecor } from "./types";
+import type { DecorKey, IntroStyle, InvitationWithTheme, Show, ShowImageSource, ShowSource, TextKey, Theme, ThemeDecor, ThemeShow } from "./types";
 
 export type Tone = "surface" | "secondary" | "accent" | "highlight";
 export type BlockKey = "card" | "family" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
@@ -51,8 +51,11 @@ export function buildView(inv: InvitationWithTheme) {
     ...(inv.show as Partial<Show> | null),
     performers: (inv.show?.performers ?? []).filter((p) => p.name || p.image_url),
   };
-  // Por defecto, la imagen del show del tema; "custom" usa la propia (o ninguna)
-  if (showImageSource(inv.show) === "theme") {
+  if (showSource(inv.show) === "theme") {
+    // Show del tema: la invitación solo pone si hay show y a qué hora
+    Object.assign(show, themeShowContent(theme));
+  } else if (showImageSource(inv.show) === "theme") {
+    // Show propio con la imagen del tema; "custom" usa la propia (o ninguna)
     show.image_url = theme?.show_url ?? null;
     show.image_style = theme?.show_style ?? "framed";
   }
@@ -167,6 +170,7 @@ export function buildView(inv: InvitationWithTheme) {
     message: inv.message,
     // 10 dígitos = número mexicano sin lada de país: wa.me necesita el 52
     whatsapp: inv.whatsapp?.length === 10 ? `52${inv.whatsapp}` : inv.whatsapp,
+    rsvpAskPeople: inv.rsvp_ask_people ?? true,
     show: { ...show, timeLabel: show.time ? clockLabel(show.time) : null },
     extras: inv.extras,
     gallery: inv.gallery,
@@ -211,4 +215,28 @@ export function themeDecor(
 /** Invitaciones guardadas antes de existir la opción: con imagen propia, "custom"; sin ella, la del tema. */
 export function showImageSource(show: Partial<Show> | null | undefined): ShowImageSource {
   return show?.image_source ?? (show?.image_url ? "custom" : "theme");
+}
+
+/** Invitaciones guardadas antes de existir la opción: si ya escribieron su show, "custom"; si no, el del tema. */
+export function showSource(show: Partial<Show> | null | undefined): ShowSource {
+  if (show?.source) return show.source;
+  return show && (show.title || show.description || show.performers?.length || show.image_source === "custom") ? "custom" : "theme";
+}
+
+/** ¿El tema trae show propio (nombre, descripción, personajes o imagen)? */
+export function themeHasShow(theme: Pick<Theme, "show" | "show_url"> | null | undefined): boolean {
+  const s: ThemeShow = theme?.show ?? {};
+  return Boolean(s.title || s.description || s.performers?.some((p) => p.name || p.image_url) || theme?.show_url);
+}
+
+/** Nombre, descripción, personajes e imagen del show del tema. Sin nombre: «Show de <tema>». */
+export function themeShowContent(theme: Pick<Theme, "name" | "show" | "show_url" | "show_style"> | null | undefined) {
+  const s: ThemeShow = theme?.show ?? {};
+  return {
+    title: s.title || (theme?.name ? `Show de ${theme.name}` : ""),
+    description: s.description ?? "",
+    performers: (s.performers ?? []).filter((p) => p.name || p.image_url),
+    image_url: theme?.show_url ?? null,
+    image_style: theme?.show_style ?? ("framed" as const),
+  };
 }

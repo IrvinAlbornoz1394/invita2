@@ -80,7 +80,6 @@ nada más) y agrega estas variables de entorno:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | llave publicable (`sb_publishable_…`) |
 | `NEXT_PUBLIC_SITE_URL` | tu dominio, ej. `https://invitaciones.com` (para la vista previa en WhatsApp) |
 | `NEXT_PUBLIC_CONTACT_WHATSAPP` | opcional: WhatsApp para cotizar desde la landing |
-| `NEXT_PUBLIC_DEMO_SLUG` | opcional: invitación de ejemplo que enlaza la landing |
 
 `SUPABASE_SECRET_KEY` **no** va en Vercel: solo la usa el script de crear admins.
 

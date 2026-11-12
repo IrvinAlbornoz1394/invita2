@@ -45,6 +45,12 @@ export type ImageStyle = "framed" | "plain";
 /** De dónde sale la imagen del show: la del tema o una propia de la invitación. */
 export type ShowImageSource = "theme" | "custom";
 
+/** De dónde sale el show completo (nombre, descripción, personajes e imagen): del tema o propio. */
+export type ShowSource = "theme" | "custom";
+
+/** Show que trae el tema; la imagen va aparte en show_url / show_style. */
+export type ThemeShow = { title?: string; description?: string; performers?: Performer[] };
+
 export type LogoStyle = "badge" | "plain";
 
 export type Theme = {
@@ -64,6 +70,9 @@ export type Theme = {
   group_url: string | null;
   show_url: string | null;
   show_style?: ImageStyle;
+  show?: ThemeShow | null;
+  /** Aparece en la landing antes de «Ver todos» */
+  featured?: boolean;
   music_url: string | null;
   music_start: number;
   background: Partial<ThemeBackground> | null;
@@ -81,6 +90,8 @@ export type Show = {
   title: string;
   description: string;
   performers: Performer[];
+  /** "theme" = usa el show del tema; "custom" = el de la invitación */
+  source?: ShowSource;
   image_source?: ShowImageSource;
   image_url?: string | null;
   image_style?: ImageStyle;
@@ -136,6 +147,8 @@ export type Invitation = {
   maps_destination?: string | null;
   message: string | null;
   whatsapp: string | null;
+  /** Si la confirmación pregunta cuántas personas asisten */
+  rsvp_ask_people: boolean;
   show: Show;
   extras: Extra[];
   gallery: GalleryItem[];

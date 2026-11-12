@@ -40,29 +40,6 @@
   background: #ece6fb;
 }
 
-.kids {
-  display: flex;
-  padding: 3px;
-  border-radius: 999px;
-  background: #ece6fb;
-}
-.kid {
-  display: grid;
-  place-items: center;
-  min-width: 64px;
-  height: 30px;
-  padding: 0 12px;
-  border-radius: 999px;
-  color: #5f5878;
-  text-decoration: none;
-  transition: background-color 0.2s, color 0.2s;
-}
-.kid[aria-current="true"] {
-  background: #fff;
-  color: #2e1f66;
-  box-shadow: 0 1px 4px rgb(46 31 102 / 0.16);
-}
-
 .ask {
   display: grid;
   place-items: center;
@@ -79,8 +56,186 @@
 }
 
 .back:focus-visible,
-.kid:focus-visible,
 .ask:focus-visible {
+  outline: 3px solid #5b3db5;
+  outline-offset: 2px;
+}
+
+/* Cambiar de personaje: en el celular solo la carita; con espacio, también el nombre */
+.pick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: #ece6fb;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.pick img,
+.pickInitial {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #fff;
+}
+.pickInitial {
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  color: #5b3db5;
+}
+.pick svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pickName {
+  display: none;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (min-width: 520px) {
+  .pickName {
+    display: block;
+  }
+}
+@media (hover: hover) {
+  .pick:hover {
+    background: #ddd3f7;
+  }
+}
+
+/* Hoja con los personajes: abajo en el celular, centrada con espacio */
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: min(78dvh, 640px);
+  margin: auto auto 0;
+  padding: 0;
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  background: #fff;
+  color: #2e1f66;
+  font: 500 15px/1.3 var(--font-poppins), system-ui, sans-serif;
+  box-shadow: 0 -10px 40px rgb(46 31 102 / 0.25);
+}
+.sheet::backdrop {
+  background: rgb(28 21 53 / 0.45);
+}
+.sheet[open] {
+  animation: sheet-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (min-width: 640px) {
+  .sheet {
+    margin: auto;
+    border-radius: 22px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sheet[open] {
+    animation: none;
+  }
+}
+
+.sheetBody {
+  padding: 18px 16px max(18px, env(safe-area-inset-bottom));
+}
+.sheetHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sheetHead h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.sheetClose {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: #ece6fb;
+  color: inherit;
+  cursor: pointer;
+}
+.sheetClose svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.sheetList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.sheetItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px 12px;
+  border: 1.5px solid #e6dff6;
+  border-radius: 16px;
+  background: #f6f3fd;
+  color: inherit;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 600;
+}
+.sheetItem img {
+  height: 52px;
+  width: 100%;
+  object-fit: contain;
+}
+.sheetItem .pickInitial {
+  width: 52px;
+  height: 52px;
+  font-size: 22px;
+}
+.sheetItem[aria-current="true"] {
+  border-color: #5b3db5;
+  background: #fff;
+  box-shadow: 0 0 0 3px #ece6fb;
+}
+@media (hover: hover) {
+  .sheetItem:hover {
+    border-color: #ddd3f7;
+    background: #fff;
+  }
+}
+
+.pick:focus-visible,
+.sheetItem:focus-visible,
+.sheetClose:focus-visible {
   outline: 3px solid #5b3db5;
   outline-offset: 2px;
 }

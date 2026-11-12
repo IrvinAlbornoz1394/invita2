@@ -28,10 +28,10 @@ async function Editor({ params }: Pick<PageProps<"/admin/invitaciones/[id]">, "p
   const keep = inv.data.theme_id ? `,id.eq.${inv.data.theme_id}` : "";
   const themes = await supabase
     .from("themes")
-    .select("id, name, colors, show_url, show_style, event_type")
+    .select("id, name, colors, show_url, show_style, show, event_type")
     .or(`and(is_active.eq.true,is_deleted.eq.false)${keep}`)
     .order("name")
-    .returns<Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "event_type">[]>();
+    .returns<Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "show" | "event_type">[]>();
   if (themes.error) throw themes.error;
 
   return <InvitationEditor invitation={inv.data} themes={themes.data} />;

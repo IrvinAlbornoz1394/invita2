@@ -8,10 +8,12 @@ import {
 } from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
 import { themeDecor } from "@/lib/view";
+import { isReligious } from "@/lib/defaults";
 import type { DecorKey, ImageStyle, LogoStyle, Theme, ThemeColors } from "@/lib/types";
 import { saveTheme } from "../../../actions";
 import { ThemeActions } from "../../../ThemeActions";
 import { MediaField } from "../../../MediaField";
+import { PerformersField } from "../../../PerformersField";
 import styles from "../../../admin.module.css";
 
 const SHOW_STYLES: { value: ImageStyle; label: string }[] = [
@@ -36,6 +38,12 @@ function toForm(t: Theme): ThemeInput {
     group_url: t.group_url,
     show_url: t.show_url ?? null,
     show_style: t.show_style ?? "framed",
+    show: {
+      title: t.show?.title ?? "",
+      description: t.show?.description ?? "",
+      performers: t.show?.performers ?? [],
+    },
+    featured: t.featured ?? false,
     music_url: t.music_url,
     music_start: t.music_start,
     background: {
@@ -68,6 +76,8 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
   const patch = (p: Partial<ThemeInput>) => setForm((f) => ({ ...f, ...p }));
   const patchBg = (p: Partial<ThemeInput["background"]>) => setForm((f) => ({ ...f, background: { ...f.background, ...p } }));
   const autoBg = autoBackground(form.colors);
+  const patchShow = (p: Partial<ThemeInput["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
+  const forParties = !form.event_type || !isReligious(form.event_type);
   const patchIntro = (p: Partial<ThemeInput["intro"]>) => setForm((f) => ({ ...f, intro: { ...f.intro, ...p } }));
   const setDecor = (key: DecorKey, i: number, url: string | null) =>
     setForm((f) => ({ ...f, decor: { ...f.decor, [key]: f.decor[key].map((u, j) => (j === i ? url : u)) } }));
@@ -141,6 +151,18 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 </select>
                 <span className={styles.help}>Al crear una invitación de ese tipo, este tema aparece primero.</span>
               </label>
+              {forParties && (
+                <label className={styles.check}>
+                  <input type="checkbox" checked={form.featured} onChange={(e) => patch({ featured: e.target.checked })} />
+                  Destacado en la landing
+                </label>
+              )}
+              {forParties && (
+                <span className={styles.help} style={{ marginTop: -8 }}>
+                  La landing muestra los destacados y un botón para ver todos los personajes. Si no hay ninguno destacado,
+                  muestra los primeros 6.
+                </span>
+              )}
               <label className={styles.field}>
                 <span className={styles.label}>Tipografía de títulos</span>
                 <select
@@ -302,9 +324,37 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                 onChange={(group_url) => patch({ group_url })}
                 folder={folder}
               />
+            </div>
+          </section>
+
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Show</h2>
+            <p className={styles.cardHint}>
+              El show que trae el tema. Lo usan la demo y las invitaciones que eligen “Show del tema”; cada invitación solo
+              pone la hora. Si no tiene nombre, se llama “Show de {form.name || "este tema"}”.
+            </p>
+            <div className={styles.grid}>
+              <label className={styles.field}>
+                <span className={styles.label}>Nombre del show</span>
+                <input
+                  className={styles.input}
+                  value={form.show.title}
+                  placeholder={`Show de ${form.name || "Bely y Beto"}`}
+                  onChange={(e) => patchShow({ title: e.target.value })}
+                />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.label}>Descripción</span>
+                <textarea
+                  className={styles.textarea}
+                  value={form.show.description}
+                  placeholder="Canciones, bailes y concursos con los personajes…"
+                  onChange={(e) => patchShow({ description: e.target.value })}
+                />
+              </label>
               <MediaField
                 label="Imagen del show"
-                help="Los personajes del show o un póster. Las invitaciones con show la usan por defecto; cada una puede cambiarla por la suya o dejarla sin imagen."
+                help="Los personajes del show o un póster. Las invitaciones con show propio también pueden usarla."
                 value={form.show_url ?? null}
                 onChange={(show_url) => patch({ show_url })}
                 folder={folder}
@@ -327,6 +377,12 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                   </div>
                 </div>
               )}
+              <PerformersField
+                value={form.show.performers}
+                onChange={(performers) => patchShow({ performers })}
+                folder={`${folder}/show`}
+                label="Personajes del show (opcional)"
+              />
             </div>
           </section>
 

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/invitation/invitation.css"
+        ],
+        "createdAt": "2026-11-08T05:05:36.456Z",
+        "reason": "Claude triage: .sign__cords is an empty element whose left/right 2px borders draw the two strings the theme sign hangs from, not an accent border on a card"
+      }
+    ]
+  }
+}

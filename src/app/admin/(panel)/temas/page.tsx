@@ -33,11 +33,11 @@ async function ThemesList() {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from("themes")
-    .select("id, name, event_type, is_active, colors, card_url, logo_url, group_url, invitations(count)")
+    .select("id, name, event_type, is_active, featured, colors, card_url, logo_url, group_url, invitations(count)")
     .eq("is_deleted", false)
     .eq("invitations.is_deleted", false)
     .order("name")
-    .returns<(Pick<Theme, "id" | "name" | "event_type" | "is_active" | "colors" | "card_url" | "logo_url" | "group_url"> & { invitations: { count: number }[] })[]>();
+    .returns<(Pick<Theme, "id" | "name" | "event_type" | "is_active" | "featured" | "colors" | "card_url" | "logo_url" | "group_url"> & { invitations: { count: number }[] })[]>();
   if (error) throw error;
 
   if (!data.length) return <div className={styles.empty}>Todavía no hay temas.</div>;
@@ -59,6 +59,7 @@ async function ThemesList() {
               <div className={styles.themeBody}>
                 <strong>{t.name}</strong>{" "}
                 {t.is_active === false && <span className={`${styles.badge} ${styles.badgeOff}`}>Desactivado</span>}
+                {t.featured && t.is_active !== false && <span className={`${styles.badge} ${styles.badgeOk}`}>Destacado</span>}
                 <div className={styles.help}>
                   {t.event_type ? `${EVENT_TYPES[t.event_type].label} · ` : ""}
                   {uses === 1 ? "1 invitación" : `${uses} invitaciones`}
