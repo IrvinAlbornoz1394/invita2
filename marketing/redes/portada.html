@@ -1,0 +1,83 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:1640px;height:624px;overflow:hidden}
+body{font-family:Poppins,sans-serif;color:#1c1535;position:relative;
+ background:radial-gradient(circle at 78% 50%,#d9cdf8 0%,rgba(217,205,248,0) 45%),linear-gradient(120deg,#f8f5fe 0%,#ece6fb 100%)}
+.dot{position:absolute;border-radius:50%}
+.strip{position:absolute;width:8px;height:22px;border-radius:3px}
+/* zona segura: 265..1375 */
+.text{position:absolute;left:300px;top:92px;width:640px}
+.logo{width:330px;display:block;margin-left:-6px}
+h1{font-size:50px;line-height:1.08;font-weight:800;margin:26px 0 22px;letter-spacing:-1.2px;color:#2e1f66}
+h1 em{font-style:normal;color:#5b3db5}
+.chips{display:flex;flex-wrap:wrap;gap:10px;width:600px}
+.chip{display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 16px 9px 12px;font-weight:600;font-size:18px;color:#2e1f66;box-shadow:0 8px 18px -10px rgba(46,31,102,.35)}
+.chip svg{width:20px;height:20px;color:#5b3db5}
+/* teléfono */
+.phone{position:absolute;left:1035px;top:46px;width:270px;height:560px;border-radius:44px;background:#1c1535;padding:11px;transform:rotate(6deg);box-shadow:0 40px 70px -24px rgba(46,31,102,.55)}
+.screen{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;background:linear-gradient(180deg,#7c5ce0 0%,#9a7bf0 38%,#fdf4e6 38.2%);text-align:center}
+.island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:80px;height:22px;border-radius:12px;background:#1c1535;z-index:2}
+.rays{position:absolute;inset:0 0 62% 0;background:repeating-conic-gradient(from 0deg at 50% 100%,rgba(255,255,255,.13) 0 8deg,transparent 8deg 16deg)}
+.hi{position:relative;margin-top:52px;color:#fff;font-weight:700;font-size:13px;letter-spacing:.4px}
+.name{position:relative;font-family:'Lilita One',sans-serif;font-size:52px;color:#fff;line-height:1;margin-top:4px;text-shadow:0 4px 0 #4c31a0}
+.age{position:relative;display:inline-block;margin-top:10px;background:#ffad4f;color:#fff;font-family:'Lilita One';font-size:18px;padding:4px 14px;border-radius:999px;box-shadow:0 3px 0 #e08a2a}
+.count{display:flex;justify-content:center;gap:7px;margin-top:40px}
+.count div{background:#fff;border-radius:12px;width:56px;padding:7px 0;box-shadow:0 6px 14px -8px rgba(46,31,102,.4)}
+.count b{display:block;font-size:21px;color:#5b3db5;line-height:1.1}
+.count span{font-size:10px;color:#5f5878;font-weight:600}
+.card{margin:14px 16px 0;background:#fff;border-radius:14px;padding:10px 12px;text-align:left;font-size:12px;color:#2e1f66;font-weight:600;box-shadow:0 6px 14px -8px rgba(46,31,102,.4);display:grid;gap:6px}
+.card div{display:flex;gap:8px;align-items:center}
+.card svg{width:15px;height:15px;color:#ff7a66;flex:none}
+.btn{margin:14px 16px 0;background:#25a35a;color:#fff;border-radius:12px;padding:11px;font-weight:700;font-size:13px;box-shadow:0 4px 0 #1b7f45}
+.gal{display:flex;gap:7px;margin:12px 16px 0}.gal span{flex:1;height:58px;border-radius:10px;box-shadow:0 6px 14px -8px rgba(46,31,102,.4)}
+/* globos */
+.balloon{position:absolute;border-radius:50% 50% 48% 48%}
+.balloon::after{content:"";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);border:6px solid transparent;border-bottom:8px solid currentColor}
+.balloon i{position:absolute;left:24%;top:16%;width:22%;height:30%;border-radius:50%;background:rgba(255,255,255,.45);transform:rotate(25deg)}
+</style></head><body>
+<!-- confeti -->
+<span class="dot" style="left:290px;top:40px;width:14px;height:14px;background:#5ad6bd"></span>
+<span class="dot" style="left:960px;top:70px;width:12px;height:12px;background:#ffad4f"></span>
+<span class="dot" style="left:1400px;top:120px;width:16px;height:16px;background:#ff7a66"></span>
+<span class="dot" style="left:1340px;top:520px;width:12px;height:12px;background:#9a6cf2"></span>
+<span class="dot" style="left:880px;top:560px;width:10px;height:10px;background:#5ad6bd"></span>
+<span class="dot" style="left:140px;top:300px;width:14px;height:14px;background:#9a6cf2"></span>
+<span class="dot" style="left:1520px;top:330px;width:12px;height:12px;background:#ffad4f"></span>
+<span class="strip" style="left:1000px;top:200px;background:#ff7a66;transform:rotate(30deg)"></span>
+<span class="strip" style="left:1360px;top:300px;background:#5ad6bd;transform:rotate(-25deg)"></span>
+<span class="strip" style="left:200px;top:110px;background:#ffad4f;transform:rotate(-20deg)"></span>
+<span class="strip" style="left:1460px;top:470px;background:#9a6cf2;transform:rotate(15deg)"></span>
+<span class="strip" style="left:60px;top:500px;background:#5ad6bd;transform:rotate(40deg)"></span>
+<!-- globos -->
+<span class="balloon" style="left:1310px;top:70px;width:70px;height:84px;background:#ff7a66;color:#ff7a66;transform:rotate(12deg)"><i></i></span>
+<span class="balloon" style="left:975px;top:380px;width:58px;height:70px;background:#5ad6bd;color:#5ad6bd;transform:rotate(-10deg)"><i></i></span>
+<span class="balloon" style="left:1440px;top:190px;width:52px;height:62px;background:#ffad4f;color:#ffad4f;transform:rotate(8deg)"><i></i></span>
+
+<div class="text">
+  <img class="logo" src="logo.png" alt="invita2">
+  <h1>Invitaciones digitales que <em>se abren con sorpresa</em></h1>
+  <div class="chips">
+    <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>Música</div>
+    <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>Cuenta regresiva</div>
+    <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>Mapa</div>
+    <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>Galería</div>
+    <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 21l2.1-5.4A8.5 8.5 0 1 1 21 11.5z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>Confirmación por WhatsApp</div>
+  </div>
+</div>
+
+<div class="phone"><div class="screen">
+  <span class="island"></span><div class="rays"></div>
+  <div class="hi">¡VEN A CELEBRAR CONMIGO!</div>
+  <div class="name">Valentina</div>
+  <div class="age">6 años</div>
+  <div class="count"><div><b>12</b><span>días</span></div><div><b>08</b><span>horas</span></div><div><b>45</b><span>min</span></div></div>
+  <div class="card">
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Sáb 14 de marzo · 4:00 pm</div>
+    <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>Jardín Los Globos</div>
+  </div>
+  <div class="gal"><span style="background:linear-gradient(135deg,#ffad4f,#ff7a66)"></span><span style="background:linear-gradient(135deg,#5ad6bd,#3fa9c9)"></span><span style="background:linear-gradient(135deg,#9a6cf2,#5b3db5)"></span></div>
+  <div class="btn">Confirmar por WhatsApp</div>
+</div></div>
+</body></html>
