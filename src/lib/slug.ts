@@ -1,21 +1,17 @@
 import { randomInt } from "node:crypto";
+import { slugify } from "./slugify";
+
+export { slugify };
 
 // Sin 0/o, 1/l para que el hash se pueda dictar sin confusiones
 const ALPHABET = "abcdefghijkmnpqrstuvwxyz23456789";
 
-export function slugify(text: string) {
-  return text
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 24)
-    .replace(/-+$/, "");
+/** Sufijo al azar para que un slug nuevo no choque con otro */
+export function randomHash(length = 6) {
+  return Array.from({ length }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
 }
 
 /** "Lucero Jeamileth" → "lucero-k3f9a2" */
 export function invitationSlug(name: string) {
-  const hash = Array.from({ length: 6 }, () => ALPHABET[randomInt(ALPHABET.length)]).join("");
-  return `${slugify(name) || "fiesta"}-${hash}`;
+  return `${slugify(name) || "fiesta"}-${randomHash()}`;
 }

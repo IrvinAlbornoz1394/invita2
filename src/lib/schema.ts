@@ -1,5 +1,6 @@
 import { z } from "zod";
-import { DECOR_MAX, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TYPE_KEYS, TITLE_FONTS } from "./defaults";
+import { THEME_SLUG_MAX } from "./slugify";
+import { DECOR_MAX, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TYPE_KEYS, FLOATER_KIND_KEYS, TITLE_FONTS } from "./defaults";
 
 const text = (max: number) => z.string().trim().max(max);
 const optionalText = (max: number) =>
@@ -89,6 +90,12 @@ export const invitationInput = z.object({
     address: optionalText(200),
     maps_url: optionalAsset,
   }),
+  effects: z.object({
+    source: z.enum(["theme", "custom"]),
+    intro: z.enum(["gift", "balloon", "book", "envelope", "curtain"]),
+    floaters: z.enum(FLOATER_KIND_KEYS),
+    keep: z.boolean(),
+  }),
   sections: z.record(z.enum(sectionKeys), z.boolean()),
   texts: z
     .partialRecord(z.enum(textKeys), text(200))
@@ -102,6 +109,12 @@ const decorImages = z.array(optionalAsset).max(DECOR_MAX);
 
 export const themeInput = z.object({
   name: text(80).min(1, "Ponle nombre al tema"),
+  slug: z
+    .string()
+    .trim()
+    .min(2, "La dirección de la demo es muy corta")
+    .max(THEME_SLUG_MAX, `La dirección de la demo va hasta ${THEME_SLUG_MAX} letras`)
+    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "La dirección de la demo solo lleva minúsculas, números y guiones"),
   event_type: z.enum(EVENT_TYPE_KEYS).nullable(),
   colors: z.object({
     primary: hex,
@@ -138,6 +151,10 @@ export const themeInput = z.object({
     details: decorImages,
     extras: decorImages,
     extras_top_width: z.number().int().min(20).max(100),
+  }),
+  effects: z.object({
+    floaters: z.enum(FLOATER_KIND_KEYS).nullable(),
+    keep: z.boolean().nullable(),
   }),
 });
 

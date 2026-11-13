@@ -407,6 +407,30 @@
   color: #8a5a00;
 }
 
+/* Dirección de la demo: /demo/ fijo pegado al campo */
+.slugField {
+  display: flex;
+  align-items: stretch;
+}
+.slugPrefix {
+  display: grid;
+  place-items: center;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-right: 0;
+  border-radius: 10px 0 0 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.82rem;
+}
+.slugField .input {
+  min-width: 0;
+  border-radius: 0 10px 10px 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.86rem;
+}
+
 .linkBox {
   display: flex;
   gap: 6px;

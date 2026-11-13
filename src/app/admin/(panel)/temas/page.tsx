@@ -54,11 +54,11 @@ async function ThemesList() {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from("themes")
-    .select("id, name, event_type, is_active, featured, colors, card_url, logo_url, group_url, invitations(count)")
+    .select("id, slug, name, event_type, is_active, featured, colors, card_url, logo_url, group_url, invitations(count)")
     .eq("is_deleted", false)
     .eq("invitations.is_deleted", false)
     .order("name")
-    .returns<(Pick<Theme, "id" | "name" | "event_type" | "is_active" | "featured" | "colors" | "card_url" | "logo_url" | "group_url"> & { invitations: { count: number }[] })[]>();
+    .returns<(Pick<Theme, "id" | "slug" | "name" | "event_type" | "is_active" | "featured" | "colors" | "card_url" | "logo_url" | "group_url"> & { invitations: { count: number }[] })[]>();
   if (error) throw error;
 
   if (!data.length) return <div className={styles.empty}>Todavía no hay temas.</div>;
@@ -105,7 +105,7 @@ async function ThemesList() {
             <ThemeActions id={t.id} name={t.name} active={t.is_active !== false} uses={uses} />
             <a
               className={`${styles.actionIcon} ${styles.themeDemo}`}
-              href={`/demo/${t.id}`}
+              href={`/demo/${t.slug}`}
               target="_blank"
               aria-label={`Ver demo pública de ${t.name}`}
               title="Ver demo pública (se puede compartir)"

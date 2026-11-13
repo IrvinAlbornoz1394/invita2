@@ -4,9 +4,11 @@ import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { autoBackground, BACKGROUND_STYLES, DEFAULT_SOFTEN, resolveBackground } from "@/lib/background";
 import {
-  COLOR_LABELS, DECOR_SECTIONS, EVENT_FONTS, EVENT_TYPES, INTRO_STYLES, TITLE_FONTS, type EventType, type TitleFont,
+  COLOR_LABELS, DECOR_SECTIONS, defaultEffects, EVENT_FONTS, EVENT_TYPES, FLOATER_KINDS, INTRO_STYLES, TITLE_FONTS, type EventType,
+  type FloaterKind, type TitleFont,
 } from "@/lib/defaults";
 import type { ThemeInput } from "@/lib/schema";
+import { slugify, THEME_SLUG_MAX } from "@/lib/slugify";
 import { themeDecor } from "@/lib/view";
 import { isReligious } from "@/lib/defaults";
 import type { DecorKey, ImageStyle, LogoStyle, Theme, ThemeColors } from "@/lib/types";
@@ -29,6 +31,7 @@ const LOGO_STYLES: { value: LogoStyle; label: string }[] = [
 function toForm(t: Theme): ThemeInput {
   return {
     name: t.name,
+    slug: t.slug,
     event_type: t.event_type ?? null,
     colors: t.colors,
     title_font: (t.title_font in TITLE_FONTS ? t.title_font : "lilita") as TitleFont,
@@ -59,8 +62,14 @@ function toForm(t: Theme): ThemeInput {
       image_url: t.intro?.image_url ?? null,
     },
     decor: themeDecor(t.decor),
+    effects: {
+      floaters: t.effects?.floaters ?? null,
+      keep: t.effects?.keep ?? null,
+    },
   };
 }
+
+const floaterLabel = (kind: FloaterKind) => FLOATER_KINDS.find((k) => k.value === kind)!.label;
 
 export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
   const [form, setForm] = useState<ThemeInput>(() => toForm(theme));
@@ -79,6 +88,10 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
   const patchShow = (p: Partial<ThemeInput["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
   const forParties = !form.event_type || !isReligious(form.event_type);
   const patchIntro = (p: Partial<ThemeInput["intro"]>) => setForm((f) => ({ ...f, intro: { ...f.intro, ...p } }));
+  const patchEffects = (p: Partial<ThemeInput["effects"]>) => setForm((f) => ({ ...f, effects: { ...f.effects, ...p } }));
+  // Sin elegir: lo de siempre del tipo de evento (sin tipo, como cumpleaños)
+  const autoEffects = defaultEffects(form.event_type ?? "cumpleanos");
+  const floaters = form.effects.floaters ?? autoEffects.floaters;
   const setDecor = (key: DecorKey, i: number, url: string | null) =>
     setForm((f) => ({ ...f, decor: { ...f.decor, [key]: f.decor[key].map((u, j) => (j === i ? url : u)) } }));
 
@@ -133,7 +146,35 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
             <div className={styles.grid} style={{ marginTop: 12 }}>
               <label className={styles.field}>
                 <span className={styles.label}>Nombre del tema</span>
-                <input className={styles.input} value={form.name} onChange={(e) => patch({ name: e.target.value })} />
+                <input
+                  className={styles.input}
+                  value={form.name}
+                  onChange={(e) => {
+                    const name = e.target.value;
+                    // Mientras la dirección siga al nombre (o sea la de «Nuevo tema»), se actualiza con él
+                    setForm((f) =>
+                      f.slug === slugify(f.name, THEME_SLUG_MAX) || f.slug.startsWith("nuevo-tema-")
+                        ? { ...f, name, slug: slugify(name, THEME_SLUG_MAX) || f.slug }
+                        : { ...f, name }
+                    );
+                  }}
+                />
+              </label>
+              <label className={styles.field}>
+                <span className={styles.label}>Dirección de la demo</span>
+                <span className={styles.slugField}>
+                  <span className={styles.slugPrefix}>/demo/</span>
+                  <input
+                    className={styles.input}
+                    value={form.slug}
+                    maxLength={THEME_SLUG_MAX}
+                    onChange={(e) => patch({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-{2,}/g, "-") })}
+                    onBlur={() => patch({ slug: slugify(form.slug, THEME_SLUG_MAX) || slugify(form.name, THEME_SLUG_MAX) })}
+                  />
+                </span>
+                <span className={styles.help}>
+                  La que compartes con el cliente. Si la cambias, los enlaces que ya mandaste con la anterior dejan de funcionar.
+                </span>
               </label>
               <label className={styles.field}>
                 <span className={styles.label}>Tipo de evento</span>
@@ -477,6 +518,63 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
                   onChange={(image_url) => patchIntro({ image_url })}
                   folder={folder}
                 />
+              </div>
+            )}
+          </section>
+
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Elementos que flotan</h2>
+            <p className={styles.cardHint}>
+              Suben (o caen) por la portada y se pueden tocar. Cada invitación puede usar estos o elegir otros.
+            </p>
+            <div className={styles.field}>
+              <span className={styles.label}>¿Qué flota?</span>
+              <div className={styles.chips}>
+                <label className={styles.check}>
+                  <input
+                    type="radio"
+                    name="effects_floaters"
+                    checked={form.effects.floaters === null}
+                    onChange={() => patchEffects({ floaters: null })}
+                  />
+                  Según el evento ({floaterLabel(autoEffects.floaters).toLowerCase()})
+                </label>
+                {FLOATER_KINDS.map((o) => (
+                  <label key={o.value} className={styles.check}>
+                    <input
+                      type="radio"
+                      name="effects_floaters"
+                      checked={form.effects.floaters === o.value}
+                      onChange={() => patchEffects({ floaters: o.value })}
+                    />
+                    {o.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            {floaters !== "none" && (
+              <div className={styles.field} style={{ marginTop: 16 }}>
+                <span className={styles.label}>Después de la portada</span>
+                <div className={styles.chips}>
+                  {(
+                    [
+                      [null, `Según el evento (${autoEffects.keep ? "siguen saliendo" : "solo en la portada"})`],
+                      [false, "Solo en la portada"],
+                      [true, "Siguen saliendo en toda la invitación"],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <label key={String(value)} className={styles.check}>
+                      <input
+                        type="radio"
+                        name="effects_keep"
+                        checked={form.effects.keep === value}
+                        onChange={() => patchEffects({ keep: value })}
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+                <span className={styles.help}>Si siguen saliendo, cada tanto sube una tanda pequeña mientras se lee la invitación.</span>
               </div>
             )}
           </section>

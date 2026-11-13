@@ -1,11 +1,11 @@
 import type { CSSProperties } from "react";
 import {
-  DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TEXTS, eventType, INTRO_STYLES, isReligious,
+  DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, defaultEffects, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TEXTS, eventType, INTRO_STYLES, isReligious,
   TITLE_FONT_KIND, TITLE_FONT_WIDTH, TITLE_FONTS, toEvent, type TitleFont,
 } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf, utcToZoned, zonedToUtc } from "./dates";
-import type { DecorKey, IntroStyle, InvitationWithTheme, Show, ShowImageSource, ShowSource, TextKey, Theme, ThemeDecor, ThemeShow } from "./types";
+import type { DecorKey, EventType, FloaterKind, IntroStyle, InvitationEffects, InvitationWithTheme, Show, ShowImageSource, ShowSource, TextKey, Theme, ThemeDecor, ThemeShow } from "./types";
 
 export type Tone = "surface" | "secondary" | "accent" | "highlight";
 export type BlockKey = "card" | "family" | "countdown" | "details" | "show" | "extras" | "gallery" | "message" | "rsvp";
@@ -19,12 +19,12 @@ export function buildView(inv: InvitationWithTheme) {
   const theme = inv.theme;
   const colors = { ...DEFAULT_COLORS, ...theme?.colors };
   const bg = resolveBackground(colors, theme?.background);
-  const introImage = theme?.intro?.image_url || null;
-  const introStyle: IntroStyle =
-    INTRO_STYLES.find((s) => s.value === theme?.intro?.style && (s.value !== "image" || introImage))?.value ?? "gift";
+  const type = eventType(inv.event_type);
+  const effects = resolveEffects(theme, type, inv.effects);
+  const introStyle = effects.intro;
+  const introImage = introStyle === "image" ? theme?.intro?.image_url || null : null;
   const font = (theme && theme.title_font in TITLE_FONTS ? theme.title_font : "lilita") as TitleFont;
   const fontKind = TITLE_FONT_KIND[font] ?? "fun";
-  const type = eventType(inv.event_type);
   const defaults = EVENT_TEXTS[type];
 
   const nameLines = inv.name_lines.filter(Boolean);
@@ -151,6 +151,8 @@ export function buildView(inv: InvitationWithTheme) {
     eventType: type,
     /** Bautizo y comunión: piezas serenas en vez de las de juguete */
     elegant: isReligious(type),
+    /** Qué flota por la invitación y si sigue saliendo después de la portada */
+    effects: { floaters: effects.floaters, keep: effects.keep && effects.floaters !== "none" },
     eventLabel: inv.event_label,
     /** «al cumpleaños», «a la Primera Comunión» */
     toEvent: toEvent(inv.event_label),
@@ -192,6 +194,36 @@ export function buildView(inv: InvitationWithTheme) {
       musicUrl: theme?.music_url ?? null,
       musicStart: theme?.music_start ?? 0,
     },
+  };
+}
+
+/** Apertura del tema: la imagen propia solo cuenta si tiene imagen; si no, el regalo. */
+export function themeIntroStyle(theme: Pick<Theme, "intro"> | null | undefined): IntroStyle {
+  const image = theme?.intro?.image_url || null;
+  return INTRO_STYLES.find((s) => s.value === theme?.intro?.style && (s.value !== "image" || image))?.value ?? "gift";
+}
+
+/** Elementos del tema; lo que no elige sale según el tipo de evento. */
+export function themeEffects(theme: Pick<Theme, "effects"> | null | undefined, type: EventType): { floaters: FloaterKind; keep: boolean } {
+  const auto = defaultEffects(type);
+  return { floaters: theme?.effects?.floaters ?? auto.floaters, keep: theme?.effects?.keep ?? auto.keep };
+}
+
+/**
+ * Apertura, elementos flotantes y si siguen saliendo: los del tema, o los de
+ * la invitación cuando eligió los suyos.
+ */
+export function resolveEffects(
+  theme: Pick<Theme, "intro" | "effects"> | null | undefined,
+  type: EventType,
+  own: InvitationEffects | null | undefined,
+): { intro: IntroStyle; floaters: FloaterKind; keep: boolean } {
+  const fromTheme = { intro: themeIntroStyle(theme), ...themeEffects(theme, type) };
+  if (own?.source !== "custom") return fromTheme;
+  return {
+    intro: own.intro ?? fromTheme.intro,
+    floaters: own.floaters ?? fromTheme.floaters,
+    keep: own.keep ?? fromTheme.keep,
   };
 }
 

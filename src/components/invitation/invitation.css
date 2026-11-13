@@ -1566,6 +1566,15 @@ html.inv-iris .intro.is-gone { transition: none; }
 }
 .floater--petal.is-popping .floater__body { animation: inv-petalAway .6s var(--ease) forwards; }
 
+/* Globos aerostáticos: suben despacio meciéndose; al tocarlos se elevan y se alejan */
+.floater--hotair { bottom: -150px; animation: inv-up linear forwards; color: var(--c-ink); }
+.floater--hotair .floater__body { aspect-ratio: 60 / 86; transform-origin: 50% 0; animation: inv-hotairSway var(--sway) ease-in-out infinite alternate; }
+.floater--hotair .floater__body::before { inset: -6px; border-radius: 40%; }
+.floater--hotair .floater__body svg { display: block; width: 100%; height: 100%; }
+.floater--hotair.is-popping .floater__body { animation: inv-hotairAway 1.2s cubic-bezier(.4, 0, .6, 1) forwards; }
+@keyframes inv-hotairSway { from { transform: translateX(-9px) rotate(-3deg); } to { transform: translateX(9px) rotate(3deg); } }
+@keyframes inv-hotairAway { 20% { transform: translateY(6px) scale(1.04); } to { transform: translateY(-55vh) scale(.6); opacity: 0; } }
+
 @keyframes inv-down { to { transform: translateY(calc(100svh + 140px)); } }
 @keyframes inv-wobble { from { transform: translateX(-10px) scale(1, .96); } to { transform: translateX(10px) scale(.96, 1); } }
 @keyframes inv-flutter {

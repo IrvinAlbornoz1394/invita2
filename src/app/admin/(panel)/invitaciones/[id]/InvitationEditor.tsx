@@ -11,6 +11,8 @@ import {
   EVENT_TYPES,
   eventType,
   EXTRAS_CATALOG,
+  FLOATER_KINDS,
+  INTRO_STYLES,
   isReligious,
   SECTION_LABELS,
   TEXT_LABELS,
@@ -19,8 +21,10 @@ import {
   type EventType,
 } from "@/lib/defaults";
 import type { InvitationInput } from "@/lib/schema";
-import type { Extra, ImageStyle, Invitation, Performer, SectionKey, ShowImageSource, ShowSource, TextKey, Theme } from "@/lib/types";
-import { showImageSource, showSource, themeHasShow, themeShowContent } from "@/lib/view";
+import type {
+  Extra, ImageStyle, Invitation, InvitationEffects, Performer, SectionKey, ShowImageSource, ShowSource, TextKey, Theme,
+} from "@/lib/types";
+import { resolveEffects, showImageSource, showSource, themeHasShow, themeShowContent } from "@/lib/view";
 import { duplicateInvitation, saveInvitation } from "../../../actions";
 import { InvitationActions, UNPUBLISH_CONFIRM } from "../../../InvitationActions";
 import { Popconfirm } from "../../../Popconfirm";
@@ -31,7 +35,12 @@ import { ItemTools, move, PerformersField } from "../../../PerformersField";
 import { uploadMedia } from "../../../upload";
 import styles from "../../../admin.module.css";
 
-export type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "show" | "event_type">;
+export type ThemeOption = Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "show" | "event_type" | "intro" | "effects">;
+
+/** Aperturas que puede elegir la invitación: la de imagen propia es del tema. */
+const OWN_INTROS = INTRO_STYLES.filter((s) => s.value !== "image");
+const introLabel = (v: string) => INTRO_STYLES.find((s) => s.value === v)?.label ?? v;
+const floaterLabel = (v: string) => FLOATER_KINDS.find((k) => k.value === v)?.label ?? v;
 
 type Form = {
   published: boolean;
@@ -68,6 +77,7 @@ type Form = {
   /** Un nombre por renglón */
   family: { parents: string; godparents: string; parents_photo: string | null; godparents_photo: string | null };
   ceremony: { enabled: boolean; time: string; place: string; address: string; maps_url: string };
+  effects: Required<InvitationEffects>;
   sections: Record<SectionKey, boolean>;
   texts: Record<TextKey, string>;
 };
@@ -121,6 +131,16 @@ function toForm(inv: Invitation): Form {
       address: inv.ceremony?.address ?? "",
       maps_url: inv.ceremony?.maps_url ?? "",
     },
+    // Los valores propios se llenan con los del tema al elegir «Otros»
+    effects: (() => {
+      const r = resolveEffects(null, type, inv.effects);
+      return {
+        source: inv.effects?.source ?? "theme",
+        intro: r.intro === "image" ? "gift" : r.intro,
+        floaters: r.floaters,
+        keep: r.keep,
+      };
+    })(),
     sections: { ...DEFAULT_SECTIONS, ...inv.sections },
     texts: Object.fromEntries(
       (Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [k, inv.texts?.[k] || EVENT_TEXTS[type][k]])
@@ -186,6 +206,16 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   const patch = (p: Partial<Form>) => setForm((f) => ({ ...f, ...p }));
   const patchShow = (p: Partial<Form["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
   const themeShowUrl = themes.find((t) => t.id === form.theme_id)?.show_url ?? null;
+
+  const patchEffects = (p: Partial<Form["effects"]>) => setForm((f) => ({ ...f, effects: { ...f.effects, ...p } }));
+
+  /** Elegir apertura y elementos propios: arranca con los del tema, para cambiar solo lo que haga falta. */
+  function switchToCustomEffects() {
+    setForm((f) => {
+      const r = resolveEffects(themes.find((x) => x.id === f.theme_id), f.event_type, null);
+      return { ...f, effects: { source: "custom", intro: r.intro === "image" ? "gift" : r.intro, floaters: r.floaters, keep: r.keep } };
+    });
+  }
 
   /** Pasar a show propio: si está vacío, arranca con el del tema para no escribir todo de nuevo. */
   function switchToCustomShow() {
@@ -596,6 +626,74 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                 </div>
               )}
             </div>
+          </section>
+
+          {/* ---------------- Apertura y elementos ---------------- */}
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Apertura y elementos</h2>
+            <p className={styles.cardHint}>Cómo se abre la invitación, qué flota por ella y si sigue saliendo después de la portada.</p>
+            <div className={styles.field}>
+              <span className={styles.label}>¿Cuáles?</span>
+              <div className={styles.chips}>
+                <label className={styles.check}>
+                  <input
+                    type="radio"
+                    name="effects_source"
+                    checked={form.effects.source === "theme"}
+                    onChange={() => patchEffects({ source: "theme" })}
+                  />
+                  Los del tema
+                </label>
+                <label className={styles.check}>
+                  <input type="radio" name="effects_source" checked={form.effects.source === "custom"} onChange={switchToCustomEffects} />
+                  Otros para esta invitación
+                </label>
+              </div>
+            </div>
+            {form.effects.source === "theme" ? (
+              <ThemeEffectsSummary theme={theme} type={form.event_type} />
+            ) : (
+              <div className={styles.grid} style={{ marginTop: 16 }}>
+                <div className={styles.field}>
+                  <span className={styles.label}>Cómo se abre</span>
+                  <div className={styles.chips}>
+                    {OWN_INTROS.map((o) => (
+                      <label key={o.value} className={styles.check}>
+                        <input
+                          type="radio"
+                          name="effects_intro"
+                          checked={form.effects.intro === o.value}
+                          onChange={() => patchEffects({ intro: o.value })}
+                        />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <div className={styles.field}>
+                  <span className={styles.label}>¿Qué flota?</span>
+                  <div className={styles.chips}>
+                    {FLOATER_KINDS.map((o) => (
+                      <label key={o.value} className={styles.check}>
+                        <input
+                          type="radio"
+                          name="effects_floaters"
+                          checked={form.effects.floaters === o.value}
+                          onChange={() => patchEffects({ floaters: o.value })}
+                        />
+                        {o.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                {form.effects.floaters !== "none" && (
+                  <label className={styles.switch}>
+                    <input type="checkbox" checked={form.effects.keep} onChange={(e) => patchEffects({ keep: e.target.checked })} />
+                    Siguen saliendo en toda la invitación (no solo en la portada)
+                  </label>
+                )}
+              </div>
+            )}
           </section>
 
           {/* ---------------- Show ---------------- */}
@@ -1021,6 +1119,24 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
 }
 
 /** Lo que trae el show del tema elegido, para saber qué se verá sin tener que abrir el tema. */
+function ThemeEffectsSummary({ theme, type }: { theme: ThemeOption | undefined; type: EventType }) {
+  const r = resolveEffects(theme, type, null);
+  return (
+    <p className={styles.help} style={{ marginTop: 12 }}>
+      {introLabel(r.intro)} · {floaterLabel(r.floaters)}
+      {r.floaters !== "none" && (r.keep ? " · siguen saliendo en toda la invitación" : " · solo en la portada")}
+      {theme ? (
+        <>
+          {" "}
+          · Se cambian en <Link href={`/admin/temas/${theme.id}`}>el tema «{theme.name}»</Link>.
+        </>
+      ) : (
+        " · Sin tema: lo de siempre según el tipo de evento."
+      )}
+    </p>
+  );
+}
+
 function ThemeShowSummary({ theme }: { theme: ThemeOption | undefined }) {
   if (!theme) return <p className={styles.help}>Elige un tema para usar su show, o escribe uno diferente.</p>;
   const c = themeShowContent(theme);

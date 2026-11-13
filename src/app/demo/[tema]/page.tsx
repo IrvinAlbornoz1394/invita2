@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+import { permanentRedirect, redirect } from "next/navigation";
 import { getLandingThemes } from "@/lib/data";
 import { demoEventAt, demoInvitation, getDemoTheme } from "@/lib/demo";
 import { eventType, isReligious } from "@/lib/defaults";
@@ -37,6 +37,11 @@ async function Demo({ params, searchParams }: Pick<PageProps<"/demo/[tema]">, "p
   const [{ tema }, query] = await Promise.all([params, searchParams]);
   const [theme, eventAt, all] = await Promise.all([getDemoTheme(tema), demoEventAt(), getLandingThemes()]);
   if (!theme) redirect("/#personajes");
+  // Enlace viejo con el id: a la dirección corta, conservando ?apertura=
+  if (tema !== theme.slug) {
+    const qs = new URLSearchParams(Object.entries(query).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : [])));
+    permanentRedirect(`/demo/${theme.slug}${qs.size ? `?${qs}` : ""}`);
+  }
 
   // ?apertura=regalo|globo|libro|sobre|telon: probar otra apertura sin tocar el tema
   const asked = String(query.apertura ?? "").toLowerCase();
@@ -48,7 +53,7 @@ async function Demo({ params, searchParams }: Pick<PageProps<"/demo/[tema]">, "p
   const religious = isReligious(eventType(theme.event_type));
   const themes = all
     .filter((t) => t.religious === religious)
-    .map((t) => ({ id: t.id, name: t.name, image: t.logoUrl ?? t.cardUrl }));
+    .map((t) => ({ id: t.id, slug: t.slug, name: t.name, image: t.logoUrl ?? t.cardUrl }));
 
   return (
     <>

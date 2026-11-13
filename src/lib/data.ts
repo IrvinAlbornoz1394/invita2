@@ -36,6 +36,8 @@ export const themesTag = "themes";
 
 export type LandingTheme = {
   id: string;
+  /** Dirección corta de la demo */
+  slug: string;
   name: string;
   logoUrl: string | null;
   cardUrl: string | null;
@@ -62,7 +64,7 @@ export async function getLandingThemes(): Promise<LandingTheme[]> {
 
   const { data, error } = await createPublicClient()
     .from("themes")
-    .select("id, name, logo_url, card_url, group_url, featured, event_type")
+    .select("id, slug, name, logo_url, card_url, group_url, featured, event_type")
     .or("logo_url.not.is.null,card_url.not.is.null")
     .eq("is_active", true)
     .eq("is_deleted", false)
@@ -71,6 +73,7 @@ export async function getLandingThemes(): Promise<LandingTheme[]> {
   if (error) throw error;
   return (data ?? []).map((t) => ({
     id: t.id,
+    slug: t.slug,
     name: t.name,
     logoUrl: t.logo_url,
     cardUrl: t.card_url,

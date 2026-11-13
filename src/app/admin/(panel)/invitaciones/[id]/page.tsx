@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
-import type { Invitation, Theme } from "@/lib/types";
-import { InvitationEditor } from "./InvitationEditor";
+import type { Invitation } from "@/lib/types";
+import { InvitationEditor, type ThemeOption } from "./InvitationEditor";
 import styles from "../../../admin.module.css";
 
 export const metadata: Metadata = { title: "Editar invitación" };
@@ -28,10 +28,10 @@ async function Editor({ params }: Pick<PageProps<"/admin/invitaciones/[id]">, "p
   const keep = inv.data.theme_id ? `,id.eq.${inv.data.theme_id}` : "";
   const themes = await supabase
     .from("themes")
-    .select("id, name, colors, show_url, show_style, show, event_type")
+    .select("id, name, colors, show_url, show_style, show, event_type, intro, effects")
     .or(`and(is_active.eq.true,is_deleted.eq.false)${keep}`)
     .order("name")
-    .returns<Pick<Theme, "id" | "name" | "colors" | "show_url" | "show_style" | "show" | "event_type">[]>();
+    .returns<ThemeOption[]>();
   if (themes.error) throw themes.error;
 
   return <InvitationEditor invitation={inv.data} themes={themes.data} />;

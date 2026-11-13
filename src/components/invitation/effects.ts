@@ -149,7 +149,7 @@ function launchBalloon(
   later(() => b.remove(), dur * 1000 + 500);
 }
 
-const pick = (colors: string[]) => colors[(Math.random() * colors.length) | 0];
+const pick = <T,>(list: T[]) => list[(Math.random() * list.length) | 0];
 
 /**
  * Globos que suben por la portada. Cuatro de cada cinco salen por delante del
@@ -181,30 +181,149 @@ export function startBalloons(back: HTMLElement, front: HTMLElement | null, colo
   };
 }
 
-/** Cada cuánto sube una tanda de globos después de la portada, y cuántos trae. */
-const SKY_EVERY_MS = 9000;
-const SKY_PER_WAVE = 3;
+/**
+ * Elementos que flotan y se pueden tocar (los globos de fiesta van aparte):
+ *   bubble  burbujas de jabón que suben (bautizo: el agua)
+ *   petal   pétalos que caen girando (primera comunión)
+ *   hotair  globos aerostáticos que suben despacio, meciéndose
+ */
+export type FloaterKind = "bubble" | "petal" | "hotair";
+
+/** Globo aerostático: gajos de colores, cuerdas y canasta. Los colores salen de --h1/--h2. */
+const HOTAIR_SVG =
+  '<svg viewBox="0 0 60 86" aria-hidden="true">' +
+  '<path style="fill:var(--h1)" d="M30 2C14 2 3 14 3 29c0 13 9 21 16 29h22c7-8 16-16 16-29C57 14 46 2 30 2Z"/>' +
+  '<path style="fill:var(--h2)" d="M30 2c-8 0-13 12-13 27 0 13 4 21 7 29h12c3-8 7-16 7-29C43 14 38 2 30 2Z"/>' +
+  '<path style="fill:var(--h1)" d="M30 2c-3 0-5 12-5 27 0 13 2 21 3 29h4c1-8 3-16 3-29C35 14 33 2 30 2Z"/>' +
+  '<path fill="#fff" opacity=".28" d="M17 9c-6 5-9 12-9 20 0 4 1 8 3 11-1-11 2-22 6-31Z"/>' +
+  '<path fill="#000" opacity=".1" d="M45 9c6 5 9 12 9 20 0 10-7 18-13 29h-4c5-11 11-20 11-31 0-7-1-13-3-18Z"/>' +
+  '<rect x="18.5" y="56" width="23" height="4" rx="2" style="fill:var(--c-accent)"/>' +
+  '<path d="M20 60l4.5 12M40 60l-4.5 12M27 60l-.5 12M33 60l.5 12" stroke="currentColor" stroke-width=".9" opacity=".55"/>' +
+  '<rect x="23" y="72" width="14" height="11" rx="2.5" style="fill:color-mix(in srgb,var(--c-accent) 70%,#6b4a24)"/>' +
+  '<path d="M23 76.5h14" stroke="#000" stroke-width=".8" opacity=".18"/>' +
+  "</svg>";
+
+/** Combinaciones de gajos de los globos aerostáticos, con los colores del tema. */
+const HOTAIR_TONES: [string, string][] = [
+  ["var(--c-primary)", "var(--c-surface)"],
+  ["var(--c-secondary)", "var(--c-primary)"],
+  ["var(--c-highlight)", "var(--c-secondary)"],
+  ["var(--c-accent)", "var(--c-surface)"],
+];
 
 /**
- * Pasada la portada, cada tanto sube una tanda de pocos globos sobre toda la
- * invitación (capa fija). En la portada no, que ya tiene los suyos. Cada globo
- * va en su tercio del ancho para que no se amontonen; también se revientan.
+ * Crea un elemento flotante en `layer`. Al tocarlo: la burbuja se revienta, el
+ * pétalo sale volando y el globo aerostático se eleva y se aleja.
  */
-export function startSkyBalloons(layer: HTMLElement, colors: string[], onPop?: (x: number, y: number) => void) {
+function launchFloater(
+  layer: HTMLElement,
+  kind: FloaterKind,
+  { front, left, dur }: { front: boolean; left: number; dur?: number },
+  later: Later,
+  onPop?: (x: number, y: number) => void
+) {
+  const el = document.createElement("div");
+  el.className = `floater floater--${kind}${front ? " floater--front" : ""}`;
+  // Los de adelante, más grandes y un poco más rápidos
+  const size =
+    kind === "bubble"
+      ? front ? 46 + Math.random() * 34 : 22 + Math.random() * 22
+      : kind === "hotair"
+        ? front ? 52 + Math.random() * 26 : 28 + Math.random() * 16
+        : front ? 20 + Math.random() * 10 : 13 + Math.random() * 7;
+  const time = dur ?? (kind === "hotair" ? 19 + Math.random() * 7 : (kind === "bubble" ? 11 : 13) + Math.random() * 6) - (front ? 2 : 0);
+  el.style.left = `${left}%`;
+  el.style.setProperty("--w", `${Math.round(size)}px`);
+  el.style.setProperty("--sway", `${(Math.random() * 2 + (kind === "hotair" ? 3.4 : 2.4)).toFixed(1)}s`);
+  el.style.setProperty("--tone", Math.random() < 0.5 ? "var(--c-highlight)" : "var(--c-accent)");
+  if (kind === "hotair") {
+    const [h1, h2] = pick(HOTAIR_TONES);
+    el.style.setProperty("--h1", h1);
+    el.style.setProperty("--h2", h2);
+  }
+  el.style.animationDuration = `${time.toFixed(1)}s`;
+  el.innerHTML = `<span class="floater__body">${kind === "hotair" ? HOTAIR_SVG : ""}</span>`;
+  el.addEventListener("pointerdown", (e) => {
+    if (el.classList.contains("is-popping")) return;
+    e.stopPropagation();
+    el.classList.add("is-popping");
+    const r = el.querySelector(".floater__body")!.getBoundingClientRect();
+    onPop?.(r.left + r.width / 2, r.top + r.height / 2);
+    navigator.vibrate?.(8);
+    later(() => el.remove(), kind === "hotair" ? 1300 : 700);
+  });
+  layer.appendChild(el);
+  later(() => el.remove(), time * 1000 + 500);
+}
+
+/**
+ * Elementos que flotan en la portada. Algo más de la mitad pasa por delante
+ * del contenido. Los globos aerostáticos, más grandes, salen menos seguido.
+ */
+export function startFloaters(
+  back: HTMLElement,
+  front: HTMLElement | null,
+  kind: FloaterKind,
+  onPop?: (x: number, y: number) => void
+) {
+  if (reducedMotion()) return () => {};
+  const { later, clear } = timerSet();
+  let count = 0;
+  const first = kind === "hotair" ? 3 : 5;
+
+  const spawn = () => {
+    const inFront = Boolean(front) && count++ % 5 < 3;
+    launchFloater(inFront ? front! : back, kind, { front: inFront, left: Math.random() * (kind === "hotair" ? 84 : 92) }, later, onPop);
+  };
+
+  for (let i = 0; i < first; i++) later(spawn, i * (kind === "hotair" ? 900 : 450));
+  const id = setInterval(() => {
+    if (!document.hidden && scrollY < innerHeight) spawn();
+  }, kind === "hotair" ? 3600 : 2400);
+
+  return () => {
+    clearInterval(id);
+    clear();
+    back.replaceChildren();
+    front?.replaceChildren();
+  };
+}
+
+/** Cada cuánto sale una tanda después de la portada. */
+const SKY_EVERY_MS = 9000;
+
+/**
+ * Pasada la portada, cada tanto sale una tanda de pocos elementos sobre toda la
+ * invitación (capa fija). En la portada no, que ya tiene los suyos. Cada uno va
+ * en su carril del ancho para que no se amontonen; también se tocan.
+ */
+export function startSky(
+  layer: HTMLElement,
+  kind: FloaterKind | "balloon",
+  colors: string[],
+  onPop?: (x: number, y: number) => void
+) {
   if (reducedMotion()) return () => {};
   const { later, clear } = timerSet();
   let last = -Infinity;
+  // Los globos aerostáticos son grandes: dos por tanda
+  const perWave = kind === "hotair" ? 2 : 3;
 
   function wave() {
     last = Date.now();
-    const lane = 100 / SKY_PER_WAVE;
-    // Carriles en orden al azar, para que no siempre suba primero el de la izquierda
-    const lanes = [...Array(SKY_PER_WAVE).keys()].sort(() => Math.random() - 0.5);
+    const lane = 100 / perWave;
+    // Carriles en orden al azar, para que no siempre salga primero el de la izquierda
+    const lanes = [...Array(perWave).keys()].sort(() => Math.random() - 0.5);
     lanes.forEach((l, i) =>
       later(() => {
-        const depth = 0.95 + Math.random() * 0.25;
         const left = l * lane + Math.random() * (lane - 16);
-        launchBalloon(layer, { color: pick(colors), depth, left, dur: 10 + Math.random() * 4, front: true }, later, onPop);
+        if (kind === "balloon") {
+          const depth = 0.95 + Math.random() * 0.25;
+          launchBalloon(layer, { color: pick(colors), depth, left, dur: 10 + Math.random() * 4, front: true }, later, onPop);
+        } else {
+          const dur = kind === "hotair" ? 15 + Math.random() * 5 : 10 + Math.random() * 4;
+          launchFloater(layer, kind, { front: true, left, dur }, later, onPop);
+        }
       }, i * 700)
     );
   }
@@ -218,74 +337,6 @@ export function startSkyBalloons(layer: HTMLElement, colors: string[], onPop?: (
     clearInterval(id);
     clear();
     layer.replaceChildren();
-  };
-}
-
-/**
- * Elementos que flotan en las portadas religiosas y se pueden tocar:
- *   bubble  burbujas de jabón que suben (bautizo: el agua)
- *   petal   pétalos que caen girando (primera comunión)
- * Algo más de la mitad pasa por delante del contenido.
- */
-export type FloaterKind = "bubble" | "petal";
-
-export function startFloaters(
-  back: HTMLElement,
-  front: HTMLElement | null,
-  kind: FloaterKind,
-  onPop?: (x: number, y: number) => void
-) {
-  if (reducedMotion()) return () => {};
-  const timers = new Set<ReturnType<typeof setTimeout>>();
-  let count = 0;
-
-  function later(fn: () => void, ms: number) {
-    const t = setTimeout(() => {
-      timers.delete(t);
-      fn();
-    }, ms);
-    timers.add(t);
-  }
-
-  function pop(el: HTMLElement, e: PointerEvent) {
-    if (el.classList.contains("is-popping")) return;
-    e.stopPropagation();
-    el.classList.add("is-popping");
-    const r = el.querySelector(".floater__body")!.getBoundingClientRect();
-    onPop?.(r.left + r.width / 2, r.top + r.height / 2);
-    navigator.vibrate?.(8);
-    later(() => el.remove(), 700);
-  }
-
-  function spawn() {
-    const inFront = Boolean(front) && count++ % 5 < 3;
-    const el = document.createElement("div");
-    el.className = `floater floater--${kind}${inFront ? " floater--front" : ""}`;
-    const bubble = kind === "bubble";
-    // Los de adelante, más grandes y un poco más rápidos
-    const size = bubble ? (inFront ? 46 + Math.random() * 34 : 22 + Math.random() * 22) : inFront ? 20 + Math.random() * 10 : 13 + Math.random() * 7;
-    const dur = (bubble ? 11 : 13) + Math.random() * 6 - (inFront ? 2 : 0);
-    el.style.left = `${Math.random() * 92}%`;
-    el.style.setProperty("--w", `${Math.round(size)}px`);
-    el.style.setProperty("--sway", `${(Math.random() * 2 + 2.4).toFixed(1)}s`);
-    el.style.setProperty("--tone", Math.random() < 0.5 ? "var(--c-highlight)" : "var(--c-accent)");
-    el.style.animationDuration = `${dur.toFixed(1)}s`;
-    el.innerHTML = '<span class="floater__body"></span>';
-    el.addEventListener("pointerdown", (e) => pop(el, e));
-    (inFront ? front! : back).appendChild(el);
-    later(() => el.remove(), dur * 1000 + 500);
-  }
-
-  for (let i = 0; i < 5; i++) later(spawn, i * 450);
-  const id = setInterval(() => {
-    if (!document.hidden && scrollY < innerHeight) spawn();
-  }, 2400);
-
-  return () => {
-    clearInterval(id);
-    timers.forEach(clearTimeout);
-    back.replaceChildren();
-    front?.replaceChildren();
   };
 }
 

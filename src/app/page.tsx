@@ -228,7 +228,7 @@ export default async function Landing() {
             <ul className={styles.stripList}>
               {picks.map((t) => (
                 <li key={t.id}>
-                  <a className={styles.stripDemo} href={`/demo/${t.id}`}>
+                  <a className={styles.stripDemo} href={`/demo/${t.slug}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={t.logoUrl ?? t.cardUrl ?? ""} alt="" loading="lazy" />
                     <span>{t.name}</span>

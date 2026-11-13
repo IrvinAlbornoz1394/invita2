@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { flushSync } from "react-dom";
 import type { BlockKey, InvitationView } from "@/lib/view";
-import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, startFloaters, startSkyBalloons, stars, type Fx } from "./effects";
+import { burstFrom, createConfetti, createMusic, reducedMotion, startBalloons, startFloaters, startSky, stars, type Fx } from "./effects";
 import { Icon, type IconName } from "./icons";
 import { Countdown } from "./Countdown";
 import { Gallery } from "./Gallery";
@@ -110,23 +110,19 @@ export function Invitation({ view, preview = false }: Props) {
   // El mapa de «fecha y lugar» se acerca apenas mientras la información pasa encima
   useEffect(() => startMapFx(rootRef.current!), []);
 
-  // Al abrir: globos en la portada
-  // (los eventos religiosos tienen su propia portada, sin globos)
+  // Al abrir: lo que flota en la portada (globos, burbujas, pétalos o globos aerostáticos)
+  const { floaters, keep } = view.effects;
   useEffect(() => {
-    if (!started || !balloonsRef.current) return;
-    // Bautizo: burbujas; comunión: pétalos; cumpleaños: globos
-    if (view.elegant) {
-      const kind = view.eventType === "primera_comunion" ? "petal" : "bubble";
-      return startFloaters(balloonsRef.current, balloonsFrontRef.current, kind, (x, y) => fx.burst(x, y, 22));
-    }
-    return startBalloons(balloonsRef.current, balloonsFrontRef.current, palette, (x, y) => fx.burst(x, y, 36));
-  }, [started, palette, fx, view.elegant, view.eventType]);
+    if (!started || !balloonsRef.current || floaters === "none") return;
+    if (floaters === "balloon") return startBalloons(balloonsRef.current, balloonsFrontRef.current, palette, (x, y) => fx.burst(x, y, 36));
+    return startFloaters(balloonsRef.current, balloonsFrontRef.current, floaters, (x, y) => fx.burst(x, y, 22));
+  }, [started, palette, fx, floaters]);
 
-  // Pasada la portada, pocos globos de vez en cuando sobre toda la invitación (solo cumpleaños)
+  // Pasada la portada, pocos de vez en cuando sobre toda la invitación (si el tema o la invitación lo piden)
   useEffect(() => {
-    if (!started || view.elegant || !skyRef.current) return;
-    return startSkyBalloons(skyRef.current, palette, (x, y) => fx.burst(x, y, 30));
-  }, [started, palette, fx, view.elegant]);
+    if (!started || !keep || floaters === "none" || !skyRef.current) return;
+    return startSky(skyRef.current, floaters, palette, (x, y) => fx.burst(x, y, floaters === "balloon" ? 30 : 22));
+  }, [started, palette, fx, floaters, keep]);
 
   // Entradas al hacer scroll
   useEffect(() => {
@@ -371,7 +367,7 @@ export function Invitation({ view, preview = false }: Props) {
         </div>
       </main>
 
-      {!view.elegant && <div className="balloons balloons--sky" ref={skyRef} aria-hidden="true" />}
+      {view.effects.keep && <div className="balloons balloons--sky" ref={skyRef} aria-hidden="true" />}
 
       {/* ===================== Barra inferior ===================== */}
       {showDock && (

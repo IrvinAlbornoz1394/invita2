@@ -380,6 +380,30 @@ export const INTRO_STYLES = [
   { value: "image", label: "Imagen propia", hint: "Toca para abrir" },
 ] as const;
 
+/** Elementos que flotan por la invitación y se pueden tocar. */
+export const FLOATER_KINDS = [
+  { value: "balloon", label: "Globos de fiesta" },
+  { value: "hotair", label: "Globos aerostáticos" },
+  { value: "bubble", label: "Burbujas" },
+  { value: "petal", label: "Pétalos" },
+  { value: "none", label: "Ninguno" },
+] as const;
+
+export type FloaterKind = (typeof FLOATER_KINDS)[number]["value"];
+
+export const FLOATER_KIND_KEYS = FLOATER_KINDS.map((k) => k.value) as [FloaterKind, ...FloaterKind[]];
+
+/**
+ * Lo que sale si el tema no dice otra cosa: cumpleaños con globos que siguen
+ * saliendo por toda la invitación; bautizo con burbujas y comunión con pétalos,
+ * solo en la portada.
+ */
+export function defaultEffects(type: EventType): { floaters: FloaterKind; keep: boolean } {
+  if (type === "bautizo") return { floaters: "bubble", keep: false };
+  if (type === "primera_comunion") return { floaters: "petal", keep: false };
+  return { floaters: "balloon", keep: true };
+}
+
 /** Secciones que aceptan elementos flotantes del tema y dónde va cada espacio. */
 export const DECOR_SECTIONS = [
   {

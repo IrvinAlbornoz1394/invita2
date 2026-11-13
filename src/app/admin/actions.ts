@@ -8,7 +8,7 @@ import { invitationTag, themeTag, themesTag } from "@/lib/data";
 import { zonedToUtc } from "@/lib/dates";
 import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, RECEPTION_AFTER_HOURS } from "@/lib/defaults";
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
-import { invitationSlug } from "@/lib/slug";
+import { invitationSlug, randomHash } from "@/lib/slug";
 import { resolveMapsDestination } from "@/lib/maps";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
@@ -172,7 +172,8 @@ export async function createTheme() {
 
   const { data, error } = await supabase
     .from("themes")
-    .insert({ name: "Nuevo tema", colors: DEFAULT_COLORS })
+    // La dirección de la demo se cambia en el editor; esta no choca con otra
+    .insert({ name: "Nuevo tema", slug: `nuevo-tema-${randomHash()}`, colors: DEFAULT_COLORS })
     .select("id")
     .single();
   if (error) throw error;
@@ -187,6 +188,7 @@ export async function saveTheme(id: string, input: ThemeInput): Promise<ActionRe
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const { error } = await supabase.from("themes").update(parsed.data).eq("id", id);
+  if (error?.code === "23505") return { ok: false, error: `La dirección /demo/${parsed.data.slug} ya la usa otro tema` };
   if (error) return { ok: false, error: error.message };
 
   // Refresca todas las invitaciones que usan este tema

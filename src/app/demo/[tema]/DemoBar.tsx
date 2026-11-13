@@ -4,7 +4,7 @@ import { useRef } from "react";
 import Link from "next/link";
 import styles from "./demo.module.css";
 
-export type DemoThemeOption = { id: string; name: string; image: string | null };
+export type DemoThemeOption = { id: string; slug: string; name: string; image: string | null };
 
 /** Barra de la demo: volver, cambiar de personaje y pedir el tema por WhatsApp. */
 export function DemoBar({
@@ -76,7 +76,7 @@ export function DemoBar({
                 {themes.map((t) => (
                   <li key={t.id}>
                     <Link
-                      href={`/demo/${t.id}`}
+                      href={`/demo/${t.slug}`}
                       replace
                       scroll={false}
                       className={styles.sheetItem}

@@ -31,18 +31,26 @@ const DEMO_FAMILY_PHOTOS = { parents_photo: demoPhoto("papas.jpg"), godparents_p
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * Tema para la demo pública; null si el id no es válido, no existe o se eliminó.
+ * Tema para la demo pública, por su dirección corta o su id; null si no existe o se eliminó.
  * Los desactivados también tienen demo: así se comparte con un cliente un tema
  * que todavía no sale en la landing.
  */
-export async function getDemoTheme(id: string): Promise<Theme | null> {
+export async function getDemoTheme(key: string): Promise<Theme | null> {
   "use cache";
   cacheLife("days");
-  cacheTag(themesTag, themeTag(id));
+  cacheTag(themesTag);
 
-  if (!UUID.test(id)) return null;
-  const { data, error } = await createPublicClient().from("themes").select("*").eq("id", id).eq("is_deleted", false).maybeSingle<Theme>();
+  // Enlaces viejos con el id; los nuevos usan la dirección corta
+  const byId = UUID.test(key);
+  if (!byId && !/^[a-z0-9-]{1,48}$/.test(key)) return null;
+  const { data, error } = await createPublicClient()
+    .from("themes")
+    .select("*")
+    .eq(byId ? "id" : "slug", key)
+    .eq("is_deleted", false)
+    .maybeSingle<Theme>();
   if (error) throw error;
+  if (data) cacheTag(themeTag(data.id));
   return data;
 }
 
@@ -66,7 +74,7 @@ export function demoInvitation(theme: Theme, eventAt: string): InvitationWithThe
   const startTime = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Merida", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(eventAt));
   return {
     id: `demo-${theme.id}`,
-    slug: `demo/${theme.id}`,
+    slug: `demo/${theme.slug}`,
     published: true,
     is_active: true,
     is_deleted: false,

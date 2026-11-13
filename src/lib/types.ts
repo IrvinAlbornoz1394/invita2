@@ -1,6 +1,6 @@
-import type { DEFAULT_TEXTS, DEFAULT_SECTIONS, DECOR_SECTIONS, EventType } from "./defaults";
+import type { DEFAULT_TEXTS, DEFAULT_SECTIONS, DECOR_SECTIONS, EventType, FloaterKind } from "./defaults";
 
-export type { EventType };
+export type { EventType, FloaterKind };
 
 export type ThemeColors = {
   primary: string;
@@ -32,6 +32,24 @@ export type ThemeIntro = {
   image_url: string | null;
 };
 
+/** Elementos flotantes del tema; null = lo de siempre según el tipo de evento. */
+export type ThemeEffects = {
+  floaters?: FloaterKind | null;
+  /** Si siguen saliendo por toda la invitación después de la portada */
+  keep?: boolean | null;
+};
+
+/**
+ * Apertura y elementos de la invitación: "theme" usa los del tema; "custom",
+ * los suyos propios.
+ */
+export type InvitationEffects = {
+  source: "theme" | "custom";
+  intro?: Exclude<IntroStyle, "image">;
+  floaters?: FloaterKind;
+  keep?: boolean;
+};
+
 export type DecorKey = (typeof DECOR_SECTIONS)[number]["key"];
 
 /** Imágenes flotantes por sección, por espacio (null = espacio vacío) */
@@ -56,6 +74,8 @@ export type LogoStyle = "badge" | "plain";
 export type Theme = {
   id: string;
   name: string;
+  /** Dirección corta de la demo: /demo/<slug> */
+  slug: string;
   /** false = no se ofrece para invitaciones nuevas ni en la landing; las que ya lo usan lo conservan */
   is_active?: boolean;
   /** Borrado lógico: no aparece en el panel */
@@ -78,6 +98,7 @@ export type Theme = {
   background: Partial<ThemeBackground> | null;
   intro: Partial<ThemeIntro> | null;
   decor: ThemeDecor | null;
+  effects?: ThemeEffects | null;
   updated_at?: string;
 };
 
@@ -156,6 +177,8 @@ export type Invitation = {
   ceremony?: Ceremony | null;
   sections: Partial<Sections>;
   texts: Texts;
+  /** Apertura y elementos flotantes: los del tema o propios */
+  effects?: InvitationEffects | null;
   updated_at: string;
 };
 
