@@ -11,6 +11,33 @@
         ],
         "createdAt": "2026-11-08T05:05:36.456Z",
         "reason": "Claude triage: .sign__cords is an empty element whose left/right 2px borders draw the two strings the theme sign hangs from, not an accent border on a card"
+      },
+      {
+        "rule": "oversized-h1",
+        "value": "*",
+        "files": [
+          "marketing/redes/carrusel-incluye.html"
+        ],
+        "createdAt": "2026-11-13T20:50:00.964Z",
+        "reason": "Claude: Instagram carousel slide (1080x1350 poster), display-size cover headline is intended, not a web viewport"
+      },
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "marketing/redes/carrusel-incluye.html"
+        ],
+        "createdAt": "2026-11-13T20:50:01.001Z",
+        "reason": "Claude: social graphic; colored shadow is a soft drop shadow on the white play button, intentional"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "marketing/redes/carrusel-incluye.html"
+        ],
+        "createdAt": "2026-11-13T20:50:01.030Z",
+        "reason": "Claude: social graphic; purple brand wash on cover/closing slides is intentional art direction"
       }
     ]
   }
