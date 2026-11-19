@@ -1,0 +1,440 @@
+/* =====================================================================
+   Formulario del cliente: misma paleta que la landing (lila, morado, arena).
+   Primero celular; a partir de 560 px los campos van de dos en dos.
+   ===================================================================== */
+
+.page {
+  --bg: #f6f3fd;
+  --lilac: #ece6fb;
+  --purple: #5b3db5;
+  --purple-hover: #4c31a0;
+  --purple-deep: #2e1f66;
+  --ink: #1c1535;
+  --muted: #5f5878;
+  --line: #e6dff6;
+  --white: #ffffff;
+  --danger: #b42318;
+  --radius: 16px;
+  --shadow: 0 18px 40px -22px rgba(46, 31, 102, 0.28), 0 4px 12px -6px rgba(46, 31, 102, 0.1);
+
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-poppins), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  padding: 32px 16px calc(48px + env(safe-area-inset-bottom));
+}
+
+.page :focus-visible {
+  outline: 2.5px solid var(--purple);
+  outline-offset: 2px;
+}
+
+.wrap {
+  max-width: 640px;
+  margin-inline: auto;
+}
+
+.loading {
+  text-align: center;
+  color: var(--muted);
+}
+
+/* Encabezado */
+.head {
+  margin-bottom: 24px;
+}
+.kicker {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--lilac);
+  color: var(--purple-deep);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.title {
+  margin: 12px 0 6px;
+  font-family: var(--font-lilita), var(--font-poppins), sans-serif;
+  font-weight: 400;
+  font-size: clamp(1.8rem, 6vw, 2.4rem);
+  line-height: 1.1;
+  color: var(--purple-deep);
+  text-wrap: balance;
+}
+.lead {
+  margin: 0;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* Secciones */
+.form {
+  display: grid;
+  gap: 16px;
+}
+.card {
+  margin: 0;
+  min-width: 0;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.sectionTitle {
+  float: left;
+  width: 100%;
+  margin: 0 0 14px;
+  padding: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--purple-deep);
+}
+.fields {
+  clear: both;
+  display: grid;
+  gap: 14px;
+}
+.row2 {
+  display: grid;
+  gap: 14px;
+}
+@media (min-width: 560px) {
+  .row2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Campos */
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+.label {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.help {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.help a {
+  color: var(--purple);
+  font-weight: 600;
+}
+.input,
+.textarea {
+  width: 100%;
+  min-width: 0;
+  /* 16 px: iOS no hace zoom al enfocar */
+  font: inherit;
+  font-size: 16px;
+  color: var(--ink);
+  background: var(--white);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.input {
+  min-height: 48px;
+}
+.textarea {
+  resize: vertical;
+}
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(91, 61, 181, 0.16);
+}
+.input::placeholder,
+.textarea::placeholder {
+  color: #a49dbb;
+}
+
+.check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  cursor: pointer;
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--purple);
+  flex: none;
+}
+
+/* Foto */
+.photo {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.photoPreview {
+  width: 84px;
+  height: 84px;
+  border-radius: 14px;
+  object-fit: cover;
+  flex: none;
+}
+.photoBlank {
+  display: grid;
+  place-items: center;
+  font-size: 1.8rem;
+  background: var(--lilac);
+}
+.photoActions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.fileInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.fileInput:focus-visible + * {
+  outline: 2.5px solid var(--purple);
+}
+.linkBtn {
+  border: 0;
+  background: none;
+  padding: 8px 0;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* Personajes */
+.themes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 10px;
+}
+.theme {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  padding: 8px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--white);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.theme:active {
+  transform: scale(0.97);
+}
+.theme input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.theme:has(input:focus-visible) {
+  outline: 2.5px solid var(--purple);
+  outline-offset: 2px;
+}
+.theme[data-checked] {
+  border-color: var(--purple);
+  background: var(--lilac);
+}
+.theme img,
+.themeBlank {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  object-fit: contain;
+}
+.themeBlank {
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  background: var(--bg);
+}
+.themeName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+/* Extras */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--white);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease, transform 0.15s ease;
+}
+.chip[aria-pressed="true"] {
+  border-color: var(--purple);
+  background: var(--lilac);
+  color: var(--purple-deep);
+  font-weight: 600;
+}
+.chip:active {
+  transform: scale(0.96);
+}
+.chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.addRow {
+  display: flex;
+  gap: 8px;
+}
+.addRow .btnGhost {
+  flex: none;
+}
+
+/* Galería */
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.galleryItem {
+  position: relative;
+}
+.galleryItem img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 12px;
+  display: block;
+}
+.galleryRemove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(28, 21, 53, 0.72);
+  color: var(--white);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Botones */
+.submit,
+.btnGhost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.submit {
+  width: 100%;
+  border: 0;
+  padding: 14px 24px;
+  background: var(--purple);
+  color: var(--white);
+  font-size: 1.05rem;
+}
+.submit:hover:not(:disabled) {
+  background: var(--purple-hover);
+}
+.submit:active:not(:disabled),
+.btnGhost:active {
+  transform: scale(0.98);
+}
+.submit:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.btnGhost {
+  padding: 10px 18px;
+  border: 1.5px solid var(--purple);
+  background: var(--white);
+  color: var(--purple);
+}
+.btnGhost:hover {
+  background: var(--lilac);
+}
+.btnGhost:disabled,
+.btnGhost[aria-disabled] {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.error {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fdecea;
+  color: var(--danger);
+  font-weight: 600;
+}
+.errorText {
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+/* Enlace cerrado o enviado */
+.closed {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  padding: 40px 24px;
+}
+.closed .title {
+  margin: 4px 0 0;
+}
+.closed .btnGhost {
+  margin-top: 12px;
+}
+.closedIcon {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme,
+  .chip,
+  .submit,
+  .btnGhost {
+    transition: none;
+  }
+  .theme:active,
+  .submit:active:not(:disabled),
+  .btnGhost:active {
+    transform: none;
+  }
+}

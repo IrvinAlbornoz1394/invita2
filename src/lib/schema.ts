@@ -2,8 +2,8 @@ import { z } from "zod";
 import { THEME_SLUG_MAX } from "./slugify";
 import { DECOR_MAX, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TYPE_KEYS, FLOATER_KIND_KEYS, TITLE_FONTS } from "./defaults";
 
-const text = (max: number) => z.string().trim().max(max);
-const optionalText = (max: number) =>
+export const text = (max: number) => z.string().trim().max(max);
+export const optionalText = (max: number) =>
   text(max)
     .nullish()
     .transform((v) => v || null);
@@ -19,11 +19,11 @@ const optionalAsset = assetUrl
   .or(z.literal(""))
   .transform((v) => v || null);
 
-const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora no válida");
+export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Hora no válida");
 const hex = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Color no válido");
 
 /** Lista de nombres (papás, padrinos): se quitan los renglones vacíos */
-const names = z
+export const names = z
   .array(text(80))
   .max(8)
   .transform((list) => list.filter(Boolean));

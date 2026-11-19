@@ -34,5 +34,12 @@ async function Editor({ params }: Pick<PageProps<"/admin/invitaciones/[id]">, "p
     .returns<ThemeOption[]>();
   if (themes.error) throw themes.error;
 
-  return <InvitationEditor invitation={inv.data} themes={themes.data} />;
+  // Si salió de una solicitud, solo se publica cuando no le falte nada
+  const req = await supabase.from("invitation_requests").select("id, data").eq("invitation_id", id).maybeSingle();
+  if (req.error) throw req.error;
+  const fromRequest = req.data
+    ? { id: req.data.id as string, customTheme: (req.data.data as { custom_theme?: string | null } | null)?.custom_theme ?? null }
+    : null;
+
+  return <InvitationEditor invitation={inv.data} themes={themes.data} fromRequest={fromRequest} />;
 }

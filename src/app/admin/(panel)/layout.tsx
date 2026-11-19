@@ -19,6 +19,7 @@ export default function PanelLayout({ children }: LayoutProps<"/admin">) {
         </Link>
         <nav className={styles.nav}>
           <Link href="/admin">Invitaciones</Link>
+          <Link href="/admin/solicitudes">Solicitudes</Link>
           <Link href="/admin/temas">Temas</Link>
         </nav>
         <Suspense>

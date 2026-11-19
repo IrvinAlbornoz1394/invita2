@@ -1,15 +1,18 @@
 "use server";
 
+import { randomBytes } from "node:crypto";
 import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { invitationTag, themeTag, themesTag } from "@/lib/data";
 import { zonedToUtc } from "@/lib/dates";
-import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, hasAge, RECEPTION_AFTER_HOURS, usesFullName } from "@/lib/defaults";
+import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, hasAge, isReligious, RECEPTION_AFTER_HOURS, usesFullName, type EventType } from "@/lib/defaults";
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
-import { invitationSlug, randomHash } from "@/lib/slug";
+import { invitationSlug, randomHash, slugify } from "@/lib/slug";
 import { resolveMapsDestination } from "@/lib/maps";
+import { DEFAULT_REQUEST_DAYS, missingForPublish, requestData, requestInput, type RequestData } from "@/lib/requests";
+import { requestPhotoPrefix } from "@/lib/request-photos";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -22,6 +25,34 @@ export async function signOut() {
 }
 
 /* ---------------- Invitaciones ---------------- */
+
+type PublishFields = { maps_url: string | null; theme_id: string | null; ceremony: { enabled?: boolean; maps_url?: string | null } | null };
+
+/**
+ * Las invitaciones que salieron de una solicitud no se publican mientras les
+ * falte algo (mapa, tema…). Las demás, sin restricción. `fields` son los
+ * valores que se van a guardar; sin ellos se leen de la base.
+ */
+async function publishBlock(supabase: Awaited<ReturnType<typeof createClient>>, id: string, fields?: PublishFields) {
+  const { data: req } = await supabase.from("invitation_requests").select("data").eq("invitation_id", id).maybeSingle();
+  if (!req) return null;
+  let inv = fields;
+  if (!inv) {
+    const { data } = await supabase.from("invitations").select("maps_url, theme_id, ceremony").eq("id", id).single();
+    inv = data as PublishFields;
+  }
+  const missing = missingForPublish(inv, (req.data as { custom_theme?: string | null } | null)?.custom_theme);
+  return missing.length ? `No se puede publicar todavía. Falta: ${missing.join("; ").toLowerCase()}` : null;
+}
+
+function nameParts(name: string, type: EventType) {
+  // El nombre completo va en renglones: "Lucero Jeamileth" → ["Lucero", "Jeamileth"]
+  const words = name.trim().split(/\s+/);
+  const nameLines = words.length <= 3 ? words : [words.slice(0, -1).join(" "), words.at(-1)!];
+  // Posada: «Familia López» → /familia-lopez-k3f9a2 (con solo «familia» no se distinguen)
+  const slugBase = usesFullName(type) ? words.slice(0, 3).join(" ") : words[0];
+  return { nameLines, slugBase };
+}
 
 export async function createInvitation(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const { supabase } = await requireAdmin();
@@ -38,11 +69,7 @@ export async function createInvitation(_prev: ActionResult | null, formData: For
   if (!name) return { ok: false, error: usesFullName(type) ? "Escribe quién invita" : "Escribe el nombre del festejado" };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return { ok: false, error: "Indica fecha y hora" };
 
-  // El nombre completo va en renglones: "Lucero Jeamileth" → ["Lucero", "Jeamileth"]
-  const words = name.split(/\s+/);
-  const nameLines = words.length <= 3 ? words : [words.slice(0, -1).join(" "), words.at(-1)!];
-  // Posada: «Familia López» → /familia-lopez-k3f9a2 (con solo «familia» no se distinguen)
-  const slugBase = usesFullName(type) ? words.slice(0, 3).join(" ") : words[0];
+  const { nameLines, slugBase } = nameParts(name, type);
 
   // En los religiosos la hora escrita es la de la ceremonia; la recepción va después
   const demo = DEMO_INVITATIONS[type];
@@ -81,6 +108,11 @@ export async function saveInvitation(id: string, input: InvitationInput): Promis
   const parsed = invitationInput.safeParse(input);
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
   const { date, time, ...fields } = parsed.data;
+
+  if (fields.published) {
+    const blocked = await publishBlock(supabase, id, fields);
+    if (blocked) return { ok: false, error: blocked };
+  }
 
   const [mapsDestination, ceremonyDestination] = await Promise.all([
     resolveMapsDestination(fields.maps_url),
@@ -154,6 +186,12 @@ export async function deleteInvitation(id: string) {
 export async function setInvitationPublished(id: string, published: boolean) {
   const { supabase } = await requireAdmin();
 
+  // El panel ya deshabilita el interruptor; esto es por si acaso
+  if (published) {
+    const blocked = await publishBlock(supabase, id);
+    if (blocked) throw new Error(blocked);
+  }
+
   const { data, error } = await supabase
     .from("invitations")
     .update({ published, is_active: true })
@@ -165,6 +203,238 @@ export async function setInvitationPublished(id: string, published: boolean) {
 
   updateTag(invitationTag(data.slug));
   refresh();
+}
+
+/* ---------------- Solicitudes ---------------- */
+
+const DAY_MS = 864e5;
+const REQUEST_TIMEZONE = "America/Merida";
+const NAME_LINE_MAX = 24;
+
+/** 192 bits al azar: es lo único que protege el formulario del cliente */
+const newToken = () => randomBytes(24).toString("base64url");
+const expiresIn = (days: number) => new Date(Date.now() + days * DAY_MS).toISOString();
+const validDays = (days: number) => (Number.isInteger(days) && days >= 1 && days <= 60 ? days : DEFAULT_REQUEST_DAYS);
+
+/** El panel genera el enlace con el cliente y el tipo de evento ya fijos. */
+export async function createRequest(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+
+  const parsed = requestInput.safeParse({
+    client_name: formData.get("client_name") ?? "",
+    client_phone: formData.get("client_phone") ?? "",
+    event_type: formData.get("event_type") ?? "",
+    days: formData.get("days") ?? DEFAULT_REQUEST_DAYS,
+  });
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  const { days, ...fields } = parsed.data;
+
+  const { data, error } = await supabase
+    .from("invitation_requests")
+    .insert({ ...fields, token: newToken(), expires_at: expiresIn(days) })
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  redirect(`/admin/solicitudes/${data.id}`);
+}
+
+/**
+ * Enlace nuevo con otra vigencia: el anterior deja de servir. Sirve para las
+ * vencidas y para las rechazadas (el cliente ve lo que ya había llenado).
+ */
+export async function renewRequest(id: string, days: number) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
+    .from("invitation_requests")
+    .update({ token: newToken(), status: "pendiente", expires_at: expiresIn(validDays(days)), reviewed_at: null })
+    .eq("id", id)
+    .in("status", ["pendiente", "rechazada"]);
+  if (error) throw error;
+
+  refresh();
+}
+
+export async function rejectRequest(id: string) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase
+    .from("invitation_requests")
+    .update({ status: "rechazada", reviewed_at: new Date().toISOString() })
+    .eq("id", id)
+    .in("status", ["pendiente", "recibida"]);
+  if (error) throw error;
+
+  refresh();
+}
+
+/** Las aprobadas no se borran: ya tienen invitación. */
+export async function deleteRequest(id: string) {
+  const { supabase } = await requireAdmin();
+
+  const { error } = await supabase.from("invitation_requests").delete().eq("id", id).neq("status", "aprobada");
+  if (error) throw error;
+
+  redirect("/admin/solicitudes");
+}
+
+/** Renglones de hasta 24 letras (lo que acepta el editor), máximo 3. */
+function wrapName(lines: string[]) {
+  if (lines.every((l) => l.length <= NAME_LINE_MAX)) return lines;
+  const out: string[] = [];
+  for (const word of lines.join(" ").split(" ")) {
+    const last = out.at(-1);
+    if (last !== undefined && `${last} ${word}`.length <= NAME_LINE_MAX) out[out.length - 1] = `${last} ${word}`;
+    else out.push(word.slice(0, NAME_LINE_MAX));
+  }
+  return out.slice(0, 3);
+}
+
+/** Invitación sin publicar con lo que llenó el cliente; lo demás, del ejemplo de su tipo de evento. */
+function invitationFromRequest(type: EventType, d: RequestData) {
+  const demo = DEMO_INVITATIONS[type];
+  const religious = isReligious(type);
+  const age = hasAge(type) ? d.age : null;
+  const { nameLines, slugBase } = nameParts(d.name, type);
+
+  return {
+    slugBase,
+    row: {
+      ...demo,
+      published: false,
+      name_lines: wrapName(nameLines),
+      age,
+      age_text: ageRibbon(age, type),
+      photo_url: d.photo_url,
+      // En los religiosos es la hora de la recepción; la de la ceremonia va aparte
+      event_at: zonedToUtc(d.date, d.time, REQUEST_TIMEZONE).toISOString(),
+      timezone: REQUEST_TIMEZONE,
+      venue_name: d.venue_name,
+      address: d.address,
+      area: null,
+      message: d.message ?? demo.message,
+      whatsapp: d.whatsapp,
+      rsvp_ask_people: d.rsvp_ask_people,
+      family: religious ? { parents: d.parents, godparents: d.godparents } : demo.family,
+      // Lo que eligió el cliente (sin extras, la sección no se muestra)
+      extras: d.extras.map((x) => ({ ...x, note: "" })),
+      gallery: d.gallery.map((url) => ({ url })),
+      ceremony:
+        religious && d.ceremony.enabled
+          ? { enabled: true, time: d.ceremony.time, place: d.ceremony.place, address: d.ceremony.address, maps_url: null }
+          : { enabled: false },
+    },
+  };
+}
+
+/**
+ * Aprobar crea la invitación (sin publicar) para terminarla en el editor: el
+ * mapa, el show, los extras… Solo las aprobadas se pueden publicar.
+ */
+export async function approveRequest(id: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+
+  const { data: req, error } = await supabase
+    .from("invitation_requests")
+    .select("id, event_type, status, data")
+    .eq("id", id)
+    .single();
+  if (error) return { ok: false, error: error.message };
+  if (req.status !== "recibida") return { ok: false, error: "Solo se aprueban las solicitudes que ya tienen datos del cliente" };
+
+  const parsed = requestData.safeParse(req.data);
+  if (!parsed.success) return { ok: false, error: `Los datos del cliente no son válidos: ${firstError(parsed.error)}` };
+  const d = parsed.data;
+  const type = eventType(req.event_type);
+
+  // Foto solo si es de su carpeta; personaje solo si sigue existiendo
+  const prefix = requestPhotoPrefix(id);
+  if (d.photo_url && !d.photo_url.startsWith(prefix)) d.photo_url = null;
+  d.gallery = d.gallery.filter((url) => url.startsWith(prefix));
+  if (d.theme_id) {
+    const { data: theme } = await supabase.from("themes").select("id").eq("id", d.theme_id).eq("is_deleted", false).maybeSingle();
+    d.theme_id = theme?.id ?? null;
+  }
+
+  const { row, slugBase } = invitationFromRequest(type, d);
+  let invitationId: string | null = null;
+  for (let attempt = 0; attempt < 3 && !invitationId; attempt++) {
+    const { data, error: insertError } = await supabase
+      .from("invitations")
+      .insert({ ...row, theme_id: d.theme_id, slug: invitationSlug(slugBase) })
+      .select("id")
+      .single();
+    if (insertError && insertError.code !== UNIQUE_VIOLATION) return { ok: false, error: insertError.message };
+    invitationId = data?.id ?? null;
+  }
+  if (!invitationId) return { ok: false, error: "No se pudo generar un enlace único, intenta de nuevo" };
+
+  const { data: updated, error: updateError } = await supabase
+    .from("invitation_requests")
+    .update({ status: "aprobada", invitation_id: invitationId, reviewed_at: new Date().toISOString() })
+    .eq("id", id)
+    .eq("status", "recibida")
+    .select("id");
+  if (updateError || !updated.length) {
+    // Otro admin la cambió al mismo tiempo: no se deja una invitación huérfana
+    await supabase.from("invitations").delete().eq("id", invitationId);
+    return { ok: false, error: updateError?.message ?? "La solicitud cambió mientras tanto; recarga la página" };
+  }
+
+  refresh();
+  return { ok: true, message: "Aprobada: ya puedes terminarla en el editor y publicarla" };
+}
+
+/** Publicar desde la solicitud: solo si ya está aprobada y no le falta nada. */
+export async function publishRequest(id: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+
+  const { data: req, error } = await supabase
+    .from("invitation_requests")
+    .select("status, data, invitation:invitations(id, maps_url, theme_id, ceremony, is_deleted)")
+    .eq("id", id)
+    .single<{
+      status: string;
+      data: { custom_theme?: string | null } | null;
+      invitation: { id: string; maps_url: string | null; theme_id: string | null; ceremony: { enabled?: boolean; maps_url?: string | null } | null; is_deleted: boolean } | null;
+    }>();
+  if (error) return { ok: false, error: error.message };
+  const inv = req.invitation;
+  if (req.status !== "aprobada" || !inv || inv.is_deleted) return { ok: false, error: "Primero aprueba la solicitud" };
+
+  const missing = missingForPublish(inv, req.data?.custom_theme);
+  if (missing.length) return { ok: false, error: `Falta: ${missing.join("; ").toLowerCase()}` };
+
+  await setInvitationPublished(inv.id, true);
+  return { ok: true };
+}
+
+/**
+ * El cliente pidió un personaje que no tenemos: crea el tema con ese nombre y
+ * su tipo de evento y abre el editor del tema para armarlo.
+ */
+export async function createThemeFromRequest(id: string) {
+  const { supabase } = await requireAdmin();
+
+  const { data: req, error } = await supabase.from("invitation_requests").select("event_type, data").eq("id", id).single();
+  if (error) throw error;
+  const name = String((req.data as { custom_theme?: unknown } | null)?.custom_theme ?? "").trim().slice(0, 80) || "Nuevo tema";
+
+  const { data, error: insertError } = await supabase
+    .from("themes")
+    .insert({
+      name,
+      slug: `${slugify(name) || "nuevo-tema"}-${randomHash()}`,
+      event_type: eventType(req.event_type),
+      colors: DEFAULT_COLORS,
+    })
+    .select("id")
+    .single();
+  if (insertError) throw insertError;
+
+  updateTag(themesTag);
+  redirect(`/admin/temas/${data.id}`);
 }
 
 /* ---------------- Temas ---------------- */

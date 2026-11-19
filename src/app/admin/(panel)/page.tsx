@@ -3,6 +3,7 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
 import { shortDate, timeOf } from "@/lib/dates";
 import { EVENT_TYPES, eventType, type EventType } from "@/lib/defaults";
+import { missingForPublish } from "@/lib/requests";
 import { duplicateInvitation } from "../actions";
 import { AdminIcon } from "../AdminIcon";
 import { CopyLink } from "../CopyLink";
@@ -47,13 +48,26 @@ type Row = {
   event_at: string;
   timezone: string;
   theme: { name: string } | null;
+  /** La solicitud de la que salió, si la llenó un cliente */
+  requests: { id: string; client_name: string; data: { custom_theme?: string | null } | null }[];
+  maps_url: string | null;
+  theme_id: string | null;
+  ceremony: { enabled?: boolean; maps_url?: string | null } | null;
 };
+
+/** Las que salieron de una solicitud no se publican mientras les falte algo. */
+function blockedReason(inv: Row) {
+  const req = inv.requests[0];
+  if (!req) return null;
+  const missing = missingForPublish(inv, req.data?.custom_theme);
+  return missing.length ? `Falta: ${missing.join("; ").toLowerCase()}` : null;
+}
 
 async function InvitationsList() {
   const { supabase } = await requireAdmin();
   const { data, error } = await supabase
     .from("invitations")
-    .select("id, slug, published, is_active, name_lines, age_text, event_type, photo_url, event_at, timezone, theme:themes(name)")
+    .select("id, slug, published, is_active, name_lines, age_text, event_type, photo_url, event_at, timezone, maps_url, theme_id, ceremony, theme:themes(name), requests:invitation_requests(id, client_name, data)")
     .eq("is_deleted", false)
     .order("event_at", { ascending: true })
     .returns<Row[]>();
@@ -80,7 +94,7 @@ async function InvitationsList() {
     const name = inv.name_lines.join(" ");
     return {
       key: inv.id,
-      search: [name, inv.age_text, inv.slug, inv.theme?.name].filter(Boolean).join(" "),
+      search: [name, inv.age_text, inv.slug, inv.theme?.name, ...inv.requests.map((r) => r.client_name)].filter(Boolean).join(" "),
       tags: [live ? "publicadas" : "inactivas"],
       node: (
         <article className={styles.row}>
@@ -96,11 +110,16 @@ async function InvitationsList() {
               {inv.age_text ? ` · ${inv.age_text}` : ""}
             </Link>
             <p className={styles.rowMeta}>
-              <PublishSwitch id={inv.id} published={live} />
+              <PublishSwitch id={inv.id} published={live} blocked={blockedReason(inv)} />
               <span>
                 {shortDate(inv.event_at, inv.timezone)} · {timeOf(inv.event_at, inv.timezone)}
               </span>
               {inv.theme && <span>{inv.theme.name}</span>}
+              {inv.requests.map((r) => (
+                <Link key={r.id} href={`/admin/solicitudes/${r.id}`}>
+                  Solicitud de {r.client_name}
+                </Link>
+              ))}
               <span className={styles.mono}>/{inv.slug}</span>
             </p>
           </div>
@@ -130,7 +149,7 @@ async function InvitationsList() {
       items={items}
       tags={STATUS_TAGS}
       allLabel="Todas"
-      placeholder="Buscar por nombre, enlace o tema"
+      placeholder="Buscar por nombre, cliente, enlace o tema"
       className={styles.list}
     />
   );

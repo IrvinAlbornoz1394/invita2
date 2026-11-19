@@ -25,9 +25,10 @@ import type { InvitationInput } from "@/lib/schema";
 import type {
   Extra, ImageStyle, Invitation, InvitationEffects, Performer, SectionKey, ShowImageSource, ShowSource, TextKey, Theme,
 } from "@/lib/types";
+import { missingForPublish } from "@/lib/requests";
 import { resolveEffects, showImageSource, showSource, themeHasShow, themeShowContent } from "@/lib/view";
 import { duplicateInvitation, saveInvitation } from "../../../actions";
-import { InvitationActions, UNPUBLISH_CONFIRM } from "../../../InvitationActions";
+import { InvitationActions, publishConfirm } from "../../../InvitationActions";
 import { Popconfirm } from "../../../Popconfirm";
 import { Switch } from "../../../Switch";
 import { CopyLink } from "../../../CopyLink";
@@ -188,7 +189,16 @@ function switchType(f: Form, next: EventType): Form {
   };
 }
 
-export function InvitationEditor({ invitation, themes }: { invitation: Invitation; themes: ThemeOption[] }) {
+export function InvitationEditor({
+  invitation,
+  themes,
+  fromRequest = null,
+}: {
+  invitation: Invitation;
+  themes: ThemeOption[];
+  /** La solicitud de la que salió: mientras le falte algo no se puede publicar */
+  fromRequest?: { id: string; customTheme: string | null } | null;
+}) {
   const [form, setForm] = useState<Form>(() => toForm(invitation));
   const [saved, setSaved] = useState(() => JSON.stringify(toForm(invitation)));
   const [saving, startSaving] = useTransition();
@@ -199,6 +209,10 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
   // Las desactivadas de antes: al publicar, el servidor las reactiva
   const [active, setActive] = useState(invitation.is_active);
   const live = form.published && active;
+  // Con lo que hay en pantalla (sin guardar también cuenta: publicar guarda)
+  const missing = fromRequest
+    ? missingForPublish({ maps_url: form.maps_url, theme_id: form.theme_id, ceremony: form.ceremony }, fromRequest.customTheme)
+    : [];
   const galleryInput = useRef<HTMLInputElement>(null);
 
   const dirty = JSON.stringify(form) !== saved;
@@ -1068,15 +1082,35 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
             <p className={styles.cardHint}>
               {live ? "El enlace funciona: compártelo." : "Inactiva: el enlace lleva a la página principal hasta que la publiques."}
             </p>
+            {!live && missing.length > 0 && (
+              <div className={styles.field} style={{ marginBottom: 12 }}>
+                <span className={styles.label}>Falta para publicar</span>
+                <ul className={styles.checklist}>
+                  {missing.map((m) => (
+                    <li key={m}>
+                      <span aria-hidden="true">○</span>
+                      <span>{m}</span>
+                    </li>
+                  ))}
+                </ul>
+                {fromRequest && (
+                  <Link className={styles.help} href={`/admin/solicitudes/${fromRequest.id}`}>
+                    Ver la solicitud
+                  </Link>
+                )}
+              </div>
+            )}
             <div className={styles.grid}>
-              {/* Publicar con cambios sin guardar también los guarda; apagarla pide confirmación */}
-              <Popconfirm {...UNPUBLISH_CONFIRM} danger onConfirm={() => setPublished(false)}>
+              {/* Publicar con cambios sin guardar también los guarda; los dos cambios piden confirmación */}
+              <Popconfirm {...publishConfirm(!live)} onConfirm={() => setPublished(!live)}>
                 {(confirm) => (
                   <Switch
                     checked={live}
                     loading={saving}
                     label={live ? "Publicada" : "Inactiva"}
-                    onChange={(on) => (on ? setPublished(true) : confirm())}
+                    disabled={!live && missing.length > 0}
+                    title={!live && missing.length > 0 ? "Completa lo que falta para poder publicarla" : undefined}
+                    onChange={() => confirm()}
                   />
                 )}
               </Popconfirm>

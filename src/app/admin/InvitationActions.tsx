@@ -11,13 +11,24 @@ export const UNPUBLISH_CONFIRM = {
   title: "¿Dejar inactiva la invitación?",
   description: "Quien tenga el enlace ya no podrá verla hasta que la publiques de nuevo.",
   okText: "Dejar inactiva",
+  danger: true,
 };
+
+export const PUBLISH_CONFIRM = {
+  title: "¿Publicar la invitación?",
+  description: "El enlace empieza a funcionar para quien lo tenga.",
+  okText: "Publicar",
+  danger: false,
+};
+
+/** Confirmación según hacia dónde cambia: publicar o dejar inactiva */
+export const publishConfirm = (publishing: boolean) => (publishing ? PUBLISH_CONFIRM : UNPUBLISH_CONFIRM);
 
 /**
  * Publicada (el enlace funciona) o inactiva (lleva a la página principal).
- * Apagarla pide confirmación: quien ya tiene el enlace deja de verla.
+ * Los dos cambios piden confirmación.
  */
-export function PublishSwitch({ id, published }: { id: string; published: boolean }) {
+export function PublishSwitch({ id, published, blocked }: { id: string; published: boolean; /** Por qué no se puede publicar todavía */ blocked?: string | null }) {
   const [pending, start] = useTransition();
   const [on, setOn] = useOptimistic(published);
   const set = (next: boolean) =>
@@ -27,13 +38,15 @@ export function PublishSwitch({ id, published }: { id: string; published: boolea
     });
 
   return (
-    <Popconfirm {...UNPUBLISH_CONFIRM} danger onConfirm={() => set(false)}>
+    <Popconfirm {...publishConfirm(!on)} onConfirm={() => set(!on)}>
       {(confirm) => (
         <Switch
           checked={on}
           loading={pending}
           label={on ? "Publicada" : "Inactiva"}
-          onChange={(next) => (next ? set(true) : confirm())}
+          disabled={!on && !!blocked}
+          title={!on && blocked ? blocked : undefined}
+          onChange={() => confirm()}
         />
       )}
     </Popconfirm>
