@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import {
   DECOR_EXTRAS_TOP_WIDTH, DECOR_SECTIONS, DEFAULT_COLORS, defaultEffects, DEFAULT_SECTIONS, DEFAULT_TEXTS, EVENT_TEXTS, eventType, INTRO_STYLES, isReligious,
-  TITLE_FONT_KIND, TITLE_FONT_WIDTH, TITLE_FONTS, toEvent, type TitleFont,
+  TITLE_FONT_KIND, TITLE_FONT_WIDTH, TITLE_FONTS, toEvent, usesFullName, type TitleFont,
 } from "./defaults";
 import { resolveBackground, textOn } from "./background";
 import { clockLabel, longDate, shortDate, timeOf, utcToZoned, zonedToUtc } from "./dates";
@@ -31,7 +31,9 @@ export function buildView(inv: InvitationWithTheme) {
   const fullName = nameLines.join(" ");
   const firstName = nameLines[0] ?? "";
 
-  const fill = (s: string) => s.replaceAll("{nombre}", firstName).replaceAll("{edad}", inv.age == null ? "" : String(inv.age));
+  // Posada: «Familia López te invita…», no «Familia te invita…»
+  const who = usesFullName(type) ? fullName : firstName;
+  const fill = (s: string) => s.replaceAll("{nombre}", who).replaceAll("{edad}", inv.age == null ? "" : String(inv.age));
   const texts = Object.fromEntries(
     (Object.keys(DEFAULT_TEXTS) as TextKey[]).map((k) => [
       k,
@@ -141,7 +143,8 @@ export function buildView(inv: InvitationWithTheme) {
     published: inv.published,
     nameLines,
     fullName,
-    firstName,
+    /** El primer nombre; en la posada, el nombre completo de quien invita */
+    firstName: who,
     age: inv.age,
     ageText: inv.age_text,
     photoUrl: inv.photo_url,

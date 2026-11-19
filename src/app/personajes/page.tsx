@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 /** Todos los personajes de fiesta (sin bautizo ni comunión), cada uno abre su demo. */
 export default async function CharactersPage() {
   const contact = process.env.NEXT_PUBLIC_CONTACT_WHATSAPP;
-  const characters = (await getLandingThemes()).filter((t) => !t.religious);
+  const characters = (await getLandingThemes()).filter((t) => t.characters);
   const ask = contact ? `https://wa.me/${contact}?text=${encodeURIComponent("¡Hola! ¿Tienen invitación con el tema de…?")}` : null;
 
   return (

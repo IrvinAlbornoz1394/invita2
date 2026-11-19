@@ -15,6 +15,7 @@ import {
   INTRO_STYLES,
   isReligious,
   SECTION_LABELS,
+  usesFullName,
   TEXT_LABELS,
   TIMEZONES,
   toEvent,
@@ -298,6 +299,8 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
 
   const theme = themes.find((t) => t.id === form.theme_id);
   const religious = isReligious(form.event_type);
+  // Posada: invita una familia o un grupo, sin edad
+  const host = usesFullName(form.event_type);
   const typeTexts = EVENT_TEXTS[form.event_type];
   // Temas del tipo de evento primero; los demás siguen disponibles
   const fitting = themes.filter((t) => !t.event_type || t.event_type === form.event_type);
@@ -324,7 +327,7 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
         <div>
           {/* ---------------- Festejado ---------------- */}
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Festejado</h2>
+            <h2 className={styles.cardTitle}>{host ? "Quién invita" : "Festejado"}</h2>
             <p className={styles.cardHint}>Cada renglón del nombre aparece en su propia línea en la portada.</p>
             <div className={styles.grid}>
               <div className={styles.field}>
@@ -367,19 +370,21 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                 ))}
               </div>
               <div className={styles.grid2}>
+                {!host && (
+                  <label className={styles.field}>
+                    <span className={styles.label}>Edad (número en la foto{religious ? ", opcional" : ""})</span>
+                    <input
+                      className={styles.input}
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={form.age}
+                      onChange={(e) => patch({ age: e.target.value })}
+                    />
+                  </label>
+                )}
                 <label className={styles.field}>
-                  <span className={styles.label}>Edad (número en la foto{religious ? ", opcional" : ""})</span>
-                  <input
-                    className={styles.input}
-                    type="number"
-                    min={0}
-                    max={120}
-                    value={form.age}
-                    onChange={(e) => patch({ age: e.target.value })}
-                  />
-                </label>
-                <label className={styles.field}>
-                  <span className={styles.label}>{religious ? "Cinta bajo el nombre" : "Texto de edad"}</span>
+                  <span className={styles.label}>{religious || host ? "Cinta bajo el nombre" : "Texto de edad"}</span>
                   <input
                     className={styles.input}
                     value={form.age_text}
@@ -389,8 +394,8 @@ export function InvitationEditor({ invitation, themes }: { invitation: Invitatio
                 </label>
               </div>
               <MediaField
-                label="Foto del festejado"
-                help="Se recorta en círculo; procura que la cara quede en la parte de arriba."
+                label={host ? "Foto principal" : "Foto del festejado"}
+                help={host ? "La familia o el grupo; se recorta en círculo." : "Se recorta en círculo; procura que la cara quede en la parte de arriba."}
                 value={form.photo_url}
                 onChange={(photo_url) => patch({ photo_url })}
                 folder={folder}

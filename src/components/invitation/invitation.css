@@ -1575,6 +1575,21 @@ html.inv-iris .intro.is-gone { transition: none; }
 @keyframes inv-hotairSway { from { transform: translateX(-9px) rotate(-3deg); } to { transform: translateX(9px) rotate(3deg); } }
 @keyframes inv-hotairAway { 20% { transform: translateY(6px) scale(1.04); } to { transform: translateY(-55vh) scale(.6); opacity: 0; } }
 
+/* Copos de nieve (posada): caen meciéndose y girando; al tocarlos dan una vuelta y se deshacen */
+.floater--snow { top: -60px; animation: inv-down linear forwards; }
+.floater--snow .floater__body { aspect-ratio: 1; animation: inv-snowSway var(--sway) ease-in-out infinite alternate; }
+.floater--snow .floater__body svg { display: block; width: 100%; height: 100%; overflow: visible; animation: inv-snowSpin var(--spin, 12s) linear infinite; }
+.floater--snow .floater__body path {
+  fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round;
+  filter: drop-shadow(0 0 1.2px color-mix(in srgb, var(--c-secondary) 80%, var(--c-ink)));
+}
+.floater--snow .floater__body circle { fill: #fff; filter: drop-shadow(0 0 1.2px color-mix(in srgb, var(--c-secondary) 80%, var(--c-ink))); }
+.floater--snow:not(.floater--front) { opacity: .85; }
+.floater--snow.is-popping .floater__body { animation: inv-snowAway .6s var(--ease) forwards; }
+@keyframes inv-snowSway { from { translate: -18px 0; } to { translate: 18px 0; } }
+@keyframes inv-snowSpin { to { rotate: 360deg; } }
+@keyframes inv-snowAway { 40% { scale: 1.5; } to { scale: .1; rotate: 200deg; opacity: 0; } }
+
 @keyframes inv-down { to { transform: translateY(calc(100svh + 140px)); } }
 @keyframes inv-wobble { from { transform: translateX(-10px) scale(1, .96); } to { transform: translateX(10px) scale(.96, 1); } }
 @keyframes inv-flutter {
@@ -1623,11 +1638,65 @@ html.inv-iris .intro.is-gone { transition: none; }
   color: var(--c-accent); -webkit-text-stroke: 0; text-shadow: none;
 }
 
+/* ==========================================================================
+   Posada: papel picado arriba, piñata de estrella, esferas navideñas y nieve
+   ========================================================================== */
+.hero--posada { padding-top: 92px; }
+
+/* Papel picado: banderitas colgadas de un cordón que se mecen con el aire */
+.picado { position: absolute; left: -2%; right: -2%; top: 0; height: 96px; z-index: 0; pointer-events: none; }
+.picado__string { position: absolute; left: 0; top: 4px; width: 100%; height: 22px; overflow: visible; }
+.picado__string path { fill: none; stroke: color-mix(in srgb, var(--c-ink) 55%, transparent); stroke-width: 1.4; vector-effect: non-scaling-stroke; }
+.picado__flag {
+  --w: clamp(34px, 10.4vw, 58px);
+  position: absolute; top: calc(6px + var(--sag) * 18px); left: var(--x); width: var(--w); height: auto; translate: -50% 0;
+  transform-origin: 50% 0; overflow: visible;
+  filter: drop-shadow(0 4px 4px color-mix(in srgb, var(--c-ink) 22%, transparent));
+  animation: inv-picado 3.2s ease-in-out infinite alternate; animation-delay: calc(var(--i) * -.45s);
+}
+.picado__flag path { fill: var(--c); opacity: .94; }
+.picado__flag--primary { --c: var(--c-primary); }
+.picado__flag--secondary { --c: var(--c-secondary); }
+.picado__flag--highlight { --c: var(--c-highlight); }
+.picado__flag--accent { --c: var(--c-accent); }
+.picado__flag--surface { --c: #fff; }
+@keyframes inv-picado { from { rotate: -5deg; } to { rotate: 5deg; } }
+
+/* Piñata de siete picos: cuelga de su cuerda y se balancea */
+.pinata { position: relative; width: clamp(104px, 30vw, 132px); margin-top: -18px; display: grid; justify-items: center; }
+.pinata__rope { width: 2px; height: 26px; background: color-mix(in srgb, var(--c-ink) 55%, transparent); }
+.pinata__body {
+  width: 100%; height: auto; overflow: visible; transform-origin: 50% 0; margin-top: -6px;
+  filter: drop-shadow(0 12px 14px color-mix(in srgb, var(--c-ink) 28%, transparent));
+}
+.is-started .pinata__body { animation: inv-pinata 4.5s ease-in-out infinite alternate; }
+.inv .pinata__cone { stroke: #fff; stroke-width: 1.4; stroke-linejoin: round; }
+.inv .pinata__cone--primary { fill: var(--c-primary); }
+.inv .pinata__cone--secondary { fill: var(--c-secondary); }
+.inv .pinata__cone--highlight { fill: var(--c-highlight); }
+.inv .pinata__cone--accent { fill: var(--c-accent); }
+.inv .pinata__shade { fill: #000; opacity: .14; }
+.inv .pinata__fringe path { fill: none; stroke-width: 2.4; stroke-linecap: round; }
+.inv .pinata__fringe--primary path { stroke: var(--c-primary); }
+.inv .pinata__fringe--secondary path { stroke: var(--c-secondary); }
+.inv .pinata__fringe--highlight path { stroke: var(--c-highlight); }
+.inv .pinata__fringe--accent path { stroke: var(--c-accent); }
+.inv .pinata__pot { fill: var(--c-accent); }
+.inv .pinata__band { fill: none; stroke: var(--c-highlight); stroke-width: 5; stroke-dasharray: 6 5; opacity: .9; }
+.inv .pinata__shine { fill: none; stroke: #fff; stroke-width: 3.5; stroke-linecap: round; opacity: .55; }
+@keyframes inv-pinata { from { rotate: -6deg; } to { rotate: 6deg; } }
+
+/* Las esferas de la portada se vuelven esferas navideñas: llevan su casquillo dorado */
+.hero--posada .orb::before {
+  content: ""; position: absolute; left: 50%; top: calc(var(--s) * -.1); width: 26%; height: 16%; translate: -50% 0;
+  border-radius: 2px 2px 1px 1px; background: linear-gradient(90deg, #b8892d, #f3d27a 45%, #b8892d);
+}
+
 /* Menos movimiento: sin giros, órbitas ni entradas 3D; solo fundidos */
 @media (prefers-reduced-motion: reduce) {
   .inv *, .inv *::before, .inv *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
   .pop, .ch, [data-reveal] { opacity: 1; translate: none; rotate: none; scale: none; }
   .gift3d__scene { transform: translateY(16px) rotateX(-18deg) rotateY(-32deg); }
   .orbs, .progress, .glints { display: none; }
-  .sacred__rays, .clouds__layer { animation: none; }
+  .sacred__rays, .clouds__layer, .picado__flag, .pinata__body { animation: none; }
 }

@@ -101,7 +101,7 @@ export default async function Landing() {
   const quote = contact ? waLink(contact, "¡Hola! Quiero cotizar una invitación digital para una fiesta.") : null;
   const themes = await getLandingThemes();
   // Personajes de fiesta; bautizo y comunión van en su mención aparte
-  const characters = themes.filter((t) => !t.religious);
+  const characters = themes.filter((t) => t.characters);
   const picks = landingPicks(characters);
   const hasMore = characters.length > picks.length;
   // "Ver personajes": baja a la sección de personajes, donde cada uno abre su demo

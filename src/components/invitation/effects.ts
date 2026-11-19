@@ -186,8 +186,21 @@ export function startBalloons(back: HTMLElement, front: HTMLElement | null, colo
  *   bubble  burbujas de jabón que suben (bautizo: el agua)
  *   petal   pétalos que caen girando (primera comunión)
  *   hotair  globos aerostáticos que suben despacio, meciéndose
+ *   snow    copos de nieve que caen girando despacio (posada)
  */
-export type FloaterKind = "bubble" | "petal" | "hotair";
+export type FloaterKind = "bubble" | "petal" | "hotair" | "snow";
+
+/**
+ * Copo de nieve de seis brazos. Blanco con un filete del color del tema para
+ * que se vea sobre fondos claros y oscuros.
+ */
+const SNOW_SVG =
+  '<svg viewBox="-20 -20 40 40" aria-hidden="true">' +
+  '<g class="snow__arms">' +
+  [0, 60, 120].map((a) => `<path transform="rotate(${a})" d="M0-17V17M-4.5-13 0-9l4.5-4M-4.5 13 0 9l4.5 4"/>`).join("") +
+  "</g>" +
+  '<circle r="3.2"/>' +
+  "</svg>";
 
 /** Globo aerostático: gajos de colores, cuerdas y canasta. Los colores salen de --h1/--h2. */
 const HOTAIR_SVG =
@@ -230,8 +243,10 @@ function launchFloater(
       ? front ? 46 + Math.random() * 34 : 22 + Math.random() * 22
       : kind === "hotair"
         ? front ? 52 + Math.random() * 26 : 28 + Math.random() * 16
-        : front ? 20 + Math.random() * 10 : 13 + Math.random() * 7;
-  const time = dur ?? (kind === "hotair" ? 19 + Math.random() * 7 : (kind === "bubble" ? 11 : 13) + Math.random() * 6) - (front ? 2 : 0);
+        : kind === "snow"
+          ? front ? 26 + Math.random() * 16 : 12 + Math.random() * 10
+          : front ? 20 + Math.random() * 10 : 13 + Math.random() * 7;
+  const time = dur ?? (kind === "hotair" ? 19 + Math.random() * 7 : (kind === "bubble" ? 11 : kind === "snow" ? 15 : 13) + Math.random() * 6) - (front ? 2 : 0);
   el.style.left = `${left}%`;
   el.style.setProperty("--w", `${Math.round(size)}px`);
   el.style.setProperty("--sway", `${(Math.random() * 2 + (kind === "hotair" ? 3.4 : 2.4)).toFixed(1)}s`);
@@ -242,7 +257,8 @@ function launchFloater(
     el.style.setProperty("--h2", h2);
   }
   el.style.animationDuration = `${time.toFixed(1)}s`;
-  el.innerHTML = `<span class="floater__body">${kind === "hotair" ? HOTAIR_SVG : ""}</span>`;
+  if (kind === "snow") el.style.setProperty("--spin", `${(Math.random() < 0.5 ? -1 : 1) * (8 + Math.random() * 8)}s`);
+  el.innerHTML = `<span class="floater__body">${kind === "hotair" ? HOTAIR_SVG : kind === "snow" ? SNOW_SVG : ""}</span>`;
   el.addEventListener("pointerdown", (e) => {
     if (el.classList.contains("is-popping")) return;
     e.stopPropagation();

@@ -1,6 +1,6 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
-import { eventType, isReligious } from "./defaults";
+import { eventType, isCharacters, isReligious, type EventType } from "./defaults";
 import { createPublicClient } from "./supabase/public";
 import type { InvitationWithTheme } from "./types";
 
@@ -43,9 +43,17 @@ export type LandingTheme = {
   cardUrl: string | null;
   groupUrl: string | null;
   featured: boolean;
-  /** Bautizo y comunión: no entran a «Personajes», tienen su mención aparte */
-  religious: boolean;
+  /** Personajes de cumpleaños; bautizo, comunión y posada tienen su mención aparte */
+  characters: boolean;
+  /** Familia de la demo: se cambia entre temas de la misma (fiesta, religiosos, posada) */
+  family: ThemeFamily;
 };
+
+export type ThemeFamily = "fiesta" | "religioso" | "posada";
+
+export function themeFamily(type: EventType): ThemeFamily {
+  return isCharacters(type) ? "fiesta" : isReligious(type) ? "religioso" : "posada";
+}
 
 /** Cuántos personajes muestra la landing si no hay ninguno destacado. */
 export const LANDING_THEMES_FALLBACK = 6;
@@ -79,6 +87,7 @@ export async function getLandingThemes(): Promise<LandingTheme[]> {
     cardUrl: t.card_url,
     groupUrl: t.group_url,
     featured: t.featured,
-    religious: isReligious(eventType(t.event_type)),
+    characters: isCharacters(eventType(t.event_type)),
+    family: themeFamily(eventType(t.event_type)),
   }));
 }

@@ -1,13 +1,15 @@
 import "server-only";
 import { cacheLife, cacheTag } from "next/cache";
 import { themesTag, themeTag } from "./data";
-import { ageRibbon, DEMO_INVITATIONS, eventType, RECEPTION_AFTER_HOURS } from "./defaults";
+import { ageRibbon, DEMO_INVITATIONS, eventType, hasAge, RECEPTION_AFTER_HOURS } from "./defaults";
 import { themeHasShow } from "./view";
 import { createPublicClient } from "./supabase/public";
 import type { InvitationWithTheme, Theme } from "./types";
 
 /** Festejado de la demo: siempre el mismo, para que cada personaje se compare con los mismos datos. */
 const DEMO_KID = { name_lines: ["Mateo"], age: 6 };
+/** Posada: invita una familia; la foto principal es la de los papás */
+const DEMO_HOSTS = { name_lines: ["Familia", "López"], age: null };
 
 /** Fotos de ejemplo (public/temas/demo): perfil para la foto principal, el resto en la galería. */
 const DEMO_PHOTOS = "/temas/demo/";
@@ -64,11 +66,12 @@ export function demoInvitation(theme: Theme, eventAt: string): InvitationWithThe
   const type = eventType(theme.event_type);
   const demo = DEMO_INVITATIONS[type];
   const religious = demo.ceremony.enabled;
-  // Religiosos: misa a la hora de la demo y recepción después
-  const at = religious ? new Date(new Date(eventAt).getTime() + RECEPTION_AFTER_HOURS * 36e5).toISOString() : eventAt;
+  const posada = type === "posada";
+  // Religiosos: misa a la hora de la demo y recepción después. Posada: en la noche (7:00 p.m.)
+  const at = religious || posada ? new Date(new Date(eventAt).getTime() + (posada ? 3 : RECEPTION_AFTER_HOURS) * 36e5).toISOString() : eventAt;
   const show = themeHasShow(theme)
     ? { ...demo.show, enabled: true, time: demo.show.time ?? "19:00", source: "theme" as const }
-    : religious
+    : religious || posada
       ? demo.show
       : { ...demo.show, source: "custom" as const, title: `Show de ${theme.name}`, performers: [] };
   const startTime = new Intl.DateTimeFormat("en-GB", { timeZone: "America/Merida", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(eventAt));
@@ -79,9 +82,9 @@ export function demoInvitation(theme: Theme, eventAt: string): InvitationWithThe
     is_active: true,
     is_deleted: false,
     theme_id: theme.id,
-    ...DEMO_KID,
-    ...(religious ? { age: null, age_text: ageRibbon(null, type) } : { age_text: null }),
-    photo_url: DEMO_PHOTO,
+    ...(posada ? DEMO_HOSTS : DEMO_KID),
+    ...(hasAge(type) ? { age_text: null } : { age: null, age_text: ageRibbon(null, type) }),
+    photo_url: posada ? DEMO_FAMILY_PHOTOS.parents_photo : DEMO_PHOTO,
     event_at: at,
     timezone: "America/Merida",
     event_type: type,

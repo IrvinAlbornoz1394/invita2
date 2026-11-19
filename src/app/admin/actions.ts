@@ -6,7 +6,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { invitationTag, themeTag, themesTag } from "@/lib/data";
 import { zonedToUtc } from "@/lib/dates";
-import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, RECEPTION_AFTER_HOURS } from "@/lib/defaults";
+import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, hasAge, RECEPTION_AFTER_HOURS, usesFullName } from "@/lib/defaults";
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
 import { invitationSlug, randomHash } from "@/lib/slug";
 import { resolveMapsDestination } from "@/lib/maps";
@@ -35,12 +35,14 @@ export async function createInvitation(_prev: ActionResult | null, formData: For
   const ageRaw = Number(formData.get("age") || NaN);
   const age = Number.isInteger(ageRaw) && ageRaw >= 0 && ageRaw <= 120 ? ageRaw : null;
 
-  if (!name) return { ok: false, error: "Escribe el nombre del festejado" };
+  if (!name) return { ok: false, error: usesFullName(type) ? "Escribe quién invita" : "Escribe el nombre del festejado" };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return { ok: false, error: "Indica fecha y hora" };
 
   // El nombre completo va en renglones: "Lucero Jeamileth" → ["Lucero", "Jeamileth"]
   const words = name.split(/\s+/);
   const nameLines = words.length <= 3 ? words : [words.slice(0, -1).join(" "), words.at(-1)!];
+  // Posada: «Familia López» → /familia-lopez-k3f9a2 (con solo «familia» no se distinguen)
+  const slugBase = usesFullName(type) ? words.slice(0, 3).join(" ") : words[0];
 
   // En los religiosos la hora escrita es la de la ceremonia; la recepción va después
   const demo = DEMO_INVITATIONS[type];
@@ -55,9 +57,9 @@ export async function createInvitation(_prev: ActionResult | null, formData: For
       .insert({
         ...demo,
         ceremony: religious ? { ...demo.ceremony, time } : demo.ceremony,
-        age: religious ? null : age,
-        age_text: ageRibbon(religious ? null : age, type),
-        slug: invitationSlug(words[0]),
+        age: hasAge(type) ? age : null,
+        age_text: ageRibbon(hasAge(type) ? age : null, type),
+        slug: invitationSlug(slugBase),
         name_lines: nameLines,
         event_at: eventAt.toISOString(),
         timezone,

@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/auth";
-import { EVENT_TYPES, eventType, isReligious } from "@/lib/defaults";
+import { EVENT_TYPES, eventType, isCharacters } from "@/lib/defaults";
 import type { Theme } from "@/lib/types";
 import { createTheme } from "../../actions";
 import { ThemeActions } from "../../ThemeActions";
@@ -28,6 +28,7 @@ const TYPE_SELECT: FilterSelect = {
     { value: "cumpleanos", label: "Infantil" },
     { value: "bautizo", label: "Bautizo" },
     { value: "primera_comunion", label: "Primera comunión" },
+    { value: "posada", label: "Posada" },
   ],
 };
 
@@ -95,8 +96,8 @@ async function ThemesList() {
               </div>
             </div>
           </Link>
-          {/* Bautizo y comunión no salen entre los personajes de la landing: no se destacan */}
-          {!isReligious(eventType(t.event_type)) && (
+          {/* Bautizo, comunión y posada no salen entre los personajes de la landing: no se destacan */}
+          {isCharacters(eventType(t.event_type)) && (
             <div className={styles.themeFeatured}>
               <FeaturedSwitch id={t.id} featured={Boolean(t.featured)} active={active} />
             </div>

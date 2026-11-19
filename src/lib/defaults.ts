@@ -5,6 +5,7 @@ export const EVENT_TYPES = {
   cumpleanos: { label: "Cumpleaños", eventLabel: "cumpleaños", emoji: "🎂", sample: "¡Feliz cumpleaños!" },
   bautizo: { label: "Bautizo", eventLabel: "bautizo", emoji: "🕊️", sample: "Mi bautizo" },
   primera_comunion: { label: "Primera Comunión", eventLabel: "Primera Comunión", emoji: "🕯️", sample: "Mi Primera Comunión" },
+  posada: { label: "Posada", eventLabel: "posada", emoji: "🎄", sample: "¡Vamos de posada!" },
 } as const;
 
 export type EventType = keyof typeof EVENT_TYPES;
@@ -16,7 +17,19 @@ export function eventType(value: string | null | undefined): EventType {
 }
 
 /** Eventos religiosos: llevan ceremonia, papás y padrinos. */
-export const isReligious = (type: EventType) => type !== "cumpleanos";
+export const isReligious = (type: EventType) => type === "bautizo" || type === "primera_comunion";
+
+/** Solo el cumpleaños lleva edad (el número en la foto y «¡Cumplo 5 años!»). */
+export const hasAge = (type: EventType) => type === "cumpleanos";
+
+/**
+ * Quien invita a la posada es una familia o un grupo («Familia López»): en los
+ * textos va el nombre completo, no solo el primero.
+ */
+export const usesFullName = (type: EventType) => type === "posada";
+
+/** Los temas de cumpleaños son los «personajes» de la landing; los demás tienen su mención aparte. */
+export const isCharacters = (type: EventType) => type === "cumpleanos";
 
 /** «al cumpleaños», «a la Primera Comunión»: artículo según el nombre del evento */
 export function toEvent(label: string) {
@@ -98,6 +111,22 @@ export const EVENT_TEXTS: Record<EventType, Texts> = {
     rsvpTitle: "¿Me acompañas?",
     footer: "Hecho con mucho cariño para celebrar mi Primera Comunión",
   },
+  posada: {
+    ...DEFAULT_TEXTS,
+    introKicker: "{nombre} te invita a su posada",
+    heroPill: "¡Vamos de posada!",
+    cardKicker: "Ven a pedir posada y a celebrar la Navidad con nosotros",
+    countdownTitle: "¡Ya casi es la posada!",
+    countdownDone: "¡Hoy es la posada!",
+    detailsTitle: "¡Aparta la fecha!",
+    extrasTitle: "Lo que habrá en la posada",
+    galleryTitle: "Nuestros recuerdos",
+    familyTitle: "Te esperamos",
+    messageTitle: "Una noche para compartir",
+    messageClosing: "¡Te esperamos con el ponche calientito!",
+    rsvpTitle: "¿Vienes a la posada?",
+    footer: "Hecho con mucho cariño para celebrar la Navidad",
+  },
 };
 
 /** Secciones que se pueden ocultar. Show, extras y galería se muestran si tienen contenido. */
@@ -164,6 +193,7 @@ export const TITLE_FONTS = {
   playfair: "Playfair Display · serif elegante",
   cinzelclassic: "Cinzel · romana, solemne",
   marcellus: "Marcellus · romana suave",
+  christmas: "Mountains of Christmas · navideña, posada",
 } as const;
 
 export type TitleFont = keyof typeof TITLE_FONTS;
@@ -188,6 +218,7 @@ export const TITLE_FONT_WIDTH: Partial<Record<TitleFont, number>> = {
   playfair: 0.6,
   cinzelclassic: 0.78,
   marcellus: 0.62,
+  christmas: 0.5,
 };
 
 /**
@@ -213,6 +244,7 @@ export const EVENT_FONTS: Record<EventType, TitleFont[]> = {
   cumpleanos: ["lilita", "luckiest", "titan", "chewy", "fredoka", "bubblegum", "sniglet"],
   bautizo: ["greatvibes", "parisienne", "alexbrush", "dancing", "cormorant", "playfair", "marcellus", "sniglet"],
   primera_comunion: ["pinyon", "greatvibes", "alexbrush", "cinzelclassic", "cormorant", "playfair", "marcellus"],
+  posada: ["christmas", "lilita", "chewy", "pacifico", "dancing", "greatvibes", "playfair"],
 };
 
 /** Atajos para la sección de extras; cada uno se puede editar después de agregarlo. */
@@ -258,10 +290,30 @@ const CELEBRATION_EXTRAS = [
   { emoji: "👔", label: "Código de vestimenta" },
 ];
 
+const POSADA_EXTRAS = [
+  { emoji: "🪅", label: "Piñata" },
+  { emoji: "☕", label: "Ponche" },
+  { emoji: "🫔", label: "Tamales" },
+  { emoji: "🍲", label: "Pozole" },
+  { emoji: "🌮", label: "Taquiza" },
+  { emoji: "🍩", label: "Buñuelos" },
+  { emoji: "🍫", label: "Champurrado" },
+  { emoji: "🍬", label: "Aguinaldos" },
+  { emoji: "🕯️", label: "Pedir posada" },
+  { emoji: "🎶", label: "Villancicos" },
+  { emoji: "🎁", label: "Intercambio de regalos" },
+  { emoji: "🎅", label: "Visita de Santa" },
+  { emoji: "🧣", label: "Suéter navideño" },
+  { emoji: "🎤", label: "Karaoke" },
+  { emoji: "🎧", label: "DJ" },
+  { emoji: "🧸", label: "Área de niños" },
+];
+
 export const EXTRAS_CATALOG: Record<EventType, { emoji: string; label: string }[]> = {
   cumpleanos: PARTY_EXTRAS,
   bautizo: CELEBRATION_EXTRAS,
   primera_comunion: CELEBRATION_EXTRAS,
+  posada: POSADA_EXTRAS,
 };
 
 export const TIMEZONES = [
@@ -357,7 +409,35 @@ export const DEMO_INVITATIONS = {
     family: { parents: ["Ana López", "Carlos Pérez"], godparents: ["Laura Gómez", "Jorge Ruiz"] },
     ceremony: { enabled: true, time: null, place: "Parroquia de San Juan", address: "Calle 62 #500, Centro, Mérida", maps_url: null },
   },
+  posada: {
+    event_type: "posada" as EventType,
+    event_label: "posada",
+    venue_name: "Casa de la familia López",
+    address: "Calle 33 #410, por 40 y 42",
+    area: "Itzimná, Mérida, Yucatán",
+    message:
+      "Este año queremos celebrar contigo la tradición: pediremos posada, cantaremos villancicos, romperemos la piñata y compartiremos ponche y tamales.",
+    show: NO_SHOW,
+    extras: [
+      { emoji: "🕯️", label: "Pedir posada", note: "Trae tu velita" },
+      { emoji: "🪅", label: "Piñata", note: "" },
+      { emoji: "☕", label: "Ponche", note: "" },
+      { emoji: "🫔", label: "Tamales", note: "" },
+      { emoji: "🍬", label: "Aguinaldos", note: "Para los niños" },
+      { emoji: "🎁", label: "Intercambio de regalos", note: "Opcional" },
+    ],
+    family: {},
+    ceremony: { enabled: false },
+  },
 } satisfies Record<EventType, object>;
+
+/** Hora con la que nace una invitación nueva de cada tipo (la de la ceremonia en los religiosos) */
+export const DEFAULT_TIME: Record<EventType, string> = {
+  cumpleanos: "16:00",
+  bautizo: "12:00",
+  primera_comunion: "12:00",
+  posada: "19:00",
+};
 
 /** Horas que la recepción va después de la ceremonia en una invitación nueva */
 export const RECEPTION_AFTER_HOURS = 2;
@@ -366,6 +446,7 @@ export const RECEPTION_AFTER_HOURS = 2;
 export function ageRibbon(age: number | null, type: EventType = "cumpleanos") {
   if (type === "bautizo") return "Mi bautizo";
   if (type === "primera_comunion") return "Mi Primera Comunión";
+  if (type === "posada") return "¡Vamos de posada!";
   if (age === null) return "¡Es mi cumpleaños!";
   return age === 1 ? "Mi primer añito" : `¡Cumplo ${age} años!`;
 }
@@ -386,6 +467,7 @@ export const FLOATER_KINDS = [
   { value: "hotair", label: "Globos aerostáticos" },
   { value: "bubble", label: "Burbujas" },
   { value: "petal", label: "Pétalos" },
+  { value: "snow", label: "Copos de nieve" },
   { value: "none", label: "Ninguno" },
 ] as const;
 
@@ -396,11 +478,12 @@ export const FLOATER_KIND_KEYS = FLOATER_KINDS.map((k) => k.value) as [FloaterKi
 /**
  * Lo que sale si el tema no dice otra cosa: cumpleaños con globos que siguen
  * saliendo por toda la invitación; bautizo con burbujas y comunión con pétalos,
- * solo en la portada.
+ * solo en la portada; posada con copos de nieve que siguen cayendo.
  */
 export function defaultEffects(type: EventType): { floaters: FloaterKind; keep: boolean } {
   if (type === "bautizo") return { floaters: "bubble", keep: false };
   if (type === "primera_comunion") return { floaters: "petal", keep: false };
+  if (type === "posada") return { floaters: "snow", keep: true };
   return { floaters: "balloon", keep: true };
 }
 

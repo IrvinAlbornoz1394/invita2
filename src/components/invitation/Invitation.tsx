@@ -220,6 +220,7 @@ export function Invitation({ view, preview = false }: Props) {
   }
 
   const showDock = started && Boolean(theme.musicUrl);
+  const posada = view.eventType === "posada";
   const style = theme.introStyle;
   const curtain = style === "curtain";
   const openerContent = {
@@ -276,8 +277,9 @@ export function Invitation({ view, preview = false }: Props) {
         {view.elegant ? (
           <SacredHero view={view} backRef={balloonsRef} frontRef={balloonsFrontRef} />
         ) : (
-          <header className="hero" id="inicio">
+          <header className={`hero${posada ? " hero--posada" : ""}`} id="inicio">
             <div className={`sunburst sunburst--${theme.bgStyle}`} aria-hidden="true" />
+            {posada && <PapelPicado />}
             <div className="hero__glow" aria-hidden="true" />
             <div className="orbs" aria-hidden="true">
               {ORBS.map((o, i) => (
@@ -300,11 +302,13 @@ export function Invitation({ view, preview = false }: Props) {
             <div className="balloons" ref={balloonsRef} aria-hidden="true" />
 
             <div className="hero__inner">
-              {theme.logoUrl && (
+              {theme.logoUrl ? (
                 <div className={`logo-badge logo-badge--${theme.logoStyle} pop`} style={{ "--d": ".1s" } as CSSProperties}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={theme.logoUrl} alt={theme.name} />
                 </div>
+              ) : (
+                posada && <Pinata />
               )}
 
               <Title
@@ -510,6 +514,80 @@ function Chalice() {
       <path className="chalice__cup" d="M14 30h36c0 12-7 20-18 20S14 42 14 30z" />
       <path className="chalice__stem" d="M32 50v10M22 66c0-4 4-6 10-6s10 2 10 6z" />
     </svg>
+  );
+}
+
+/* ======================================================================
+   Posada: papel picado arriba y la piñata de estrella como emblema
+   ====================================================================== */
+
+/** Colores de las banderitas, en orden (se repiten) */
+const PICADO_TONES = ["primary", "highlight", "accent", "surface"];
+const PICADO_FLAGS = 9;
+
+/**
+ * Banderita de papel picado: borde de picos abajo y calados (rombos, estrella y
+ * puntos) que dejan ver el fondo. Con evenodd los calados quedan huecos.
+ */
+const PICADO_PATH = [
+  "M0 0H40V44L36 49 32 44 28 49 24 44 20 49 16 44 12 49 8 44 4 49 0 44Z",
+  // estrella al centro
+  "M20 13l2.6 6.2 6.6.4-5.1 4.2 1.7 6.5L20 26.7l-5.8 3.6 1.7-6.5-5.1-4.2 6.6-.4z",
+  // rombos en las esquinas
+  "M7 6l3 4-3 4-3-4zM33 6l3 4-3 4-3-4zM7 31l3 4-3 4-3-4zM33 31l3 4-3 4-3-4z",
+  // puntos
+  "M20 36a2 2 0 1 1 0 4 2 2 0 1 1 0-4zM20 5a1.6 1.6 0 1 1 0 3.2 1.6 1.6 0 1 1 0-3.2z",
+].join("");
+
+function PapelPicado() {
+  return (
+    <div className="picado" aria-hidden="true">
+      <svg className="picado__string" viewBox="0 0 100 10" preserveAspectRatio="none">
+        <path d="M0 2Q50 10 100 2" />
+      </svg>
+      {Array.from({ length: PICADO_FLAGS }, (_, i) => {
+        // Las banderitas siguen la curva del cordón
+        const x = (i + 0.5) / PICADO_FLAGS;
+        const sag = 4 * x * (1 - x);
+        return (
+          <svg
+            key={i}
+            className={`picado__flag picado__flag--${PICADO_TONES[i % PICADO_TONES.length]}`}
+            viewBox="0 0 40 49"
+            style={{ "--x": `${x * 100}%`, "--sag": sag, "--i": i } as CSSProperties}
+          >
+            <path d={PICADO_PATH} fillRule="evenodd" />
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Piñata de siete picos: cada pico de un color del tema, con flecos en la punta */
+function Pinata() {
+  const tones = ["primary", "highlight", "secondary", "accent", "primary", "highlight", "secondary"];
+  return (
+    <div className="pinata pop" style={{ "--d": ".1s" } as CSSProperties} aria-hidden="true">
+      <span className="pinata__rope" />
+      <svg className="pinata__body" viewBox="-60 -60 120 120">
+        {tones.map((tone, i) => {
+          const a = (i * 360) / 7 - 90;
+          return (
+            <g key={i} transform={`rotate(${a + 90})`}>
+              <path className={`pinata__cone pinata__cone--${tone}`} d="M-11-24L0-54 11-24Z" />
+              <path className="pinata__shade" d="M0-54 11-24H0Z" />
+              <g className={`pinata__fringe pinata__fringe--${tones[(i + 2) % tones.length]}`}>
+                <path d="M0-54l-5-6M0-54l0-7M0-54l5-6" />
+              </g>
+            </g>
+          );
+        })}
+        <circle className="pinata__pot" r="27" />
+        <circle className="pinata__band" r="27" />
+        <path className="pinata__shine" d="M-15-14a20 20 0 0 1 16-8" />
+      </svg>
+    </div>
   );
 }
 

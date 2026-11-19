@@ -1,6 +1,6 @@
 import {
   Alex_Brush, Audiowide, Baloo_2, Bangers, Bubblegum_Sans, Bungee, Chewy, Cinzel, Cinzel_Decorative, Cormorant_Garamond,
-  Creepster, Dancing_Script, Fredoka, Great_Vibes, Lilita_One, Luckiest_Guy, Marcellus, Monoton, Orbitron, Pacifico,
+  Creepster, Dancing_Script, Fredoka, Great_Vibes, Lilita_One, Luckiest_Guy, Marcellus, Monoton, Mountains_of_Christmas, Orbitron, Pacifico,
   Parisienne, Pinyon_Script, Playfair_Display, Poppins, Press_Start_2P, Rubik_Moonrocks, Rye, Sniglet, Titan_One,
 } from "next/font/google";
 
@@ -25,6 +25,7 @@ const monoton = Monoton({ weight: "400", subsets: ["latin"], variable: "--font-m
 const audiowide = Audiowide({ weight: "400", subsets: ["latin"], variable: "--font-audiowide", display: "swap", preload: false });
 const orbitron = Orbitron({ weight: "800", subsets: ["latin"], variable: "--font-orbitron", display: "swap", preload: false });
 const cinzel = Cinzel_Decorative({ weight: "700", subsets: ["latin"], variable: "--font-cinzel", display: "swap", preload: false });
+const christmas = Mountains_of_Christmas({ weight: "700", subsets: ["latin"], variable: "--font-christmas", display: "swap", preload: false });
 const sniglet = Sniglet({ weight: "800", subsets: ["latin"], variable: "--font-sniglet", display: "swap", preload: false });
 
 // Elegantes (bautizo, primera comunión): caligráficas y serif clásicas
@@ -43,6 +44,6 @@ const poppins = Poppins({ weight: ["400", "500", "600", "700"], subsets: ["latin
 
 export const fontVariables = [
   poppins, lilita, baloo, luckiest, titan, chewy, fredoka, bubblegum,
-  moonrocks, bangers, bungee, pixel, rye, creepster, pacifico, monoton, audiowide, orbitron, cinzel, sniglet,
+  moonrocks, bangers, bungee, pixel, rye, creepster, pacifico, monoton, audiowide, orbitron, cinzel, sniglet, christmas,
   greatvibes, parisienne, pinyon, alexbrush, dancing, cormorant, playfair, cinzelclassic, marcellus,
 ].map((f) => f.variable).join(" ");

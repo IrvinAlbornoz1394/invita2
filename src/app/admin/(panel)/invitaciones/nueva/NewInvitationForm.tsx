@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { EVENT_TYPES, isReligious, RECEPTION_AFTER_HOURS, TIMEZONES, type EventType } from "@/lib/defaults";
+import { DEFAULT_TIME, EVENT_TYPES, hasAge, isReligious, RECEPTION_AFTER_HOURS, TIMEZONES, usesFullName, type EventType } from "@/lib/defaults";
 import { createInvitation } from "../../../actions";
 import styles from "../../../admin.module.css";
 
@@ -11,6 +11,7 @@ export function NewInvitationForm({ themes }: { themes: ThemeOption[] }) {
   const [state, action, pending] = useActionState(createInvitation, null);
   const [type, setType] = useState<EventType>("cumpleanos");
   const religious = isReligious(type);
+  const host = usesFullName(type);
   // Primero los temas de este tipo (o de cualquiera); los demás quedan al final
   const fitting = themes.filter((t) => !t.event_type || t.event_type === type);
   const others = themes.filter((t) => t.event_type && t.event_type !== type);
@@ -31,11 +32,13 @@ export function NewInvitationForm({ themes }: { themes: ThemeOption[] }) {
         </div>
       </div>
       <label className={styles.field}>
-        <span className={styles.label}>Nombre del festejado</span>
-        <input className={styles.input} name="name" required placeholder="Lucero Jeamileth" autoFocus />
-        <span className={styles.help}>El primer nombre se usa en el enlace: /lucero-k3f9a2</span>
+        <span className={styles.label}>{host ? "¿Quién invita?" : "Nombre del festejado"}</span>
+        <input className={styles.input} name="name" required placeholder={host ? "Familia López" : "Lucero Jeamileth"} autoFocus />
+        <span className={styles.help}>
+          {host ? "La familia, la empresa o el grupo; va en el enlace: /familia-lopez-k3f9a2" : "El primer nombre se usa en el enlace: /lucero-k3f9a2"}
+        </span>
       </label>
-      {!religious && (
+      {hasAge(type) && (
         <label className={styles.field} style={{ maxWidth: 200 }}>
           <span className={styles.label}>Edad que cumple</span>
           <input className={styles.input} name="age" type="number" min={0} max={120} placeholder="5" />
@@ -48,7 +51,7 @@ export function NewInvitationForm({ themes }: { themes: ThemeOption[] }) {
         </label>
         <label className={styles.field}>
           <span className={styles.label}>{religious ? "Hora de la ceremonia" : "Hora"}</span>
-          <input className={styles.input} name="time" type="time" required defaultValue={religious ? "12:00" : "16:00"} key={type} />
+          <input className={styles.input} name="time" type="time" required defaultValue={DEFAULT_TIME[type]} key={type} />
           {religious && (
             <span className={styles.help}>La recepción queda {RECEPTION_AFTER_HOURS} horas después; se ajusta en el editor.</span>
           )}

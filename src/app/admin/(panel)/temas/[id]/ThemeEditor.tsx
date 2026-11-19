@@ -10,7 +10,7 @@ import {
 import type { ThemeInput } from "@/lib/schema";
 import { slugify, THEME_SLUG_MAX } from "@/lib/slugify";
 import { themeDecor } from "@/lib/view";
-import { isReligious } from "@/lib/defaults";
+import { isCharacters } from "@/lib/defaults";
 import type { DecorKey, ImageStyle, LogoStyle, Theme, ThemeColors } from "@/lib/types";
 import { saveTheme } from "../../../actions";
 import { ThemeActions } from "../../../ThemeActions";
@@ -86,7 +86,7 @@ export function ThemeEditor({ theme, uses }: { theme: Theme; uses: number }) {
   const patchBg = (p: Partial<ThemeInput["background"]>) => setForm((f) => ({ ...f, background: { ...f.background, ...p } }));
   const autoBg = autoBackground(form.colors);
   const patchShow = (p: Partial<ThemeInput["show"]>) => setForm((f) => ({ ...f, show: { ...f.show, ...p } }));
-  const forParties = !form.event_type || !isReligious(form.event_type);
+  const forParties = !form.event_type || isCharacters(form.event_type);
   const patchIntro = (p: Partial<ThemeInput["intro"]>) => setForm((f) => ({ ...f, intro: { ...f.intro, ...p } }));
   const patchEffects = (p: Partial<ThemeInput["effects"]>) => setForm((f) => ({ ...f, effects: { ...f.effects, ...p } }));
   // Sin elegir: lo de siempre del tipo de evento (sin tipo, como cumpleaños)
