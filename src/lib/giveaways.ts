@@ -24,18 +24,25 @@ export function announceLabel(date: string) {
   }).replace(",", "");
 }
 
-/** Lo que se copia para mandar; {enlace} y {fecha} se reemplazan al copiar. */
-export const DEFAULT_GIVEAWAY_MESSAGE = `🎁 ¡Estamos regalando invitaciones digitales animadas! 🎉
+/**
+ * Respuesta por WhatsApp a quien pidió información o quiere participar.
+ * {enlace}, {fecha} y {ganadores} se reemplazan al copiar.
+ */
+export const DEFAULT_GIVEAWAY_MESSAGE = `¡Hola! 👋 Gracias por tu interés en nuestro giveaway 🎁
 
-Para participar:
+Estamos regalando {ganadores} invitaciones digitales animadas para tu fiesta. Para participar:
+
 ✅ Dale me gusta a nuestra página de Facebook
 ✅ Síguenos en Instagram
 ✅ Regístrate aquí: {enlace}
 
-Anunciamos a los ganadores {fecha}. ¡Mucha suerte! 🍀`;
+Anunciamos a los ganadores {fecha} en nuestras redes y les escribimos por aquí. ¡Mucha suerte! 🍀`;
 
-export function giveawayMessage(template: string, link: string, announceOn: string) {
-  return (template || DEFAULT_GIVEAWAY_MESSAGE).replaceAll("{enlace}", link).replaceAll("{fecha}", `el ${announceLabel(announceOn)}`);
+export function giveawayMessage(template: string, link: string, announceOn: string, winners: number) {
+  return (template || DEFAULT_GIVEAWAY_MESSAGE)
+    .replaceAll("{enlace}", link)
+    .replaceAll("{fecha}", `el ${announceLabel(announceOn)}`)
+    .replaceAll("{ganadores}", String(winners));
 }
 
 /** Lo que llena quien participa */

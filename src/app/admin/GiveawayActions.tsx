@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
-import { giveawayMessage } from "@/lib/giveaways";
+import { DEFAULT_GIVEAWAY_MESSAGE, giveawayMessage } from "@/lib/giveaways";
 import { createGiveaway, drawWinner, pickWinner, saveGiveawayMessage, setEntryDiscarded, setGiveawayActive } from "./actions";
 import { Popconfirm } from "./Popconfirm";
 import { Switch } from "./Switch";
@@ -50,18 +50,18 @@ function useCopy() {
 }
 
 /** Copia el mensaje completo con el enlace para mandarlo. */
-export function CopyGiveawayMessage({ template, path, announceOn, siteUrl, small = false }: { template: string; path: string; announceOn: string; siteUrl: string; small?: boolean }) {
+export function CopyGiveawayMessage({ template, path, announceOn, winners, siteUrl, small = false }: { template: string; path: string; announceOn: string; winners: number; siteUrl: string; small?: boolean }) {
   const origin = useOrigin(siteUrl);
   const { copied, copy } = useCopy();
   return (
-    <button type="button" className={`${styles.btn} ${small ? styles.btnSmall : styles.btnPrimary}`} onClick={() => copy(giveawayMessage(template, `${origin}${path}`, announceOn))}>
-      {copied ? "¡Mensaje copiado!" : "Copiar mensaje con enlace"}
+    <button type="button" className={`${styles.btn} ${small ? styles.btnSmall : styles.btnPrimary}`} onClick={() => copy(giveawayMessage(template, `${origin}${path}`, announceOn, winners))}>
+      {copied ? "¡Mensaje copiado!" : "Copiar mensaje para WhatsApp"}
     </button>
   );
 }
 
 /** Enlace, mensaje editable y botón para copiarlo todo. */
-export function GiveawayMessage({ id, initial, path, announceOn, siteUrl }: { id: string; initial: string; path: string; announceOn: string; siteUrl: string }) {
+export function GiveawayMessage({ id, initial, path, announceOn, winners, siteUrl }: { id: string; initial: string; path: string; announceOn: string; winners: number; siteUrl: string }) {
   const origin = useOrigin(siteUrl);
   const url = `${origin}${path}`;
   const [message, setMessage] = useState(initial);
@@ -83,16 +83,16 @@ export function GiveawayMessage({ id, initial, path, announceOn, siteUrl }: { id
         </div>
       </div>
       <label className={styles.field}>
-        <span className={styles.label}>Mensaje</span>
+        <span className={styles.label}>Mensaje para WhatsApp</span>
         <textarea className={styles.textarea} rows={9} value={message} maxLength={2000} onChange={(e) => setMessage(e.target.value)} />
         <span className={styles.help}>
-          {"{enlace}"} se cambia por el enlace y {"{fecha}"} por el día del anuncio.
+          {"{enlace}"} se cambia por el enlace, {"{fecha}"} por el día del anuncio y {"{ganadores}"} por cuántas invitaciones regalan.
         </span>
       </label>
       {error && <p className={styles.error}>{error}</p>}
       <div className={styles.labelRow} style={{ gap: 8, justifyContent: "flex-start", flexWrap: "wrap" }}>
-        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => all.copy(giveawayMessage(message, url, announceOn))}>
-          {all.copied ? "¡Mensaje copiado!" : "Copiar mensaje con enlace"}
+        <button type="button" className={`${styles.btn} ${styles.btnPrimary}`} onClick={() => all.copy(giveawayMessage(message, url, announceOn, winners))}>
+          {all.copied ? "¡Mensaje copiado!" : "Copiar mensaje para WhatsApp"}
         </button>
         <button
           type="button"
@@ -109,6 +109,11 @@ export function GiveawayMessage({ id, initial, path, announceOn, siteUrl }: { id
         >
           {pending ? "Guardando…" : message === saved ? "Guardado" : "Guardar mensaje"}
         </button>
+        {message !== DEFAULT_GIVEAWAY_MESSAGE && (
+          <button type="button" className={`${styles.btn} ${styles.btnGhost}`} onClick={() => setMessage(DEFAULT_GIVEAWAY_MESSAGE)}>
+            Usar el mensaje sugerido
+          </button>
+        )}
       </div>
     </div>
   );

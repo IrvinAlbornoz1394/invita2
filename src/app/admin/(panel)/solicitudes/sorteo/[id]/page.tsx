@@ -127,7 +127,7 @@ async function GiveawayDetail({ params }: Pick<PageProps<"/admin/solicitudes/sor
         <section className={styles.card}>
           <h2 className={styles.cardTitle}>Enlace y mensaje</h2>
           <p className={styles.cardHint}>No aparece en la página principal: compártelo desde aquí.</p>
-          <GiveawayMessage id={g.id} initial={g.message} path={giveawayPath(g.token)} announceOn={g.announce_on} siteUrl={process.env.NEXT_PUBLIC_SITE_URL ?? ""} />
+          <GiveawayMessage id={g.id} initial={g.message} path={giveawayPath(g.token)} announceOn={g.announce_on} winners={g.winners} siteUrl={process.env.NEXT_PUBLIC_SITE_URL ?? ""} />
           <div style={{ marginTop: 16 }}>
             <GiveawayActiveSwitch id={g.id} active={g.is_active} />
           </div>

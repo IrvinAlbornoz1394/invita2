@@ -160,7 +160,7 @@ async function Giveaways() {
                   </p>
                 </div>
                 <div className={styles.labelRow} style={{ gap: 8 }}>
-                  {open && <CopyGiveawayMessage template={g.message} path={giveawayPath(g.token)} announceOn={g.announce_on} siteUrl={siteUrl} small />}
+                  {open && <CopyGiveawayMessage template={g.message} path={giveawayPath(g.token)} announceOn={g.announce_on} winners={g.winners} siteUrl={siteUrl} small />}
                   <Link className={`${styles.btn} ${styles.btnSmall} ${styles.btnGhost}`} href={`/admin/solicitudes/sorteo/${g.id}`}>
                     Ver participantes
                   </Link>
