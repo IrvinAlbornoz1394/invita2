@@ -1,6 +1,6 @@
 "use server";
 
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomInt } from "node:crypto";
 import { refresh, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
@@ -13,6 +13,7 @@ import { invitationSlug, randomHash, slugify } from "@/lib/slug";
 import { resolveMapsDestination } from "@/lib/maps";
 import { DEFAULT_REQUEST_DAYS, missingForPublish, requestData, requestInput, type RequestData } from "@/lib/requests";
 import { requestPhotoPrefix } from "@/lib/request-photos";
+import { DEFAULT_GIVEAWAY_MESSAGE, giveawayInput } from "@/lib/giveaways";
 
 export type ActionResult = { ok: true; message?: string } | { ok: false; error: string };
 
@@ -435,6 +436,127 @@ export async function createThemeFromRequest(id: string) {
 
   updateTag(themesTag);
   redirect(`/admin/temas/${data.id}`);
+}
+
+/* ---------------- Giveaways ---------------- */
+
+/** Días que tiene un ganador para llenar sus datos */
+const WINNER_DAYS = 15;
+
+export async function createGiveaway(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+
+  const parsed = giveawayInput.safeParse({
+    name: formData.get("name") ?? "",
+    winners: formData.get("winners") ?? 10,
+    announce_on: formData.get("announce_on") ?? "",
+  });
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+  const g = parsed.data;
+
+  // El registro cierra al empezar el día del anuncio (hora de Mérida)
+  const closesAt = zonedToUtc(g.announce_on, "00:00", REQUEST_TIMEZONE);
+  if (closesAt.getTime() <= Date.now()) return { ok: false, error: "La fecha del anuncio tiene que ser futura" };
+
+  const { data, error } = await supabase
+    .from("giveaways")
+    .insert({ ...g, token: randomHash(10), closes_at: closesAt.toISOString(), message: DEFAULT_GIVEAWAY_MESSAGE })
+    .select("id")
+    .single();
+  if (error) return { ok: false, error: error.message };
+
+  redirect(`/admin/solicitudes/sorteo/${data.id}`);
+}
+
+export async function saveGiveawayMessage(id: string, message: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+  const text = String(message ?? "").slice(0, 2000);
+  const { error } = await supabase.from("giveaways").update({ message: text }).eq("id", id);
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, message: "Mensaje guardado" };
+}
+
+/** Cerrar (o reabrir) el registro antes de la fecha */
+export async function setGiveawayActive(id: string, active: boolean) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase.from("giveaways").update({ is_active: active }).eq("id", id);
+  if (error) throw error;
+  refresh();
+}
+
+/**
+ * Ganador: se le genera una solicitud con su tipo de evento y lo que eligió al
+ * registrarse ya puesto, para mandarle el enlace y que llene los datos.
+ */
+async function makeWinner(supabase: Awaited<ReturnType<typeof createClient>>, entryId: string): Promise<ActionResult> {
+  const { data: entry, error } = await supabase
+    .from("giveaway_entries")
+    .select("id, name, phone, event_type, theme_id, custom_theme, event_date, status")
+    .eq("id", entryId)
+    .single();
+  if (error) return { ok: false, error: error.message };
+  if (entry.status !== "participando") return { ok: false, error: "Solo puede ganar quien sigue participando" };
+
+  const { data: req, error: reqError } = await supabase
+    .from("invitation_requests")
+    .insert({
+      token: newToken(),
+      event_type: entry.event_type,
+      client_name: entry.name,
+      client_phone: entry.phone,
+      expires_at: expiresIn(WINNER_DAYS),
+      preset: { theme_id: entry.theme_id, custom_theme: entry.custom_theme, date: entry.event_date },
+    })
+    .select("id")
+    .single();
+  if (reqError) return { ok: false, error: reqError.message };
+
+  const { data: updated, error: updateError } = await supabase
+    .from("giveaway_entries")
+    .update({ status: "ganador", request_id: req.id })
+    .eq("id", entryId)
+    .eq("status", "participando")
+    .select("id");
+  if (updateError || !updated.length) {
+    await supabase.from("invitation_requests").delete().eq("id", req.id);
+    return { ok: false, error: updateError?.message ?? "Cambió mientras tanto; recarga la página" };
+  }
+  return { ok: true, message: `¡${entry.name} ganó! Ya puedes mandarle su enlace.` };
+}
+
+export async function pickWinner(entryId: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+  const result = await makeWinner(supabase, entryId);
+  refresh();
+  return result;
+}
+
+/** Sorteo: uno al azar entre quienes siguen participando (los descartados no entran). */
+export async function drawWinner(giveawayId: string): Promise<ActionResult> {
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from("giveaway_entries")
+    .select("id")
+    .eq("giveaway_id", giveawayId)
+    .eq("status", "participando");
+  if (error) return { ok: false, error: error.message };
+  if (!data.length) return { ok: false, error: "No queda nadie participando" };
+
+  const result = await makeWinner(supabase, data[randomInt(data.length)].id);
+  refresh();
+  return result;
+}
+
+/** Descartar a quien no cumplió los requisitos (o regresarlo al sorteo). */
+export async function setEntryDiscarded(entryId: string, discarded: boolean) {
+  const { supabase } = await requireAdmin();
+  const { error } = await supabase
+    .from("giveaway_entries")
+    .update({ status: discarded ? "descartado" : "participando" })
+    .eq("id", entryId)
+    .neq("status", "ganador");
+  if (error) throw error;
+  refresh();
 }
 
 /* ---------------- Temas ---------------- */

@@ -8,6 +8,8 @@ import { REQUEST_STATES, requestState, type RequestState, type RequestStatus } f
 import { AdminIcon } from "../../AdminIcon";
 import { FilterableList, type FilterTag } from "../../FilterableList";
 import { NewRequestForm } from "../../RequestActions";
+import { CopyGiveawayMessage, NewGiveawayForm } from "../../GiveawayActions";
+import { announceLabel, giveawayPath } from "@/lib/giveaways";
 import { STATE_BADGE } from "../../requestBadge";
 import styles from "../../admin.module.css";
 
@@ -22,6 +24,9 @@ export default function RequestsPage() {
           <p className={styles.pageSub}>Enlaces para que el cliente llene los datos de su evento. Primero las que hay que revisar.</p>
         </div>
       </div>
+      <Suspense fallback={null}>
+        <Giveaways />
+      </Suspense>
       <div className={styles.card} style={{ marginBottom: 24 }}>
         <h2 className={styles.cardTitle}>Nueva solicitud</h2>
         <p className={styles.cardHint}>Genera el enlace con el tipo de evento ya fijo y mándaselo al cliente.</p>
@@ -105,4 +110,74 @@ async function RequestsList() {
   });
 
   return <FilterableList items={items} tags={STATE_TAGS} allLabel="Todas" placeholder="Buscar por cliente, teléfono o festejado" className={styles.list} />;
+}
+
+type GiveawayRow = {
+  id: string;
+  token: string;
+  name: string;
+  winners: number;
+  announce_on: string;
+  closes_at: string;
+  message: string;
+  is_active: boolean;
+  entries: { status: string }[];
+};
+
+/** Giveaways: el enlace no está en la landing; se copia de aquí con su mensaje. */
+async function Giveaways() {
+  const { supabase } = await requireAdmin();
+  const { data, error } = await supabase
+    .from("giveaways")
+    .select("id, token, name, winners, announce_on, closes_at, message, is_active, entries:giveaway_entries(status)")
+    .order("created_at", { ascending: false })
+    .returns<GiveawayRow[]>();
+  if (error) throw error;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  return (
+    <section className={styles.card} style={{ marginBottom: 16 }}>
+      <h2 className={styles.cardTitle}>🎁 Giveaways</h2>
+      <p className={styles.cardHint}>Enlace para que la gente se registre; a los ganadores se les genera su solicitud.</p>
+      <div className={styles.grid} style={{ gap: 12 }}>
+        {data.map((g) => {
+          const won = g.entries.filter((e) => e.status === "ganador").length;
+          const open = g.is_active && new Date(g.closes_at) > new Date();
+          return (
+            <div key={g.id} className={styles.item}>
+              <div className={styles.labelRow} style={{ gap: 12, flexWrap: "wrap" }}>
+                <div>
+                  <Link className={styles.rowTitle} href={`/admin/solicitudes/sorteo/${g.id}`}>
+                    {g.name}
+                  </Link>
+                  <p className={styles.rowMeta}>
+                    <span className={`${styles.badge} ${open ? styles.badgeOk : styles.badgePast}`}>{open ? "Registro abierto" : "Cerrado"}</span>
+                    <span>{g.entries.length} participantes</span>
+                    <span>
+                      Ganadores {won}/{g.winners}
+                    </span>
+                    <span>Anuncio: {announceLabel(g.announce_on)}</span>
+                  </p>
+                </div>
+                <div className={styles.labelRow} style={{ gap: 8 }}>
+                  {open && <CopyGiveawayMessage template={g.message} path={giveawayPath(g.token)} announceOn={g.announce_on} siteUrl={siteUrl} small />}
+                  <Link className={`${styles.btn} ${styles.btnSmall} ${styles.btnGhost}`} href={`/admin/solicitudes/sorteo/${g.id}`}>
+                    Ver participantes
+                  </Link>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+        <details>
+          <summary className={styles.label} style={{ cursor: "pointer" }}>
+            + Nuevo giveaway
+          </summary>
+          <div style={{ marginTop: 12 }}>
+            <NewGiveawayForm />
+          </div>
+        </details>
+      </div>
+    </section>
+  );
 }
