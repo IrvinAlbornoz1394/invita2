@@ -146,8 +146,9 @@ export function GiveawayForm({ token, themes, announce }: { token: string; theme
 
       <Section title="Requisitos">
         <ul className={styles.requirements}>
-          <li>Dale me gusta a nuestra página de Facebook</li>
+          <li>Dale me gusta y síguenos en Facebook</li>
           <li>Síguenos en Instagram</li>
+          <li>Mándanos tus capturas por WhatsApp</li>
         </ul>
         <label className={styles.check}>
           <input type="checkbox" checked={form.accepted} onChange={(e) => set("accepted", e.target.checked)} required />

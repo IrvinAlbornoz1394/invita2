@@ -25,18 +25,16 @@ export function announceLabel(date: string) {
 }
 
 /**
- * Respuesta por WhatsApp a quien pidió información o quiere participar.
- * {enlace}, {fecha} y {ganadores} se reemplazan al copiar.
+ * Respuesta por WhatsApp a quien ya mandó sus capturas (me gusta y sigue la
+ * página de Facebook, sigue el Instagram). {enlace}, {fecha} y {ganadores} se
+ * reemplazan al copiar.
  */
-export const DEFAULT_GIVEAWAY_MESSAGE = `¡Hola! 👋 Gracias por tu interés en nuestro giveaway 🎁
+export const DEFAULT_GIVEAWAY_MESSAGE = `¡Gracias por participar en nuestro giveaway! 🎁
 
-Estamos regalando {ganadores} invitaciones digitales animadas para tu fiesta. Para participar:
+Ya recibimos tus capturas ✅ Ahora solo falta tu registro con los datos de tu evento y el personaje que te gustaría:
+👉 {enlace}
 
-✅ Dale me gusta a nuestra página de Facebook
-✅ Síguenos en Instagram
-✅ Regístrate aquí: {enlace}
-
-Anunciamos a los ganadores {fecha} en nuestras redes y les escribimos por aquí. ¡Mucha suerte! 🍀`;
+Estamos regalando {ganadores} invitaciones digitales animadas y anunciamos a los ganadores {fecha} en nuestras redes. ¡Mucha suerte! 🍀`;
 
 export function giveawayMessage(template: string, link: string, announceOn: string, winners: number) {
   return (template || DEFAULT_GIVEAWAY_MESSAGE)
