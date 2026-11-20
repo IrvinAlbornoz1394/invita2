@@ -1,0 +1,47 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1080px;font-family:Poppins,sans-serif;color:#2e1f66}
+:root{--purple:#5b3db5;--deep:#2e1f66;--muted:#5f5878;--coral:#ff7a66;--mint:#5ad6bd;--orange:#ffad4f;--gold:#ffd08a}
+.s{width:1080px;height:1350px;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 80% 85%,#ddd3f7 0%,rgba(221,211,247,0) 45%),radial-gradient(circle at 15% 10%,#e9e1fb 0%,rgba(233,225,251,0) 40%),linear-gradient(160deg,#f8f5fe 0%,#ece6fb 100%)}
+.dot{position:absolute;border-radius:50%}.strip{position:absolute;width:12px;height:30px;border-radius:4px}
+/* Cada columna junta pedazos de la misma invitación (captura de 390 px de ancho, aquí a 312 = 0.8) */
+.col{position:absolute;width:312px;border-radius:30px;overflow:hidden;background:#fff;display:flex;flex-direction:column;
+  box-shadow:0 34px 60px -26px rgba(46,31,102,.45),0 10px 22px -12px rgba(46,31,102,.25);border:6px solid #fff}
+.col i{display:block;flex:none;width:300px;background:url(muestra/bluey.png) no-repeat;background-size:300px auto}
+.c1{left:40px;top:44px}
+.c2{left:384px;top:120px}
+.c3{left:728px;top:44px}
+.brand{position:absolute;left:728px;width:312px;top:560px;bottom:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:18px}
+.brand img{width:260px}
+.brand h2{font-size:40px;line-height:1.08;font-weight:800;letter-spacing:-1px}
+.brand h2 em{font-style:normal;color:var(--purple)}
+.brand ul{list-style:none;padding:0;display:grid;gap:10px;margin-top:4px}
+.brand li{background:#fff;border-radius:999px;padding:10px 22px;font-size:24px;font-weight:700;color:var(--purple);box-shadow:0 10px 20px -12px rgba(46,31,102,.35)}
+.brand p{font-size:22px;font-weight:600;color:var(--muted)}
+</style></head><body>
+<section class="s">
+  <span class="dot" style="left:20px;top:1290px;width:18px;height:18px;background:var(--mint)"></span>
+  <span class="dot" style="left:700px;top:20px;width:16px;height:16px;background:var(--orange)"></span>
+  <span class="strip" style="left:1050px;top:620px;background:var(--coral);transform:rotate(25deg)"></span>
+  <span class="dot" style="left:360px;top:60px;width:14px;height:14px;background:var(--coral)"></span>
+  <span class="strip" style="left:690px;top:1240px;background:var(--orange);transform:rotate(-30deg)"></span>
+
+  <div class="col c1"><i style="height:1177px;background-position:0 -0px"></i></div>
+  <div class="col c2"><i style="height:262px;background-position:0 -1838px"></i><i style="height:573px;background-position:0 -2250px"></i><i style="height:300px;background-position:0 -3915px"></i></div>
+  <div class="col c3"><i style="height:465px;background-position:0 -4965px"></i></div>
+
+  <div class="brand">
+    <img src="logo.png" alt="">
+    <h2>Invitaciones <em>digitales e interactivas</em></h2>
+    <ul>
+      <li>Sin apps</li>
+      <li>Sin archivos</li>
+      <li>Solo un enlace</li>
+    </ul>
+    <p>Pídela por WhatsApp</p>
+  </div>
+</section>
+</body></html>
