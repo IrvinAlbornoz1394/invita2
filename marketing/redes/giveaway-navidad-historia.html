@@ -1,0 +1,75 @@
+<!doctype html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800&family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1080px;font-family:Poppins,sans-serif;color:#fff}
+:root{--purple:#5b3db5;--deep:#2e1f66;--lilac:#ece6fb;--coral:#ff7a66;--mint:#5ad6bd;--orange:#ffad4f;--gold:#ffd08a;--violet:#9a6cf2;--shadow:0 30px 60px -28px rgba(20,10,60,.6),0 8px 20px -10px rgba(20,10,60,.35)}
+.s{width:1080px;height:1920px;position:relative;overflow:hidden;
+  background:radial-gradient(circle at 50% 52%,#8a68ee 0%,rgba(138,104,238,0) 48%),linear-gradient(160deg,#5b3db5 0%,#2e1f66 100%)}
+.dot{position:absolute;border-radius:50%}.strip{position:absolute;width:12px;height:32px;border-radius:4px}
+.snow{position:absolute;color:rgba(255,255,255,.55);font-size:34px;line-height:1}
+.wrap{position:absolute;inset:230px 100px 250px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.logo{width:340px}
+.pill{margin-top:22px;white-space:nowrap;background:var(--gold);color:var(--deep);font-weight:800;font-size:28px;letter-spacing:4px;text-transform:uppercase;padding:10px 32px;border-radius:999px}
+h1{margin-top:40px;font-size:88px;line-height:1.02;font-weight:800;letter-spacing:-2.5px;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.sub{margin-top:16px;font-size:32px;font-weight:600;color:#ece6fb}
+
+/* regalo con el 10 */
+.gift{position:relative;margin-top:110px;transform:scale(1.15);width:300px;height:250px;flex:none}
+.gift .box{position:absolute;bottom:0;left:25px;width:250px;height:170px;border-radius:22px;background:linear-gradient(160deg,#ff9a85,#e0533d);box-shadow:var(--shadow)}
+.gift .lid{position:absolute;top:50px;left:0;width:300px;height:68px;border-radius:20px;background:linear-gradient(160deg,#ffb3a3,#ef6a52);transform:rotate(-12deg) translate(-14px,-40px);box-shadow:0 20px 30px -16px rgba(20,10,60,.5)}
+.gift .rib{position:absolute;bottom:0;left:135px;width:30px;height:170px;background:var(--gold)}
+.gift .lid::after{content:"";position:absolute;left:135px;top:0;width:30px;height:68px;background:var(--gold)}
+.bow{position:absolute;top:-34px;left:108px;width:80px;height:60px}
+.bow::before,.bow::after{content:"";position:absolute;width:52px;height:42px;border:12px solid var(--gold);border-radius:50%;top:0}
+.bow::before{left:-28px;transform:rotate(-20deg)}.bow::after{left:48px;transform:rotate(20deg)}
+.ten{position:absolute;right:-150px;top:10px;width:176px;height:176px;border-radius:50%;background:#fff;color:var(--purple);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:var(--shadow);transform:rotate(8deg)}
+.ten b{font-family:'Lilita One';font-weight:400;font-size:88px;line-height:.9}
+.ten span{font-size:17px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-top:4px}
+
+/* pasos */
+.steps{margin-top:auto;width:100%;display:grid;gap:14px;text-align:left}
+.steps div{display:flex;gap:20px;align-items:center;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.22);border-radius:24px;padding:16px 26px;font-size:30px;font-weight:700}
+.steps i{flex:none;width:50px;height:50px;border-radius:50%;background:var(--gold);color:var(--deep);font-style:normal;font-family:'Lilita One';font-size:28px;display:flex;align-items:center;justify-content:center}
+.steps small{display:block;font-size:22px;font-weight:500;color:#ece6fb;margin-top:2px}
+.date{margin-top:22px;font-size:30px;font-weight:700;color:#fff}
+.date b{color:var(--gold)}
+</style></head><body>
+<section class="s">
+  <span class="snow" style="left:80px;top:150px">❄</span>
+  <span class="snow" style="left:960px;top:330px;font-size:26px">❄</span>
+  <span class="snow" style="left:70px;top:640px;font-size:28px">❄</span>
+  <span class="snow" style="left:950px;top:960px">❄</span>
+  <span class="dot" style="left:110px;top:470px;width:20px;height:20px;background:var(--mint)"></span>
+  <span class="dot" style="left:900px;top:180px;width:18px;height:18px;background:var(--orange)"></span>
+  <span class="strip" style="left:150px;top:820px;background:var(--mint);transform:rotate(-28deg)"></span>
+  <span class="strip" style="left:940px;top:760px;background:var(--orange);transform:rotate(25deg)"></span>
+  <span class="dot" style="left:140px;top:1000px;width:16px;height:16px;background:var(--gold)"></span>
+  <span class="snow" style="left:140px;top:1730px">❄</span>
+  <span class="snow" style="left:930px;top:1720px;font-size:28px">❄</span>
+  <span class="dot" style="left:880px;top:1760px;width:20px;height:20px;background:var(--mint)"></span>
+  <span class="strip" style="left:170px;top:1780px;background:var(--orange);transform:rotate(-24deg)"></span>
+  <span class="dot" style="left:520px;top:110px;width:16px;height:16px;background:var(--coral)"></span>
+
+  <div class="wrap">
+    <img class="logo" src="logo.png" alt="">
+    <span class="pill">Giveaway navideño</span>
+    <h1>Regalamos <em>10&nbsp;invitaciones</em> digitales animadas</h1>
+    <p class="sub">Con el personaje que más te guste</p>
+
+    <div class="gift">
+      <div class="box"></div><div class="rib"></div>
+      <div class="lid"><span class="bow"></span></div>
+      <div class="ten"><b>10</b><span>ganadores</span></div>
+    </div>
+
+    <div class="steps">
+      <div><i>1</i><span>Dale me gusta a nuestra página de Facebook</span></div>
+      <div><i>2</i><span>Síguenos en Instagram</span></div>
+      <div><i>3</i><span>Escríbenos «QUIERO PARTICIPAR»<small>Por WhatsApp o mensaje y te mandamos tu registro</small></span></div>
+    </div>
+    <p class="date">Anunciamos a los ganadores el <b>jueves 10 de diciembre</b></p>
+  </div>
+</section>
+</body></html>
