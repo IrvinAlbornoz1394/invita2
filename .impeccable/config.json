@@ -38,6 +38,42 @@
         ],
         "createdAt": "2026-11-13T20:50:01.030Z",
         "reason": "Claude: social graphic; purple brand wash on cover/closing slides is intentional art direction"
+      },
+      {
+        "rule": "oversized-h1",
+        "value": "*",
+        "files": [
+          "marketing/redes/giveaway-navidad.html"
+        ],
+        "createdAt": "2026-11-20T04:08:43.433Z",
+        "reason": "Claude: imagen de redes 1080px renderizada a JPG, el titular grande es el diseño de póster, no una página web"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "marketing/redes/giveaway-navidad.html"
+        ],
+        "createdAt": "2026-11-20T04:08:43.469Z",
+        "reason": "Claude: copos de nieve decorativos semitransparentes en imagen de redes; el texto real es blanco/dorado sobre morado"
+      },
+      {
+        "rule": "oversized-h1",
+        "value": "*",
+        "files": [
+          "marketing/redes/giveaway-navidad-historia.html"
+        ],
+        "createdAt": "2026-11-20T04:08:43.510Z",
+        "reason": "Claude: imagen de redes 1080px renderizada a JPG, el titular grande es el diseño de póster, no una página web"
+      },
+      {
+        "rule": "low-contrast",
+        "value": "*",
+        "files": [
+          "marketing/redes/giveaway-navidad-historia.html"
+        ],
+        "createdAt": "2026-11-20T04:08:43.547Z",
+        "reason": "Claude: copos de nieve decorativos semitransparentes en imagen de redes; el texto real es blanco/dorado sobre morado"
       }
     ]
   }
