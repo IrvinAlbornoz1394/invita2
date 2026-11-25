@@ -39,7 +39,8 @@ export default function RequestsPage() {
   );
 }
 
-const STATE_ORDER: RequestState[] = ["recibida", "pendiente", "aprobada", "vencida", "rechazada"];
+// Las aprobadas ya son invitaciones: salen de esta lista
+const STATE_ORDER: RequestState[] = ["recibida", "pendiente", "vencida", "rechazada"];
 const STATE_TAGS: FilterTag[] = STATE_ORDER.map((s) => ({ value: s, label: REQUEST_STATES[s].label }));
 
 type Row = {
@@ -65,9 +66,22 @@ async function RequestsList() {
     .returns<Row[]>();
   if (error) throw error;
 
-  if (!data.length) return <div className={styles.empty}><p>Todavía no hay solicitudes.</p></div>;
+  const approved = data.filter((r) => r.status === "aprobada").length;
+  const approvedNote = approved > 0 && (
+    <p className={styles.help} style={{ marginTop: 12 }}>
+      {approved === 1 ? "1 solicitud ya pasó" : `${approved} solicitudes ya pasaron`} a <Link href="/admin">Invitaciones</Link>.
+    </p>
+  );
+  const open = data.filter((r) => r.status !== "aprobada");
+  if (!open.length)
+    return (
+      <div className={styles.empty}>
+        <p>No hay solicitudes pendientes.</p>
+        {approvedNote}
+      </div>
+    );
 
-  const rows = data
+  const rows = open
     .map((r) => ({ ...r, state: requestState(r.status, r.expires_at) }))
     .sort((a, b) => STATE_ORDER.indexOf(a.state) - STATE_ORDER.indexOf(b.state));
 
@@ -109,7 +123,12 @@ async function RequestsList() {
     };
   });
 
-  return <FilterableList items={items} tags={STATE_TAGS} allLabel="Todas" placeholder="Buscar por cliente, teléfono o festejado" className={styles.list} />;
+  return (
+    <>
+      <FilterableList items={items} tags={STATE_TAGS} allLabel="Todas" placeholder="Buscar por cliente, teléfono o festejado" className={styles.list} />
+      {approvedNote}
+    </>
+  );
 }
 
 type GiveawayRow = {

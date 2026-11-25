@@ -2,7 +2,7 @@
 
 import { useActionState, useState, useSyncExternalStore, useTransition } from "react";
 import { EVENT_TYPES, type EventType } from "@/lib/defaults";
-import { DEFAULT_REQUEST_DAYS, REQUEST_DAYS } from "@/lib/requests";
+import { CORRECTION_DAYS, CORRECTION_NOTE_MAX, DEFAULT_REQUEST_DAYS, REQUEST_DAYS } from "@/lib/requests";
 import { approveRequest, createRequest, deleteRequest, publishRequest, rejectRequest, renewRequest } from "./actions";
 import { Popconfirm } from "./Popconfirm";
 import styles from "./admin.module.css";
@@ -14,7 +14,7 @@ function useOrigin(fallback: string) {
   return useSyncExternalStore(noop, () => location.origin, () => fallback);
 }
 
-const daysLabel = (d: number) => (d === 1 ? "1 día" : `${d} días`);
+const daysLabel = (d: number) => (d === 1 ? "24 horas" : `${d} días`);
 
 function DaysSelect({ name = "days", value, onChange }: { name?: string; value?: number; onChange?: (d: number) => void }) {
   return (
@@ -75,12 +75,27 @@ export function NewRequestForm() {
 }
 
 /** Enlace del formulario: copiarlo o mandarlo por WhatsApp al teléfono del cliente. */
-export function RequestLink({ path, phone, clientName, siteUrl }: { path: string; phone: string; clientName: string; siteUrl: string }) {
+export function RequestLink({
+  path,
+  phone,
+  clientName,
+  siteUrl,
+  note = null,
+}: {
+  path: string;
+  phone: string;
+  clientName: string;
+  siteUrl: string;
+  /** Si es para corregir, el mensaje lo dice */
+  note?: string | null;
+}) {
   const origin = useOrigin(siteUrl);
   const url = `${origin}${path}`;
   const [copied, setCopied] = useState(false);
   const firstName = clientName.split(/\s+/)[0];
-  const text = `¡Hola, ${firstName}! Aquí puedes llenar los datos de tu invitación: ${url}`;
+  const text = note
+    ? `¡Hola, ${firstName}! Necesitamos que corrijas unos datos de tu invitación:\n\n${note}\n\nAquí puedes hacerlo (ya están tus datos, solo cambia lo que haga falta): ${url}`
+    : `¡Hola, ${firstName}! Aquí puedes llenar los datos de tu invitación: ${url}`;
 
   async function copy() {
     await navigator.clipboard.writeText(url);
@@ -129,6 +144,66 @@ export function RenewRequest({ id, label = "Generar enlace nuevo" }: { id: strin
   );
 }
 
+/**
+ * Vuelve a abrir el formulario (con enlace nuevo de vigencia corta) para que el
+ * cliente corrija lo que ya mandó. La nota le dice qué corregir.
+ */
+export function ReopenRequest({
+  id,
+  defaultDays = CORRECTION_DAYS,
+  label = "Pedir correcciones",
+  noteRequired = true,
+}: {
+  id: string;
+  defaultDays?: number;
+  label?: string;
+  noteRequired?: boolean;
+}) {
+  const [days, setDays] = useState<number>(defaultDays);
+  const [note, setNote] = useState("");
+  const [pending, start] = useTransition();
+  const missingNote = noteRequired && !note.trim();
+
+  return (
+    <div className={styles.grid} style={{ gap: 10 }}>
+      <label className={styles.field}>
+        <span className={styles.label}>¿Qué tiene que corregir?{noteRequired ? "" : " (opcional)"}</span>
+        <textarea
+          className={styles.textarea}
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          maxLength={CORRECTION_NOTE_MAX}
+          placeholder="La fecha no coincide con lo que platicamos; falta la dirección completa del salón."
+        />
+        <span className={styles.help}>El cliente la ve arriba del formulario, con lo que ya había llenado.</span>
+      </label>
+      <div className={styles.labelRow} style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-start" }}>
+        <span className={styles.help}>El enlace dura</span>
+        <DaysSelect value={days} onChange={setDays} />
+        <Popconfirm
+          title="¿Volver a abrir el formulario?"
+          description="Se genera un enlace nuevo; el cliente puede corregir y enviar otra vez una sola vez."
+          okText="Abrir"
+          onConfirm={() => start(() => renewRequest(id, days, note))}
+        >
+          {(confirm) => (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnSmall}`}
+              disabled={pending || missingNote}
+              title={missingNote ? "Escribe qué tiene que corregir" : undefined}
+              onClick={confirm}
+            >
+              {pending ? "Generando…" : label}
+            </button>
+          )}
+        </Popconfirm>
+      </div>
+    </div>
+  );
+}
+
 /** Aprobar (crea la invitación sin publicar) o rechazar. */
 export function ReviewRequest({ id, canApprove }: { id: string; canApprove: boolean }) {
   const [pending, start] = useTransition();
@@ -141,13 +216,14 @@ export function ReviewRequest({ id, canApprove }: { id: string; canApprove: bool
         {canApprove && (
           <Popconfirm
             title="¿Aprobar la solicitud?"
-            description="Se crea la invitación sin publicar para que la termines en el editor."
+            description="Se crea la invitación sin publicar, sale de Solicitudes y se abre el editor para terminarla."
             okText="Aprobar"
             onConfirm={() =>
               start(async () => {
                 setError(null);
+                // Si sale bien, el servidor manda al editor de la invitación
                 const result = await approveRequest(id);
-                if (!result.ok) setError(result.error);
+                if (result && !result.ok) setError(result.error);
               })
             }
           >

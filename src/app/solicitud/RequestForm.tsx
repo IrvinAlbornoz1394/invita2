@@ -51,11 +51,13 @@ export function RequestForm({
     time: initial?.time ?? (religious ? addHours(DEFAULT_TIME[type], RECEPTION_AFTER_HOURS) : DEFAULT_TIME[type]),
     venue_name: initial?.venue_name ?? "",
     address: initial?.address ?? "",
+    maps_url: initial?.maps_url ?? "",
     ceremony: {
       enabled: initial?.ceremony?.enabled ?? true,
       time: initial?.ceremony?.time ?? DEFAULT_TIME[type],
       place: initial?.ceremony?.place ?? "",
       address: initial?.ceremony?.address ?? "",
+      maps_url: initial?.ceremony?.maps_url ?? "",
     },
     parents: lines(initial?.parents),
     godparents: lines(initial?.godparents),
@@ -90,7 +92,8 @@ export function RequestForm({
       time: form.time,
       venue_name: form.venue_name,
       address: form.address,
-      ceremony: religious ? form.ceremony : { enabled: false, time: null, place: null, address: null },
+      maps_url: form.maps_url,
+      ceremony: religious ? form.ceremony : { enabled: false, time: null, place: null, address: null, maps_url: null },
       parents: religious ? fromLines(form.parents) : [],
       godparents: religious ? fromLines(form.godparents) : [],
       message: form.message,
@@ -135,9 +138,9 @@ export function RequestForm({
           )}
         </Field>
         {hasAge(type) && (
-          <Field label="Edad que cumple" narrow>
+          <Field label="¿Cuántos años cumple?" narrow>
             {(id) => (
-              <input id={id} className={styles.input} type="number" inputMode="numeric" min={0} max={120} value={form.age} onChange={(e) => set("age", e.target.value)} placeholder="5" />
+              <input id={id} className={styles.input} type="number" inputMode="numeric" min={1} max={120} step={1} value={form.age} onChange={(e) => set("age", e.target.value)} required placeholder="5" />
             )}
           </Field>
         )}
@@ -180,6 +183,7 @@ export function RequestForm({
               <Field label="Dirección de la iglesia">
                 {(id) => <input id={id} className={styles.input} value={form.ceremony.address ?? ""} onChange={(e) => setCeremony({ address: e.target.value })} maxLength={200} placeholder="Calle 62 #500, Centro" />}
               </Field>
+              <MapsField value={form.ceremony.maps_url ?? ""} onChange={(v) => setCeremony({ maps_url: v })} />
             </>
           )}
         </Section>
@@ -192,6 +196,7 @@ export function RequestForm({
         <Field label="Dirección" help="Calle, número, cruzamientos y colonia.">
           {(id) => <textarea id={id} className={styles.textarea} rows={2} value={form.address} onChange={(e) => set("address", e.target.value)} required maxLength={200} placeholder="Calle 60 #500 por 61 y 63, Centro" />}
         </Field>
+        <MapsField value={form.maps_url} onChange={(v) => set("maps_url", v)} />
       </Section>
 
       {religious && (
@@ -300,6 +305,30 @@ export function RequestForm({
         </p>
       )}
     </form>
+  );
+}
+
+/** Opcional: si no lo pone, buscamos la ubicación nosotros con la dirección. */
+function MapsField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <Field
+      label="Ubicación en Google Maps (opcional)"
+      help="En Google Maps toca «Compartir» y pega aquí el enlace. Si no lo tienes, lo buscamos con la dirección."
+    >
+      {(id) => (
+        <input
+          id={id}
+          className={styles.input}
+          type="text"
+          inputMode="url"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          maxLength={1000}
+          placeholder="https://maps.app.goo.gl/…"
+          autoComplete="off"
+        />
+      )}
+    </Field>
   );
 }
 

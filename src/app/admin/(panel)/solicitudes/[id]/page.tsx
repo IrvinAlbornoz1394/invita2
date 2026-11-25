@@ -5,12 +5,12 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth";
 import { clockLabel, longDate, shortDate, timeOf, zonedToUtc } from "@/lib/dates";
 import { EVENT_TYPES, eventType, hasAge, isReligious, usesFullName } from "@/lib/defaults";
-import { publishChecks, REQUEST_STATES, requestData, requestPath, requestState, type RequestStatus } from "@/lib/requests";
+import { CORRECTION_DAYS, publishChecks, REQUEST_STATES, correctionPath, requestData, requestPath, requestState, type RequestStatus } from "@/lib/requests";
 import { firstError } from "@/lib/schema";
 import { createThemeFromRequest } from "../../../actions";
 import { CopyLink } from "../../../CopyLink";
 import { PublishSwitch } from "../../../InvitationActions";
-import { DeleteRequest, PublishRequest, RenewRequest, RequestLink, ReviewRequest } from "../../../RequestActions";
+import { DeleteRequest, PublishRequest, RenewRequest, ReopenRequest, RequestLink, ReviewRequest } from "../../../RequestActions";
 import { STATE_BADGE } from "../../../requestBadge";
 import styles from "../../../admin.module.css";
 
@@ -42,6 +42,7 @@ type Row = {
   data: unknown;
   submitted_at: string | null;
   created_at: string;
+  correction_note: string | null;
   invitation: {
     id: string;
     slug: string;
@@ -77,7 +78,7 @@ async function RequestDetail({ params }: Pick<PageProps<"/admin/solicitudes/[id]
   const checks = inv
     ? publishChecks(inv, customTheme)
     : sent.success
-      ? publishChecks({ maps_url: null, theme_id: sent.data.theme_id, ceremony: isReligious(type) ? sent.data.ceremony : null }, customTheme)
+      ? publishChecks({ maps_url: sent.data.maps_url, theme_id: sent.data.theme_id, ceremony: isReligious(type) ? sent.data.ceremony : null }, customTheme)
       : [];
   const ready = checks.every((c) => c.done);
 
@@ -99,15 +100,22 @@ async function RequestDetail({ params }: Pick<PageProps<"/admin/solicitudes/[id]
       <div style={{ marginTop: 20 }}>
         {state === "pendiente" && (
           <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Enlace para el cliente</h2>
+            <h2 className={styles.cardTitle}>{req.correction_note ? "Enlace para corregir" : "Enlace para el cliente"}</h2>
             <p className={styles.cardHint}>
               Vence el {longDate(req.expires_at, TZ).toLowerCase()} a las {timeOf(req.expires_at, TZ)}. Solo se puede mandar una vez.
             </p>
+            {req.correction_note && (
+              <div className={styles.field} style={{ marginBottom: 12 }}>
+                <span className={styles.label}>Lo que le pediste corregir</span>
+                <p style={{ margin: 0, whiteSpace: "pre-wrap" }}>{req.correction_note}</p>
+              </div>
+            )}
             <RequestLink
-              path={requestPath(type, req.token)}
+              path={req.data ? correctionPath(req.token) : requestPath(type, req.token)}
               phone={req.client_phone}
               clientName={req.client_name}
               siteUrl={process.env.NEXT_PUBLIC_SITE_URL ?? ""}
+              note={req.correction_note}
             />
             <div style={{ marginTop: 16 }}>
               <RenewRequest id={req.id} />
@@ -121,7 +129,11 @@ async function RequestDetail({ params }: Pick<PageProps<"/admin/solicitudes/[id]
             <p className={styles.cardHint}>
               Con un enlace nuevo el cliente puede {req.data ? "corregir lo que ya había llenado" : "llenar el formulario"}.
             </p>
-            <RenewRequest id={req.id} label="Generar enlace nuevo" />
+            {req.data ? (
+              <ReopenRequest id={req.id} label="Generar enlace nuevo" noteRequired={false} />
+            ) : (
+              <RenewRequest id={req.id} label="Generar enlace nuevo" />
+            )}
           </section>
         )}
 
@@ -130,6 +142,17 @@ async function RequestDetail({ params }: Pick<PageProps<"/admin/solicitudes/[id]
             <h2 className={styles.cardTitle}>Revisar</h2>
             <p className={styles.cardHint}>Al aprobarla se crea la invitación sin publicar para que la completes (mapa, show, extras…).</p>
             <ReviewRequest id={req.id} canApprove={!!req.data} />
+          </section>
+        )}
+
+        {state === "recibida" && (
+          <section className={styles.card}>
+            <h2 className={styles.cardTitle}>Pedir correcciones</h2>
+            <p className={styles.cardHint}>
+              Vuelve a abrir el formulario con lo que ya llenó para que corrija algo. El enlace nuevo dura{" "}
+              {CORRECTION_DAYS === 1 ? "24 horas" : `${CORRECTION_DAYS} días`} (puedes cambiarlo) y se cierra en cuanto lo envíe.
+            </p>
+            <ReopenRequest id={req.id} />
           </section>
         )}
 
@@ -246,6 +269,7 @@ async function ClientData({
     [religious ? "Hora de la recepción" : "Hora", clockLabel(d.time)],
     ["Lugar", d.venue_name ?? "—"],
     ["Dirección", d.address],
+    ["Google Maps", mapsLink(d.maps_url)],
     ...(religious
       ? ([
           [
@@ -254,6 +278,7 @@ async function ClientData({
               ? [d.ceremony.time && clockLabel(d.ceremony.time), d.ceremony.place, d.ceremony.address].filter(Boolean).join(" · ") || "Sí"
               : "No habrá",
           ],
+          ...(d.ceremony.enabled ? ([["Maps de la iglesia", mapsLink(d.ceremony.maps_url)]] as [string, ReactNode][]) : []),
           ["Papás", d.parents.join(", ") || "—"],
           ["Padrinos", d.godparents.join(", ") || "—"],
         ] as [string, ReactNode][])
@@ -318,5 +343,15 @@ async function ClientData({
         </div>
       )}
     </section>
+  );
+}
+
+function mapsLink(url: string | null) {
+  return url ? (
+    <a href={url} target="_blank" rel="noreferrer" style={{ overflowWrap: "anywhere" }}>
+      {url}
+    </a>
+  ) : (
+    "— (la buscas tú con la dirección)"
   );
 }

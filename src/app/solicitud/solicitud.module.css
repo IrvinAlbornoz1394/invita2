@@ -450,3 +450,23 @@
 .requirements li::before {
   content: "✅ ";
 }
+
+/* Lo que pidió corregir el operador (enlace reabierto) */
+.correction {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff8e6;
+  border: 1px solid #f3dc9b;
+  color: #5c4205;
+}
+.correction strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #3f2d03;
+}
+.correction p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

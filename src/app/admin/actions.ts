@@ -11,7 +11,7 @@ import { ageRibbon, DEFAULT_COLORS, DEMO_INVITATIONS, eventType, hasAge, isRelig
 import { firstError, invitationInput, themeInput, type InvitationInput, type ThemeInput } from "@/lib/schema";
 import { invitationSlug, randomHash, slugify } from "@/lib/slug";
 import { resolveMapsDestination } from "@/lib/maps";
-import { DEFAULT_REQUEST_DAYS, missingForPublish, requestData, requestInput, type RequestData } from "@/lib/requests";
+import { CORRECTION_NOTE_MAX, DEFAULT_REQUEST_DAYS, missingForPublish, requestData, requestInput, type RequestData } from "@/lib/requests";
 import { requestPhotoPrefix } from "@/lib/request-photos";
 import { DEFAULT_GIVEAWAY_MESSAGE, giveawayInput } from "@/lib/giveaways";
 
@@ -242,16 +242,25 @@ export async function createRequest(_prev: ActionResult | null, formData: FormDa
 
 /**
  * Enlace nuevo con otra vigencia: el anterior deja de servir. Sirve para las
- * vencidas y para las rechazadas (el cliente ve lo que ya había llenado).
+ * vencidas, las rechazadas y para pedir correcciones de una ya recibida: el
+ * cliente ve lo que ya había llenado y, si hay nota, qué tiene que corregir.
+ * Sin `note` se queda la nota que hubiera; con `null` se borra.
  */
-export async function renewRequest(id: string, days: number) {
+export async function renewRequest(id: string, days: number, note?: string | null) {
   const { supabase } = await requireAdmin();
 
+  const cleanNote = note === undefined ? undefined : note?.trim().slice(0, CORRECTION_NOTE_MAX) || null;
   const { error } = await supabase
     .from("invitation_requests")
-    .update({ token: newToken(), status: "pendiente", expires_at: expiresIn(validDays(days)), reviewed_at: null })
+    .update({
+      token: newToken(),
+      status: "pendiente",
+      expires_at: expiresIn(validDays(days)),
+      reviewed_at: null,
+      ...(cleanNote !== undefined && { correction_note: cleanNote }),
+    })
     .eq("id", id)
-    .in("status", ["pendiente", "rechazada"]);
+    .in("status", ["pendiente", "recibida", "rechazada"]);
   if (error) throw error;
 
   refresh();
@@ -293,11 +302,17 @@ function wrapName(lines: string[]) {
 }
 
 /** Invitación sin publicar con lo que llenó el cliente; lo demás, del ejemplo de su tipo de evento. */
-function invitationFromRequest(type: EventType, d: RequestData) {
+async function invitationFromRequest(type: EventType, d: RequestData) {
   const demo = DEMO_INVITATIONS[type];
   const religious = isReligious(type);
   const age = hasAge(type) ? d.age : null;
   const { nameLines, slugBase } = nameParts(d.name, type);
+  const ceremonyOn = religious && d.ceremony.enabled;
+  // Si mandó el enlace de Maps, se sacan las coordenadas como en el editor
+  const [mapsDestination, ceremonyDestination] = await Promise.all([
+    resolveMapsDestination(d.maps_url),
+    ceremonyOn ? resolveMapsDestination(d.ceremony.maps_url) : null,
+  ]);
 
   return {
     slugBase,
@@ -313,6 +328,8 @@ function invitationFromRequest(type: EventType, d: RequestData) {
       timezone: REQUEST_TIMEZONE,
       venue_name: d.venue_name,
       address: d.address,
+      maps_url: d.maps_url,
+      maps_destination: mapsDestination,
       area: null,
       message: d.message ?? demo.message,
       whatsapp: d.whatsapp,
@@ -321,10 +338,16 @@ function invitationFromRequest(type: EventType, d: RequestData) {
       // Lo que eligió el cliente (sin extras, la sección no se muestra)
       extras: d.extras.map((x) => ({ ...x, note: "" })),
       gallery: d.gallery.map((url) => ({ url })),
-      ceremony:
-        religious && d.ceremony.enabled
-          ? { enabled: true, time: d.ceremony.time, place: d.ceremony.place, address: d.ceremony.address, maps_url: null }
-          : { enabled: false },
+      ceremony: ceremonyOn
+        ? {
+            enabled: true,
+            time: d.ceremony.time,
+            place: d.ceremony.place,
+            address: d.ceremony.address,
+            maps_url: d.ceremony.maps_url,
+            destination: ceremonyDestination,
+          }
+        : { enabled: false },
     },
   };
 }
@@ -358,7 +381,7 @@ export async function approveRequest(id: string): Promise<ActionResult> {
     d.theme_id = theme?.id ?? null;
   }
 
-  const { row, slugBase } = invitationFromRequest(type, d);
+  const { row, slugBase } = await invitationFromRequest(type, d);
   let invitationId: string | null = null;
   for (let attempt = 0; attempt < 3 && !invitationId; attempt++) {
     const { data, error: insertError } = await supabase
@@ -373,7 +396,7 @@ export async function approveRequest(id: string): Promise<ActionResult> {
 
   const { data: updated, error: updateError } = await supabase
     .from("invitation_requests")
-    .update({ status: "aprobada", invitation_id: invitationId, reviewed_at: new Date().toISOString() })
+    .update({ status: "aprobada", invitation_id: invitationId, reviewed_at: new Date().toISOString(), correction_note: null })
     .eq("id", id)
     .eq("status", "recibida")
     .select("id");
@@ -383,8 +406,8 @@ export async function approveRequest(id: string): Promise<ActionResult> {
     return { ok: false, error: updateError?.message ?? "La solicitud cambió mientras tanto; recarga la página" };
   }
 
-  refresh();
-  return { ok: true, message: "Aprobada: ya puedes terminarla en el editor y publicarla" };
+  // Ya es invitación: sale de Solicitudes y se termina (y publica) en el editor
+  redirect(`/admin/invitaciones/${invitationId}`);
 }
 
 /** Publicar desde la solicitud: solo si ya está aprobada y no le falta nada. */

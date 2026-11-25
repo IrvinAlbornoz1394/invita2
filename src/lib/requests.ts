@@ -19,8 +19,11 @@ export function requestState(status: RequestStatus, expiresAt: string, now = Dat
 }
 
 /** Días de vigencia que se ofrecen al generar o renovar un enlace */
-export const REQUEST_DAYS = [3, 7, 15, 30] as const;
+export const REQUEST_DAYS = [1, 3, 7, 15, 30] as const;
 export const DEFAULT_REQUEST_DAYS = 7;
+/** Al pedir correcciones el enlace dura poco: 24 h */
+export const CORRECTION_DAYS = 1;
+export const CORRECTION_NOTE_MAX = 600;
 
 /** En la URL va con guion: /solicitud/primera-comunion/<token> */
 export const typeSlug = (type: EventType) => type.replace(/_/g, "-");
@@ -34,6 +37,9 @@ export const validToken = (token: unknown): token is string => typeof token === 
 
 export const requestPath = (type: EventType, token: string) => `/solicitud/${typeSlug(type)}/${token}`;
 
+/** Enlace para corregir un prospecto ya enviado: el tipo ya está en la solicitud */
+export const correctionPath = (token: string) => `/solicitud/corregir/${token}`;
+
 /** Solo dígitos, con lada: «+52 999 123 4567» → «529991234567» */
 export const phoneDigits = (v: string) => v.replace(/\D/g, "");
 
@@ -45,6 +51,18 @@ const phone = (message: string) =>
     .string()
     .transform((v) => withCountryCode(phoneDigits(v)))
     .refine((v) => /^[0-9]{8,15}$/.test(v), message);
+
+/**
+ * Enlace de Google Maps (opcional). Acepta el texto que comparte la app
+ * («Ubicación: https://maps.app.goo.gl/…») y se queda solo con el enlace.
+ */
+const mapsLink = z
+  .string()
+  .trim()
+  .max(1000)
+  .nullish()
+  .transform((v) => v?.match(/https?:\/\/\S+/)?.[0] ?? (v ? v : null))
+  .refine((v) => v === null || /^https?:\/\/\S+$/.test(v), "Pega el enlace completo de Google Maps (empieza con https://)");
 
 export const REQUEST_GALLERY_MAX = 12;
 export const REQUEST_EXTRAS_MAX = 20;
@@ -64,11 +82,13 @@ export const requestData = z.object({
   time: hhmm,
   venue_name: optionalText(120),
   address: text(200).min(1, "Escribe la dirección del evento"),
+  maps_url: mapsLink,
   ceremony: z.object({
     enabled: z.boolean(),
     time: hhmm.nullable().or(z.literal("").transform(() => null)),
     place: optionalText(120),
     address: optionalText(200),
+    maps_url: mapsLink,
   }),
   parents: names,
   godparents: names,

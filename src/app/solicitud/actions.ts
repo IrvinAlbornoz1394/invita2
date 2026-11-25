@@ -31,8 +31,10 @@ export async function submitRequest(token: string, input: RequestDataInput): Pro
   const type = eventType(req.event_type);
   const d = parsed.data;
   if (!hasAge(type)) d.age = null;
+  // En cumpleaños la edad que cumple es obligatoria (va en la cinta: «¡Cumplo 5!»)
+  else if (d.age === null || d.age < 1) return { ok: false, error: "Indica cuántos años cumple" };
   if (!isReligious(type)) {
-    d.ceremony = { enabled: false, time: null, place: null, address: null };
+    d.ceremony = { enabled: false, time: null, place: null, address: null, maps_url: null };
     d.parents = [];
     d.godparents = [];
   }
